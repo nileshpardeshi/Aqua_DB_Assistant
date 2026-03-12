@@ -32,6 +32,8 @@ model Project {
   aiConversations    AIConversation[]
   dbConnections      DatabaseConnection[]
   auditLogs          AuditLog[]
+  columnMappings     ColumnMappingConfig[]
+  dataSheetMappings  DataSheetMappingConfig[]
 
   @@index([status])
   @@index([createdAt])
@@ -289,6 +291,38 @@ model Migration {
 
   @@unique([projectId, version])
   @@index([projectId, status])
+}
+
+model ColumnMappingConfig {
+  id              String   @id @default(uuid())
+  projectId       String
+  name            String
+  sourceTableName String
+  targetTableName String
+  sourceDialect   String
+  targetDialect   String
+  mappings        String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model DataSheetMappingConfig {
+  id              String   @id @default(uuid())
+  projectId       String
+  name            String
+  sourceTableName String
+  csvFileName     String
+  mappings        String   // JSON: DataSheetMapping[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
 }
 
 // ============================================================

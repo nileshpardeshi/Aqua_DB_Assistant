@@ -5,6 +5,8 @@
 
 import { PrismaClient } from '@prisma/client';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { config } from 'dotenv';
 
 // Load .env from server root
@@ -40,6 +42,8 @@ async function main() {
   await prisma.aIConversation.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.dataLifecycleRule.deleteMany();
+  await prisma.dataSheetMappingConfig.deleteMany();
+  await prisma.columnMappingConfig.deleteMany();
   await prisma.migration.deleteMany();
   await prisma.performanceRun.deleteMany();
   await prisma.queryExecution.deleteMany();
@@ -159,6 +163,27 @@ async function main() {
 
   await seedAuditLogs(PROJECT_IDS.banking, PROJECT_IDS.ecommerce);
   console.log('  Created audit logs.');
+
+  // ========================================================================
+  // 11. COLUMN MAPPING CONFIGS
+  // ========================================================================
+
+  await seedColumnMappings(PROJECT_IDS.banking, PROJECT_IDS.ecommerce);
+  console.log('  Created column mapping configurations.');
+
+  // ========================================================================
+  // 12. DEMO CSV FILES (for Data Migration tab)
+  // ========================================================================
+
+  await seedDemoCSVFiles();
+  console.log('  Created demo CSV files for data migration.');
+
+  // ========================================================================
+  // 13. DATA SHEET MAPPING CONFIGS (CSV Header → Source Column mappings)
+  // ========================================================================
+
+  await seedDataSheetMappings(PROJECT_IDS.banking, PROJECT_IDS.ecommerce);
+  console.log('  Created data sheet mapping configurations.');
 
   console.log('\nSeed complete!');
 }
@@ -1247,6 +1272,603 @@ async function seedAuditLogs(bankingId: string, ecommerceId: string) {
         createdAt: new Date(Date.now() - (actions.length - i) * 3600000),
       },
     });
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Column Mapping Configurations
+// ──────────────────────────────────────────────────────────────────────────────
+
+async function seedColumnMappings(bankingId: string, ecommerceId: string) {
+  // Helper to build SavedMappingData JSON
+  function buildMappingJSON(
+    columnMappings: Array<{
+      sourceColumn: string;
+      targetColumn: string;
+      transformationType: string;
+      castTo?: string;
+      expression?: string;
+      defaultValue?: string;
+      nullHandling?: string;
+    }>,
+    sourceColumns: Array<{ name: string; dataType: string }>,
+    targetColumns: Array<{ name: string; dataType: string }>,
+  ): string {
+    return JSON.stringify({
+      columnMappings: columnMappings.map((cm, idx) => ({
+        id: `seed-cm-${idx}`,
+        sourceColumn: cm.sourceColumn,
+        targetColumn: cm.targetColumn,
+        transformationType: cm.transformationType || 'direct',
+        castTo: cm.castTo,
+        expression: cm.expression,
+        defaultValue: cm.defaultValue,
+        nullHandling: cm.nullHandling || 'pass',
+        isValid: true,
+      })),
+      sourceColumns: sourceColumns.map((c, idx) => ({
+        name: c.name,
+        dataType: c.dataType,
+        ordinalPosition: idx + 1,
+        isNullable: true,
+        isPrimaryKey: idx === 0,
+        isUnique: false,
+      })),
+      targetColumns: targetColumns.map((c, idx) => ({
+        name: c.name,
+        dataType: c.dataType,
+        ordinalPosition: idx + 1,
+        isNullable: true,
+        isPrimaryKey: idx === 0,
+        isUnique: false,
+      })),
+    });
+  }
+
+  const mappings = [
+    // ── Banking: PostgreSQL → MySQL ──────────────────────────────
+    {
+      projectId: bankingId,
+      name: 'Customers → Customer Master',
+      sourceTableName: 'customers',
+      targetTableName: 'customer_master',
+      sourceDialect: 'postgresql',
+      targetDialect: 'mysql',
+      mappings: buildMappingJSON(
+        [
+          { sourceColumn: 'id', targetColumn: 'customer_id', transformationType: 'rename' },
+          { sourceColumn: 'first_name', targetColumn: 'fname', transformationType: 'rename' },
+          { sourceColumn: 'last_name', targetColumn: 'lname', transformationType: 'rename' },
+          { sourceColumn: 'email', targetColumn: 'email_address', transformationType: 'rename' },
+          { sourceColumn: 'phone', targetColumn: 'phone_number', transformationType: 'rename' },
+          { sourceColumn: 'date_of_birth', targetColumn: 'dob', transformationType: 'rename' },
+          { sourceColumn: 'kyc_status', targetColumn: 'kyc_status', transformationType: 'direct' },
+          { sourceColumn: 'risk_score', targetColumn: 'risk_level', transformationType: 'rename' },
+          { sourceColumn: 'created_at', targetColumn: 'created_date', transformationType: 'cast', castTo: 'DATETIME' },
+        ],
+        [
+          { name: 'id', dataType: 'uuid' },
+          { name: 'first_name', dataType: 'varchar(100)' },
+          { name: 'last_name', dataType: 'varchar(100)' },
+          { name: 'email', dataType: 'varchar(255)' },
+          { name: 'phone', dataType: 'varchar(20)' },
+          { name: 'date_of_birth', dataType: 'date' },
+          { name: 'kyc_status', dataType: 'varchar(20)' },
+          { name: 'risk_score', dataType: 'integer' },
+          { name: 'created_at', dataType: 'timestamp' },
+        ],
+        [
+          { name: 'customer_id', dataType: 'varchar(36)' },
+          { name: 'fname', dataType: 'varchar(100)' },
+          { name: 'lname', dataType: 'varchar(100)' },
+          { name: 'email_address', dataType: 'varchar(255)' },
+          { name: 'phone_number', dataType: 'varchar(20)' },
+          { name: 'dob', dataType: 'date' },
+          { name: 'kyc_status', dataType: 'varchar(20)' },
+          { name: 'risk_level', dataType: 'int' },
+          { name: 'created_date', dataType: 'datetime' },
+        ],
+      ),
+    },
+    {
+      projectId: bankingId,
+      name: 'Accounts → Account Master',
+      sourceTableName: 'accounts',
+      targetTableName: 'account_master',
+      sourceDialect: 'postgresql',
+      targetDialect: 'mysql',
+      mappings: buildMappingJSON(
+        [
+          { sourceColumn: 'id', targetColumn: 'account_id', transformationType: 'rename' },
+          { sourceColumn: 'customer_id', targetColumn: 'cust_id', transformationType: 'rename' },
+          { sourceColumn: 'account_number', targetColumn: 'acct_no', transformationType: 'rename' },
+          { sourceColumn: 'account_type', targetColumn: 'acct_type', transformationType: 'rename' },
+          { sourceColumn: 'currency', targetColumn: 'currency_code', transformationType: 'rename' },
+          { sourceColumn: 'balance', targetColumn: 'current_balance', transformationType: 'rename' },
+          { sourceColumn: 'status', targetColumn: 'acct_status', transformationType: 'rename' },
+          { sourceColumn: 'opened_at', targetColumn: 'open_date', transformationType: 'cast', castTo: 'DATETIME' },
+        ],
+        [
+          { name: 'id', dataType: 'uuid' },
+          { name: 'customer_id', dataType: 'uuid' },
+          { name: 'account_number', dataType: 'varchar(20)' },
+          { name: 'account_type', dataType: 'varchar(30)' },
+          { name: 'currency', dataType: 'char(3)' },
+          { name: 'balance', dataType: 'decimal(18,2)' },
+          { name: 'status', dataType: 'varchar(20)' },
+          { name: 'opened_at', dataType: 'timestamp' },
+        ],
+        [
+          { name: 'account_id', dataType: 'varchar(36)' },
+          { name: 'cust_id', dataType: 'varchar(36)' },
+          { name: 'acct_no', dataType: 'varchar(20)' },
+          { name: 'acct_type', dataType: 'varchar(30)' },
+          { name: 'currency_code', dataType: 'char(3)' },
+          { name: 'current_balance', dataType: 'decimal(18,2)' },
+          { name: 'acct_status', dataType: 'varchar(20)' },
+          { name: 'open_date', dataType: 'datetime' },
+        ],
+      ),
+    },
+    {
+      projectId: bankingId,
+      name: 'Branches → Branch Info',
+      sourceTableName: 'branches',
+      targetTableName: 'branch_info',
+      sourceDialect: 'postgresql',
+      targetDialect: 'mysql',
+      mappings: buildMappingJSON(
+        [
+          { sourceColumn: 'id', targetColumn: 'branch_id', transformationType: 'rename' },
+          { sourceColumn: 'branch_code', targetColumn: 'code', transformationType: 'rename' },
+          { sourceColumn: 'name', targetColumn: 'branch_name', transformationType: 'rename' },
+          { sourceColumn: 'city', targetColumn: 'city', transformationType: 'direct' },
+          { sourceColumn: 'country', targetColumn: 'country_code', transformationType: 'rename' },
+          { sourceColumn: 'is_active', targetColumn: 'active_flag', transformationType: 'cast', castTo: 'TINYINT(1)' },
+        ],
+        [
+          { name: 'id', dataType: 'uuid' },
+          { name: 'branch_code', dataType: 'varchar(10)' },
+          { name: 'name', dataType: 'varchar(200)' },
+          { name: 'city', dataType: 'varchar(100)' },
+          { name: 'country', dataType: 'char(2)' },
+          { name: 'is_active', dataType: 'boolean' },
+        ],
+        [
+          { name: 'branch_id', dataType: 'varchar(36)' },
+          { name: 'code', dataType: 'varchar(10)' },
+          { name: 'branch_name', dataType: 'varchar(200)' },
+          { name: 'city', dataType: 'varchar(100)' },
+          { name: 'country_code', dataType: 'char(2)' },
+          { name: 'active_flag', dataType: 'tinyint(1)' },
+        ],
+      ),
+    },
+    {
+      projectId: bankingId,
+      name: 'Transactions → Transaction Log',
+      sourceTableName: 'transactions',
+      targetTableName: 'transaction_log',
+      sourceDialect: 'postgresql',
+      targetDialect: 'mysql',
+      mappings: buildMappingJSON(
+        [
+          { sourceColumn: 'id', targetColumn: 'txn_id', transformationType: 'rename' },
+          { sourceColumn: 'account_id', targetColumn: 'acct_id', transformationType: 'rename' },
+          { sourceColumn: 'transaction_type', targetColumn: 'txn_type', transformationType: 'rename' },
+          { sourceColumn: 'amount', targetColumn: 'txn_amount', transformationType: 'rename' },
+          { sourceColumn: 'currency', targetColumn: 'currency_code', transformationType: 'rename' },
+          { sourceColumn: 'description', targetColumn: 'txn_description', transformationType: 'rename' },
+          { sourceColumn: 'reference_number', targetColumn: 'ref_no', transformationType: 'rename' },
+          { sourceColumn: 'status', targetColumn: 'txn_status', transformationType: 'direct' },
+          { sourceColumn: 'created_at', targetColumn: 'txn_date', transformationType: 'cast', castTo: 'DATETIME' },
+        ],
+        [
+          { name: 'id', dataType: 'uuid' },
+          { name: 'account_id', dataType: 'uuid' },
+          { name: 'transaction_type', dataType: 'varchar(30)' },
+          { name: 'amount', dataType: 'decimal(18,2)' },
+          { name: 'currency', dataType: 'char(3)' },
+          { name: 'description', dataType: 'varchar(500)' },
+          { name: 'reference_number', dataType: 'varchar(50)' },
+          { name: 'status', dataType: 'varchar(20)' },
+          { name: 'created_at', dataType: 'timestamp' },
+        ],
+        [
+          { name: 'txn_id', dataType: 'varchar(36)' },
+          { name: 'acct_id', dataType: 'varchar(36)' },
+          { name: 'txn_type', dataType: 'varchar(30)' },
+          { name: 'txn_amount', dataType: 'decimal(18,2)' },
+          { name: 'currency_code', dataType: 'char(3)' },
+          { name: 'txn_description', dataType: 'varchar(500)' },
+          { name: 'ref_no', dataType: 'varchar(50)' },
+          { name: 'txn_status', dataType: 'varchar(20)' },
+          { name: 'txn_date', dataType: 'datetime' },
+        ],
+      ),
+    },
+
+    // ── E-Commerce: MySQL → PostgreSQL ─────────────────────────
+    {
+      projectId: ecommerceId,
+      name: 'Users → App Users',
+      sourceTableName: 'users',
+      targetTableName: 'app_users',
+      sourceDialect: 'mysql',
+      targetDialect: 'postgresql',
+      mappings: buildMappingJSON(
+        [
+          { sourceColumn: 'id', targetColumn: 'user_id', transformationType: 'cast', castTo: 'BIGINT' },
+          { sourceColumn: 'username', targetColumn: 'login_name', transformationType: 'rename' },
+          { sourceColumn: 'email', targetColumn: 'email_address', transformationType: 'rename' },
+          { sourceColumn: 'full_name', targetColumn: 'display_name', transformationType: 'rename' },
+          { sourceColumn: 'role', targetColumn: 'user_role', transformationType: 'rename' },
+          { sourceColumn: 'is_verified', targetColumn: 'verified', transformationType: 'cast', castTo: 'BOOLEAN' },
+          { sourceColumn: 'created_at', targetColumn: 'registered_at', transformationType: 'cast', castTo: 'TIMESTAMP' },
+        ],
+        [
+          { name: 'id', dataType: 'bigint' },
+          { name: 'username', dataType: 'varchar(50)' },
+          { name: 'email', dataType: 'varchar(255)' },
+          { name: 'full_name', dataType: 'varchar(200)' },
+          { name: 'role', dataType: "enum('customer','admin','vendor')" },
+          { name: 'is_verified', dataType: 'tinyint(1)' },
+          { name: 'created_at', dataType: 'datetime' },
+        ],
+        [
+          { name: 'user_id', dataType: 'bigint' },
+          { name: 'login_name', dataType: 'varchar(50)' },
+          { name: 'email_address', dataType: 'varchar(255)' },
+          { name: 'display_name', dataType: 'varchar(200)' },
+          { name: 'user_role', dataType: 'varchar(20)' },
+          { name: 'verified', dataType: 'boolean' },
+          { name: 'registered_at', dataType: 'timestamp' },
+        ],
+      ),
+    },
+    {
+      projectId: ecommerceId,
+      name: 'Products → Product Catalog',
+      sourceTableName: 'products',
+      targetTableName: 'product_catalog',
+      sourceDialect: 'mysql',
+      targetDialect: 'postgresql',
+      mappings: buildMappingJSON(
+        [
+          { sourceColumn: 'id', targetColumn: 'product_id', transformationType: 'cast', castTo: 'BIGINT' },
+          { sourceColumn: 'sku', targetColumn: 'product_sku', transformationType: 'rename' },
+          { sourceColumn: 'name', targetColumn: 'product_name', transformationType: 'rename' },
+          { sourceColumn: 'description', targetColumn: 'product_desc', transformationType: 'rename' },
+          { sourceColumn: 'price', targetColumn: 'retail_price', transformationType: 'rename' },
+          { sourceColumn: 'cost_price', targetColumn: 'cost', transformationType: 'rename', nullHandling: 'default', defaultValue: '0.00' },
+          { sourceColumn: 'stock_quantity', targetColumn: 'qty_on_hand', transformationType: 'rename' },
+          { sourceColumn: 'status', targetColumn: 'product_status', transformationType: 'rename' },
+          { sourceColumn: 'created_at', targetColumn: 'created_at', transformationType: 'cast', castTo: 'TIMESTAMP' },
+        ],
+        [
+          { name: 'id', dataType: 'bigint' },
+          { name: 'sku', dataType: 'varchar(50)' },
+          { name: 'name', dataType: 'varchar(300)' },
+          { name: 'description', dataType: 'text' },
+          { name: 'price', dataType: 'decimal(10,2)' },
+          { name: 'cost_price', dataType: 'decimal(10,2)' },
+          { name: 'stock_quantity', dataType: 'int' },
+          { name: 'status', dataType: "enum('active','draft','archived')" },
+          { name: 'created_at', dataType: 'datetime' },
+        ],
+        [
+          { name: 'product_id', dataType: 'bigint' },
+          { name: 'product_sku', dataType: 'varchar(50)' },
+          { name: 'product_name', dataType: 'varchar(300)' },
+          { name: 'product_desc', dataType: 'text' },
+          { name: 'retail_price', dataType: 'decimal(10,2)' },
+          { name: 'cost', dataType: 'decimal(10,2)' },
+          { name: 'qty_on_hand', dataType: 'integer' },
+          { name: 'product_status', dataType: 'varchar(20)' },
+          { name: 'created_at', dataType: 'timestamp' },
+        ],
+      ),
+    },
+    {
+      projectId: ecommerceId,
+      name: 'Orders → Order Records',
+      sourceTableName: 'orders',
+      targetTableName: 'order_records',
+      sourceDialect: 'mysql',
+      targetDialect: 'postgresql',
+      mappings: buildMappingJSON(
+        [
+          { sourceColumn: 'id', targetColumn: 'order_id', transformationType: 'cast', castTo: 'BIGINT' },
+          { sourceColumn: 'user_id', targetColumn: 'customer_id', transformationType: 'rename' },
+          { sourceColumn: 'order_number', targetColumn: 'order_ref', transformationType: 'rename' },
+          { sourceColumn: 'status', targetColumn: 'order_status', transformationType: 'rename' },
+          { sourceColumn: 'subtotal', targetColumn: 'subtotal', transformationType: 'direct' },
+          { sourceColumn: 'tax_amount', targetColumn: 'tax', transformationType: 'rename' },
+          { sourceColumn: 'total_amount', targetColumn: 'grand_total', transformationType: 'rename' },
+          { sourceColumn: 'ordered_at', targetColumn: 'placed_at', transformationType: 'cast', castTo: 'TIMESTAMP' },
+        ],
+        [
+          { name: 'id', dataType: 'bigint' },
+          { name: 'user_id', dataType: 'bigint' },
+          { name: 'order_number', dataType: 'varchar(30)' },
+          { name: 'status', dataType: "enum('pending','processing','shipped','delivered','cancelled')" },
+          { name: 'subtotal', dataType: 'decimal(12,2)' },
+          { name: 'tax_amount', dataType: 'decimal(10,2)' },
+          { name: 'total_amount', dataType: 'decimal(12,2)' },
+          { name: 'ordered_at', dataType: 'datetime' },
+        ],
+        [
+          { name: 'order_id', dataType: 'bigint' },
+          { name: 'customer_id', dataType: 'bigint' },
+          { name: 'order_ref', dataType: 'varchar(30)' },
+          { name: 'order_status', dataType: 'varchar(20)' },
+          { name: 'subtotal', dataType: 'decimal(12,2)' },
+          { name: 'tax', dataType: 'decimal(10,2)' },
+          { name: 'grand_total', dataType: 'decimal(12,2)' },
+          { name: 'placed_at', dataType: 'timestamp' },
+        ],
+      ),
+    },
+    {
+      projectId: ecommerceId,
+      name: 'Order Items → Order Line Items',
+      sourceTableName: 'order_items',
+      targetTableName: 'order_line_items',
+      sourceDialect: 'mysql',
+      targetDialect: 'postgresql',
+      mappings: buildMappingJSON(
+        [
+          { sourceColumn: 'id', targetColumn: 'line_id', transformationType: 'cast', castTo: 'BIGINT' },
+          { sourceColumn: 'order_id', targetColumn: 'order_id', transformationType: 'direct' },
+          { sourceColumn: 'product_id', targetColumn: 'product_id', transformationType: 'direct' },
+          { sourceColumn: 'quantity', targetColumn: 'qty', transformationType: 'rename' },
+          { sourceColumn: 'unit_price', targetColumn: 'price_each', transformationType: 'rename' },
+          { sourceColumn: 'total_price', targetColumn: 'line_total', transformationType: 'rename' },
+          { sourceColumn: 'discount_pct', targetColumn: 'discount_percent', transformationType: 'rename', nullHandling: 'default', defaultValue: '0.00' },
+        ],
+        [
+          { name: 'id', dataType: 'bigint' },
+          { name: 'order_id', dataType: 'bigint' },
+          { name: 'product_id', dataType: 'bigint' },
+          { name: 'quantity', dataType: 'int' },
+          { name: 'unit_price', dataType: 'decimal(10,2)' },
+          { name: 'total_price', dataType: 'decimal(12,2)' },
+          { name: 'discount_pct', dataType: 'decimal(5,2)' },
+        ],
+        [
+          { name: 'line_id', dataType: 'bigint' },
+          { name: 'order_id', dataType: 'bigint' },
+          { name: 'product_id', dataType: 'bigint' },
+          { name: 'qty', dataType: 'integer' },
+          { name: 'price_each', dataType: 'decimal(10,2)' },
+          { name: 'line_total', dataType: 'decimal(12,2)' },
+          { name: 'discount_percent', dataType: 'decimal(5,2)' },
+        ],
+      ),
+    },
+  ];
+
+  for (const m of mappings) {
+    await prisma.columnMappingConfig.create({ data: m });
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Demo CSV Files for Data Migration
+// ──────────────────────────────────────────────────────────────────────────────
+
+async function seedDemoCSVFiles() {
+  const csvDir = path.resolve('./uploads/demo-csv');
+  if (!fs.existsSync(csvDir)) {
+    fs.mkdirSync(csvDir, { recursive: true });
+  }
+
+  // Banking: customers_export.csv
+  // CSV headers intentionally differ from DB columns to demonstrate data sheet mapping
+  const customersCSV = `Customer ID,First Name,Last Name,Email Address,Phone,DOB,KYC Status,Risk Score,Registration Date
+a1b2c3d4-e5f6-4789-abcd-000000000001,Alice,Johnson,alice.johnson@example.com,+1-555-0101,1985-03-15,verified,72,2023-01-15 09:30:00
+a1b2c3d4-e5f6-4789-abcd-000000000002,Bob,Smith,bob.smith@example.com,+1-555-0102,1990-07-22,verified,45,2023-02-20 14:15:00
+a1b2c3d4-e5f6-4789-abcd-000000000003,Carol,Williams,carol.w@example.com,+1-555-0103,1978-11-08,pending,88,2023-03-10 11:00:00
+a1b2c3d4-e5f6-4789-abcd-000000000004,David,Brown,david.brown@example.com,,1995-01-30,verified,30,2023-04-05 16:45:00
+a1b2c3d4-e5f6-4789-abcd-000000000005,Eva,Martinez,eva.m@example.com,+1-555-0105,1988-06-12,verified,55,2023-04-18 08:20:00
+a1b2c3d4-e5f6-4789-abcd-000000000006,Frank,Garcia,frank.garcia@example.com,+1-555-0106,1972-09-25,enhanced,91,2023-05-01 10:30:00
+a1b2c3d4-e5f6-4789-abcd-000000000007,Grace,Lee,grace.lee@example.com,+1-555-0107,1993-12-03,verified,38,2023-05-22 13:00:00
+a1b2c3d4-e5f6-4789-abcd-000000000008,Henry,Wilson,henry.w@example.com,+1-555-0108,1980-04-17,verified,62,2023-06-10 09:45:00
+a1b2c3d4-e5f6-4789-abcd-000000000009,Iris,Anderson,iris.anderson@example.com,+1-555-0109,1997-08-28,pending,25,2023-07-03 15:30:00
+a1b2c3d4-e5f6-4789-abcd-000000000010,Jack,Thomas,jack.thomas@example.com,+1-555-0110,1983-02-14,verified,70,2023-07-20 11:15:00
+a1b2c3d4-e5f6-4789-abcd-000000000011,Karen,Jackson,karen.j@example.com,,1991-10-09,verified,48,2023-08-05 14:00:00
+a1b2c3d4-e5f6-4789-abcd-000000000012,Leo,White,leo.white@example.com,+1-555-0112,1976-05-20,enhanced,85,2023-08-28 16:30:00
+a1b2c3d4-e5f6-4789-abcd-000000000013,Maria,Harris,maria.harris@example.com,+1-555-0113,1999-01-07,verified,33,2023-09-12 10:00:00
+a1b2c3d4-e5f6-4789-abcd-000000000014,Nick,Clark,nick.clark@example.com,+1-555-0114,1987-07-31,verified,57,2023-10-01 08:45:00
+a1b2c3d4-e5f6-4789-abcd-000000000015,Olivia,Lewis,olivia.lewis@example.com,+1-555-0115,1994-03-22,pending,42,2023-10-15 12:30:00
+a1b2c3d4-e5f6-4789-abcd-000000000016,Peter,Robinson,peter.r@example.com,+1-555-0116,1981-11-14,verified,65,2023-11-02 09:15:00
+a1b2c3d4-e5f6-4789-abcd-000000000017,Quinn,Walker,quinn.walker@example.com,,1996-06-08,verified,28,2023-11-18 14:45:00
+a1b2c3d4-e5f6-4789-abcd-000000000018,Rachel,Hall,rachel.hall@example.com,+1-555-0118,1974-08-19,enhanced,93,2023-12-05 11:30:00
+a1b2c3d4-e5f6-4789-abcd-000000000019,Sam,Young,sam.young@example.com,+1-555-0119,1989-12-25,verified,51,2024-01-10 08:00:00
+a1b2c3d4-e5f6-4789-abcd-000000000020,Tina,King,tina.king@example.com,+1-555-0120,1992-04-01,verified,44,2024-01-28 15:00:00`;
+
+  // Banking: accounts_export.csv
+  const accountsCSV = `Account ID,Customer ID,Account Number,Account Type,Currency,Balance,Status,Opened At
+b1b2c3d4-e5f6-4789-abcd-000000000001,a1b2c3d4-e5f6-4789-abcd-000000000001,ACC-2023-00001,savings,USD,45230.50,active,2023-01-15 10:00:00
+b1b2c3d4-e5f6-4789-abcd-000000000002,a1b2c3d4-e5f6-4789-abcd-000000000001,ACC-2023-00002,checking,USD,12800.75,active,2023-01-15 10:05:00
+b1b2c3d4-e5f6-4789-abcd-000000000003,a1b2c3d4-e5f6-4789-abcd-000000000002,ACC-2023-00003,savings,USD,8920.00,active,2023-02-20 14:30:00
+b1b2c3d4-e5f6-4789-abcd-000000000004,a1b2c3d4-e5f6-4789-abcd-000000000003,ACC-2023-00004,checking,EUR,35100.25,active,2023-03-10 11:30:00
+b1b2c3d4-e5f6-4789-abcd-000000000005,a1b2c3d4-e5f6-4789-abcd-000000000003,ACC-2023-00005,savings,EUR,92500.00,active,2023-03-10 11:35:00
+b1b2c3d4-e5f6-4789-abcd-000000000006,a1b2c3d4-e5f6-4789-abcd-000000000004,ACC-2023-00006,checking,USD,3240.80,active,2023-04-05 17:00:00
+b1b2c3d4-e5f6-4789-abcd-000000000007,a1b2c3d4-e5f6-4789-abcd-000000000005,ACC-2023-00007,savings,USD,67890.15,active,2023-04-18 08:30:00
+b1b2c3d4-e5f6-4789-abcd-000000000008,a1b2c3d4-e5f6-4789-abcd-000000000006,ACC-2023-00008,checking,GBP,128500.00,active,2023-05-01 10:45:00
+b1b2c3d4-e5f6-4789-abcd-000000000009,a1b2c3d4-e5f6-4789-abcd-000000000006,ACC-2023-00009,savings,GBP,245000.50,active,2023-05-01 10:50:00
+b1b2c3d4-e5f6-4789-abcd-000000000010,a1b2c3d4-e5f6-4789-abcd-000000000007,ACC-2023-00010,checking,USD,5670.30,active,2023-05-22 13:15:00
+b1b2c3d4-e5f6-4789-abcd-000000000011,a1b2c3d4-e5f6-4789-abcd-000000000008,ACC-2023-00011,savings,USD,23400.90,active,2023-06-10 10:00:00
+b1b2c3d4-e5f6-4789-abcd-000000000012,a1b2c3d4-e5f6-4789-abcd-000000000009,ACC-2023-00012,checking,USD,1580.45,active,2023-07-03 15:45:00
+b1b2c3d4-e5f6-4789-abcd-000000000013,a1b2c3d4-e5f6-4789-abcd-000000000010,ACC-2023-00013,savings,USD,89750.00,active,2023-07-20 11:30:00
+b1b2c3d4-e5f6-4789-abcd-000000000014,a1b2c3d4-e5f6-4789-abcd-000000000010,ACC-2023-00014,checking,USD,15200.60,active,2023-07-20 11:35:00
+b1b2c3d4-e5f6-4789-abcd-000000000015,a1b2c3d4-e5f6-4789-abcd-000000000011,ACC-2023-00015,savings,CAD,41000.00,active,2023-08-05 14:15:00
+b1b2c3d4-e5f6-4789-abcd-000000000016,a1b2c3d4-e5f6-4789-abcd-000000000012,ACC-2023-00016,checking,USD,178900.75,active,2023-08-28 16:45:00
+b1b2c3d4-e5f6-4789-abcd-000000000017,a1b2c3d4-e5f6-4789-abcd-000000000013,ACC-2023-00017,savings,USD,6300.20,active,2023-09-12 10:15:00
+b1b2c3d4-e5f6-4789-abcd-000000000018,a1b2c3d4-e5f6-4789-abcd-000000000014,ACC-2023-00018,checking,USD,27650.00,active,2023-10-01 09:00:00
+b1b2c3d4-e5f6-4789-abcd-000000000019,a1b2c3d4-e5f6-4789-abcd-000000000015,ACC-2023-00019,savings,USD,11200.35,active,2023-10-15 12:45:00
+b1b2c3d4-e5f6-4789-abcd-000000000020,a1b2c3d4-e5f6-4789-abcd-000000000016,ACC-2023-00020,checking,EUR,53800.90,active,2023-11-02 09:30:00`;
+
+  // Banking: branches_export.csv
+  const branchesCSV = `Branch ID,Branch Code,Branch Name,City,Country,Is Active
+c1b2c3d4-e5f6-4789-abcd-000000000001,HQ-001,Main Headquarters,New York,US,true
+c1b2c3d4-e5f6-4789-abcd-000000000002,NYC-002,Manhattan Downtown,New York,US,true
+c1b2c3d4-e5f6-4789-abcd-000000000003,LAX-001,Los Angeles Central,Los Angeles,US,true
+c1b2c3d4-e5f6-4789-abcd-000000000004,CHI-001,Chicago Loop,Chicago,US,true
+c1b2c3d4-e5f6-4789-abcd-000000000005,LON-001,London City,London,GB,true
+c1b2c3d4-e5f6-4789-abcd-000000000006,LON-002,London Canary Wharf,London,GB,true
+c1b2c3d4-e5f6-4789-abcd-000000000007,FRA-001,Frankfurt Main,Frankfurt,DE,true
+c1b2c3d4-e5f6-4789-abcd-000000000008,SIN-001,Singapore Central,Singapore,SG,true
+c1b2c3d4-e5f6-4789-abcd-000000000009,TOR-001,Toronto Downtown,Toronto,CA,true
+c1b2c3d4-e5f6-4789-abcd-000000000010,SYD-001,Sydney CBD,Sydney,AU,false`;
+
+  // E-Commerce: users_export.csv
+  const usersCSV = `User ID,User Name,Email,Full Name,User Role,Verified,Signup Date
+1001,alice_shop,alice@shopmail.com,Alice Thompson,customer,1,2023-01-10 08:30:00
+1002,bob_buyer,bob.b@shopmail.com,Bob Martinez,customer,1,2023-01-22 14:00:00
+1003,carol_admin,carol@company.com,Carol Chen,admin,1,2023-02-05 09:00:00
+1004,dave_vendor,dave@vendorco.com,David Patel,vendor,1,2023-02-18 11:30:00
+1005,emma_shop,emma.s@email.com,Emma Wilson,customer,0,2023-03-01 16:45:00
+1006,frank_buy,frank@email.com,Frank Lee,customer,1,2023-03-15 10:15:00
+1007,grace_vendor,grace@craftstore.com,Grace Kim,vendor,1,2023-04-02 13:00:00
+1008,henry_shop,henry.h@email.com,Henry Brown,customer,1,2023-04-20 08:45:00
+1009,iris_buy,iris@webmail.com,Iris Johnson,customer,1,2023-05-08 15:30:00
+1010,jack_admin,jack@company.com,Jack Davis,admin,1,2023-05-22 09:30:00
+1011,kate_shop,kate.s@email.com,Kate Taylor,customer,0,2023-06-10 14:00:00
+1012,leo_vendor,leo@artisanal.com,Leo Anderson,vendor,1,2023-07-01 11:00:00
+1013,mia_buy,mia@email.com,Mia Garcia,customer,1,2023-07-18 16:30:00
+1014,noah_shop,noah.n@email.com,Noah White,customer,1,2023-08-05 08:15:00
+1015,olivia_buy,olivia@webmail.com,Olivia Martin,customer,1,2023-08-22 12:45:00`;
+
+  // E-Commerce: products_export.csv
+  const productsCSV = `Product ID,SKU,Product Name,Description,Price,Cost Price,Stock Qty,Status,Created
+2001,WDG-BLU-001,Wireless Bluetooth Speaker,Premium portable speaker with 20hr battery,79.99,32.50,145,active,2023-01-05 10:00:00
+2002,PHN-CSE-002,Premium Phone Case,Shockproof case with wireless charging support,29.99,8.75,520,active,2023-01-12 11:30:00
+2003,LPT-STD-003,Laptop Stand Adjustable,Ergonomic aluminum laptop stand,49.99,18.00,88,active,2023-02-01 09:00:00
+2004,KBD-MEC-004,Mechanical Keyboard RGB,Cherry MX switches with per-key RGB,129.99,52.00,67,active,2023-02-15 14:00:00
+2005,MSE-WLS-005,Wireless Ergonomic Mouse,Vertical design reduces wrist strain,39.99,14.50,230,active,2023-03-01 08:30:00
+2006,HDN-ANC-006,Noise Cancelling Headphones,ANC with 30hr battery and Hi-Res audio,199.99,78.00,42,active,2023-03-20 10:45:00
+2007,CHG-USB-007,USB-C Fast Charger 65W,GaN charger for laptops and phones,34.99,12.00,380,active,2023-04-05 11:00:00
+2008,CBL-USB-008,Braided USB-C Cable 2m,Premium nylon braided cable,12.99,3.50,890,active,2023-04-10 09:30:00
+2009,MNT-4K-009,4K Monitor 27 inch,IPS panel with USB-C hub,449.99,210.00,25,active,2023-05-01 13:00:00
+2010,WCM-HD-010,HD Webcam 1080p,Auto-focus with built-in mic,59.99,22.00,156,active,2023-05-15 08:00:00
+2011,SPK-DSK-011,Desktop Speakers Pair,2.0 channel with wooden enclosure,69.99,28.00,73,active,2023-06-01 10:30:00
+2012,HUB-USB-012,USB-C Hub 7-in-1,HDMI + USB-A + SD card reader,44.99,16.50,195,active,2023-06-20 14:15:00
+2013,PAD-MSE-013,XL Gaming Mouse Pad,900x400mm extended desk mat,19.99,4.00,410,active,2023-07-05 09:00:00
+2014,ARM-MNT-014,Monitor Arm Single,Gas spring desk mount,79.99,30.00,62,active,2023-07-25 11:30:00
+2015,BAG-LPT-015,Laptop Backpack 15.6",Water resistant with USB port,54.99,20.00,8,active,2023-08-10 08:45:00
+2016,DNG-BLU-016,Bluetooth Dongle 5.3,Low latency USB adapter,14.99,3.00,640,active,2023-08-25 10:00:00
+2017,WRS-RST-017,Ergonomic Wrist Rest,Memory foam keyboard rest,17.99,5.50,310,active,2023-09-10 14:30:00
+2018,LGT-DSK-018,LED Desk Lamp,Touch dimmer with USB charging port,39.99,15.00,4,active,2023-10-01 09:15:00
+2019,TPD-WLS-019,Wireless Trackpad,Multi-touch gestures for desktop,49.99,18.00,0,archived,2023-10-20 11:00:00
+2020,CAM-PTZ-020,PTZ Conference Camera,4K with remote pan/tilt/zoom,299.99,135.00,15,draft,2023-11-05 13:30:00`;
+
+  // Write all CSV files
+  const csvFiles: Record<string, string> = {
+    'customers_export.csv': customersCSV,
+    'accounts_export.csv': accountsCSV,
+    'branches_export.csv': branchesCSV,
+    'users_export.csv': usersCSV,
+    'products_export.csv': productsCSV,
+  };
+
+  for (const [filename, content] of Object.entries(csvFiles)) {
+    fs.writeFileSync(path.join(csvDir, filename), content, 'utf-8');
+  }
+
+  console.log(`    Written ${Object.keys(csvFiles).length} CSV files to ${csvDir}`);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Data Sheet Mapping Configs (CSV Header → Source Column)
+// ──────────────────────────────────────────────────────────────────────────────
+
+async function seedDataSheetMappings(bankingId: string, ecommerceId: string) {
+  const configs = [
+    {
+      projectId: bankingId,
+      name: 'Customers CSV Import',
+      sourceTableName: 'customers',
+      csvFileName: 'customers_export.csv',
+      mappings: JSON.stringify([
+        { csvHeader: 'Customer ID', sourceColumn: 'id' },
+        { csvHeader: 'First Name', sourceColumn: 'first_name' },
+        { csvHeader: 'Last Name', sourceColumn: 'last_name' },
+        { csvHeader: 'Email Address', sourceColumn: 'email' },
+        { csvHeader: 'Phone', sourceColumn: 'phone' },
+        { csvHeader: 'DOB', sourceColumn: 'date_of_birth' },
+        { csvHeader: 'KYC Status', sourceColumn: 'kyc_status' },
+        { csvHeader: 'Risk Score', sourceColumn: 'risk_score' },
+        { csvHeader: 'Registration Date', sourceColumn: 'created_at' },
+      ]),
+    },
+    {
+      projectId: bankingId,
+      name: 'Accounts CSV Import',
+      sourceTableName: 'accounts',
+      csvFileName: 'accounts_export.csv',
+      mappings: JSON.stringify([
+        { csvHeader: 'Account ID', sourceColumn: 'id' },
+        { csvHeader: 'Customer ID', sourceColumn: 'customer_id' },
+        { csvHeader: 'Account Number', sourceColumn: 'account_number' },
+        { csvHeader: 'Account Type', sourceColumn: 'account_type' },
+        { csvHeader: 'Currency', sourceColumn: 'currency' },
+        { csvHeader: 'Balance', sourceColumn: 'balance' },
+        { csvHeader: 'Status', sourceColumn: 'status' },
+        { csvHeader: 'Opened At', sourceColumn: 'opened_at' },
+      ]),
+    },
+    {
+      projectId: bankingId,
+      name: 'Branches CSV Import',
+      sourceTableName: 'branches',
+      csvFileName: 'branches_export.csv',
+      mappings: JSON.stringify([
+        { csvHeader: 'Branch ID', sourceColumn: 'id' },
+        { csvHeader: 'Branch Code', sourceColumn: 'branch_code' },
+        { csvHeader: 'Branch Name', sourceColumn: 'branch_name' },
+        { csvHeader: 'City', sourceColumn: 'city' },
+        { csvHeader: 'Country', sourceColumn: 'country' },
+        { csvHeader: 'Is Active', sourceColumn: 'is_active' },
+      ]),
+    },
+    {
+      projectId: ecommerceId,
+      name: 'Users CSV Import',
+      sourceTableName: 'users',
+      csvFileName: 'users_export.csv',
+      mappings: JSON.stringify([
+        { csvHeader: 'User ID', sourceColumn: 'user_id' },
+        { csvHeader: 'User Name', sourceColumn: 'username' },
+        { csvHeader: 'Email', sourceColumn: 'email' },
+        { csvHeader: 'Full Name', sourceColumn: 'full_name' },
+        { csvHeader: 'User Role', sourceColumn: 'role' },
+        { csvHeader: 'Verified', sourceColumn: 'is_verified' },
+        { csvHeader: 'Signup Date', sourceColumn: 'created_at' },
+      ]),
+    },
+    {
+      projectId: ecommerceId,
+      name: 'Products CSV Import',
+      sourceTableName: 'products',
+      csvFileName: 'products_export.csv',
+      mappings: JSON.stringify([
+        { csvHeader: 'Product ID', sourceColumn: 'product_id' },
+        { csvHeader: 'SKU', sourceColumn: 'sku' },
+        { csvHeader: 'Product Name', sourceColumn: 'name' },
+        { csvHeader: 'Description', sourceColumn: 'description' },
+        { csvHeader: 'Price', sourceColumn: 'price' },
+        { csvHeader: 'Cost Price', sourceColumn: 'cost' },
+        { csvHeader: 'Stock Qty', sourceColumn: 'stock_quantity' },
+        { csvHeader: 'Status', sourceColumn: 'status' },
+        { csvHeader: 'Created', sourceColumn: 'created_at' },
+      ]),
+    },
+  ];
+
+  for (const cfg of configs) {
+    await prisma.dataSheetMappingConfig.create({ data: cfg });
   }
 }
 

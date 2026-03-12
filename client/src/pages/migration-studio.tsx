@@ -14,6 +14,7 @@ import {
   FolderInput,
   FileEdit,
   Columns3,
+  FileUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMigrations } from '@/hooks/use-migrations';
@@ -25,12 +26,14 @@ import { MigrationTimeline } from '@/components/migration/migration-timeline';
 import { MigrationReports } from '@/components/migration/migration-reports';
 import { MigrationImportExport } from '@/components/migration/migration-import-export';
 import { ColumnMapping } from '@/components/migration/column-mapping';
+import { DataMigration } from '@/components/migration/data-migration';
 
 type MigrationTab =
   | 'planner'
   | 'dialect-converter'
   | 'schema-comparison'
   | 'column-mapping'
+  | 'data-migration'
   | 'scripts'
   | 'migration-history'
   | 'reports'
@@ -45,6 +48,7 @@ const TABS: {
   { id: 'dialect-converter', label: 'Converter', icon: ArrowRightLeft },
   { id: 'schema-comparison', label: 'Comparison', icon: GitCompareArrows },
   { id: 'column-mapping', label: 'Column Mapping', icon: Columns3 },
+  { id: 'data-migration', label: 'Data Migration', icon: FileUp },
   { id: 'scripts', label: 'Scripts', icon: FileCode2 },
   { id: 'migration-history', label: 'History', icon: Clock },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
@@ -184,6 +188,9 @@ export function MigrationStudio() {
         )}
         {activeTab === 'column-mapping' && projectId && (
           <ColumnMapping projectId={projectId} />
+        )}
+        {activeTab === 'data-migration' && projectId && (
+          <DataMigration projectId={projectId} />
         )}
         {activeTab === 'scripts' && projectId && (
           <MigrationScriptsPanel projectId={projectId} />

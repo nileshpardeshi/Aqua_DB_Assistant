@@ -20,11 +20,18 @@ import {
   type MappingEdgeData,
 } from './column-mapping-nodes';
 
-import { useTables, type Column, type Table } from '@/hooks/use-schema';
+import { useTables, type Column } from '@/hooks/use-schema';
 import {
   useSuggestColumnMapping,
   type AIColumnMappingSuggestion,
 } from '@/hooks/use-column-mapping';
+import {
+  useColumnMappings,
+  useCreateColumnMapping,
+  useUpdateColumnMapping,
+  useDeleteColumnMapping,
+  type SavedColumnMapping,
+} from '@/hooks/use-column-mappings';
 
 import { cn } from '@/lib/utils';
 import { downloadTextFile } from '@/lib/export-utils';
@@ -50,6 +57,9 @@ import {
   FileCode2,
   Settings2,
   Zap,
+  Plus,
+  Save,
+  FileUp,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -76,7 +86,18 @@ interface MappingConfiguration {
   version: string;
 }
 
-type DataMode = 'project' | 'paste';
+interface SavedMappingData {
+  columnMappings: ColumnMapping[];
+  sourceColumns: Column[];
+  targetColumns: Column[];
+}
+
+interface ParsedTable {
+  name: string;
+  columns: Column[];
+}
+
+type SourceMode = 'project' | 'paste' | 'file';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -87,11 +108,18 @@ const AI_STEPS = [
   'Building mappings',
 ];
 
-// ── SECTION 1: DDL Parser ────────────────────────────────────────────────────
+const DIALECT_PATTERNS = [
+  { pattern: /\bSERIAL\b|\bJSONB\b|\bBYTEA\b/i, dialect: 'postgresql' },
+  { pattern: /\bAUTO_INCREMENT\b|\bENGINE\s*=/i, dialect: 'mysql' },
+  { pattern: /\bIDENTITY\s*\(|\bNVARCHAR\s*\(\s*MAX\b/i, dialect: 'sqlserver' },
+  { pattern: /\bVARCHAR2\b|\bNUMBER\s*\(/i, dialect: 'oracle' },
+];
+
+// ── DDL Parser (single table) ────────────────────────────────────────────────
 
 function parseDDL(
   ddl: string
-): { name: string; columns: Column[] } | null {
+): ParsedTable | null {
   const tableRegex =
     /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:["`]?\w+["`]?\.)?["`]?(\w+)["`]?\s*\(([\s\S]*?)\)\s*;/gi;
 
@@ -103,7 +131,6 @@ function parseDDL(
   const columns: Column[] = [];
   const primaryKeyColumns = new Set<string>();
 
-  // Extract table-level PRIMARY KEY constraints
   const pkConstraintRegex =
     /(?:CONSTRAINT\s+\w+\s+)?PRIMARY\s+KEY\s*\(([^)]+)\)/gi;
   let pkMatch: RegExpExecArray | null;
@@ -156,7 +183,6 @@ function parseDDL(
     ordinal++;
   }
 
-  // Mark columns that are part of table-level PK
   for (const col of columns) {
     if (primaryKeyColumns.has(col.name.toLowerCase())) {
       col.isPrimaryKey = true;
@@ -167,7 +193,85 @@ function parseDDL(
   return columns.length > 0 ? { name: tableName, columns } : null;
 }
 
-// ── SECTION 2: Type Compatibility Checker ────────────────────────────────────
+// ── DDL Parser (all tables from SQL file) ────────────────────────────────────
+
+function parseAllDDL(ddl: string): ParsedTable[] {
+  const tables: ParsedTable[] = [];
+  const tableRegex =
+    /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:["`]?\w+["`]?\.)?["`]?(\w+)["`]?\s*\(([\s\S]*?)\)\s*;/gi;
+
+  let match: RegExpExecArray | null;
+  while ((match = tableRegex.exec(ddl)) !== null) {
+    const tableName = match[1];
+    const body = match[2];
+    const columns: Column[] = [];
+    const primaryKeyColumns = new Set<string>();
+
+    const pkConstraintRegex =
+      /(?:CONSTRAINT\s+\w+\s+)?PRIMARY\s+KEY\s*\(([^)]+)\)/gi;
+    let pkMatch: RegExpExecArray | null;
+    while ((pkMatch = pkConstraintRegex.exec(body)) !== null) {
+      const pkCols = pkMatch[1].split(',').map((c) => c.trim().replace(/["`]/g, ''));
+      pkCols.forEach((col) => primaryKeyColumns.add(col.toLowerCase()));
+    }
+
+    const lines = body.split(',').map((line) => line.trim()).filter(Boolean);
+    let ordinal = 1;
+
+    for (const line of lines) {
+      if (/^\s*(PRIMARY\s+KEY|FOREIGN\s+KEY|UNIQUE|CHECK|INDEX|KEY|CONSTRAINT)\s/i.test(line)) continue;
+
+      const colRegex =
+        /^["`]?(\w+)["`]?\s+([\w]+(?:\s*\([^)]*\))?(?:\s+(?:UNSIGNED|SIGNED|VARYING|PRECISION|WITHOUT\s+TIME\s+ZONE|WITH\s+TIME\s+ZONE))*)(.*)/i;
+      const colMatch = colRegex.exec(line);
+      if (!colMatch) continue;
+
+      const colName = colMatch[1];
+      const colType = colMatch[2].trim().toUpperCase();
+      const rest = colMatch[3] || '';
+
+      const isNotNull = /NOT\s+NULL/i.test(rest);
+      const isInlinePK = /PRIMARY\s+KEY/i.test(rest);
+      const isPK = isInlinePK || primaryKeyColumns.has(colName.toLowerCase());
+
+      columns.push({
+        id: `parsed-${tableName}-${colName}-${ordinal}`,
+        name: colName,
+        dataType: colType,
+        nullable: !isNotNull && !isPK,
+        isPrimaryKey: isPK,
+        isForeignKey: false,
+        isUnique: false,
+        ordinalPosition: ordinal,
+      });
+      ordinal++;
+    }
+
+    for (const col of columns) {
+      if (primaryKeyColumns.has(col.name.toLowerCase())) {
+        col.isPrimaryKey = true;
+        col.nullable = false;
+      }
+    }
+
+    if (columns.length > 0) {
+      tables.push({ name: tableName, columns });
+    }
+  }
+
+  return tables;
+}
+
+// ── Dialect Detection ────────────────────────────────────────────────────────
+
+function detectDialectFromSQL(sql: string): string | null {
+  for (const { pattern, dialect } of DIALECT_PATTERNS) {
+    if (pattern.test(sql)) return dialect;
+  }
+  return null;
+}
+
+// ── Type Compatibility Checker ───────────────────────────────────────────────
 
 function checkTypeCompatibility(
   sourceType: string,
@@ -226,13 +330,57 @@ function checkTypeCompatibility(
   return false;
 }
 
+// ── Helper: parse saved mapping count ────────────────────────────────────────
+
+function getSavedMappingCount(saved: SavedColumnMapping): number {
+  try {
+    const parsed = JSON.parse(saved.mappings);
+    if (Array.isArray(parsed)) return parsed.length;
+    return parsed.columnMappings?.length ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+// ── Mode Button Component ────────────────────────────────────────────────────
+
+function ModeButton({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ElementType;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
+        active
+          ? 'bg-purple-600 text-white border-purple-600'
+          : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+      )}
+    >
+      <Icon className="w-3.5 h-3.5" />
+      {label}
+    </button>
+  );
+}
+
 // ── Inner Component ──────────────────────────────────────────────────────────
 
 function ColumnMappingInner({ projectId }: { projectId: string }) {
-  // ── Data selection state ───────────────────────────────────────────────────
+  // ── Data selection state ─────────────────────────────────────────────────
   const { data: projectTables, isLoading: tablesLoading } =
     useTables(projectId);
-  const [dataMode, setDataMode] = useState<DataMode>('project');
+
+  const [sourceMode, setSourceMode] = useState<SourceMode>('project');
+  const [targetMode, setTargetMode] = useState<SourceMode>('project');
+
   const [sourceTableId, setSourceTableId] = useState('');
   const [targetTableId, setTargetTableId] = useState('');
   const [sourcePasteDDL, setSourcePasteDDL] = useState('');
@@ -240,65 +388,127 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
   const [sourceDialect, setSourceDialect] = useState('postgresql');
   const [targetDialect, setTargetDialect] = useState('mysql');
 
-  // ── Mapping state ─────────────────────────────────────────────────────────
+  // ── File upload state ──────────────────────────────────────────────────
+  const [sourceFileTables, setSourceFileTables] = useState<ParsedTable[]>([]);
+  const [targetFileTables, setTargetFileTables] = useState<ParsedTable[]>([]);
+  const [sourceFileTableName, setSourceFileTableName] = useState('');
+  const [targetFileTableName, setTargetFileTableName] = useState('');
+  const sourceFileRef = useRef<HTMLInputElement>(null);
+  const targetFileRef = useRef<HTMLInputElement>(null);
+
+  // ── Mapping state ──────────────────────────────────────────────────────
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
-  const [sourceTable, setSourceTable] = useState<{
-    name: string;
-    columns: Column[];
-  } | null>(null);
-  const [targetTable, setTargetTable] = useState<{
-    name: string;
-    columns: Column[];
-  } | null>(null);
+  const [sourceTable, setSourceTable] = useState<ParsedTable | null>(null);
+  const [targetTable, setTargetTable] = useState<ParsedTable | null>(null);
   const [canvasReady, setCanvasReady] = useState(false);
 
-  // ── React Flow ────────────────────────────────────────────────────────────
+  // ── React Flow ─────────────────────────────────────────────────────────
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  // ── UI state ──────────────────────────────────────────────────────────────
+  // ── UI state ───────────────────────────────────────────────────────────
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [showTransformPanel, setShowTransformPanel] = useState(false);
   const [generatedSQL, setGeneratedSQL] = useState('');
   const [showSQLPanel, setShowSQLPanel] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // ── AI ────────────────────────────────────────────────────────────────────
+  // ── Persistence state ──────────────────────────────────────────────────
+  const [activeMappingId, setActiveMappingId] = useState<string | null>(null);
+  const [mappingName, setMappingName] = useState('');
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+
+  // ── AI ─────────────────────────────────────────────────────────────────
   const suggestMapping = useSuggestColumnMapping();
   const [aiProgress, setAiProgress] = useState(-1);
 
-  // ── Import ref ────────────────────────────────────────────────────────────
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // ── Import ref ─────────────────────────────────────────────────────────
+  const configFileRef = useRef<HTMLInputElement>(null);
 
-  // ── Copy handler ──────────────────────────────────────────────────────────
+  // ── Saved mappings hooks ───────────────────────────────────────────────
+  const { data: savedMappings, isLoading: savedLoading } =
+    useColumnMappings(projectId);
+  const createMapping = useCreateColumnMapping();
+  const updateMapping = useUpdateColumnMapping();
+  const deleteMapping = useDeleteColumnMapping();
+
+  // ── Copy handler ───────────────────────────────────────────────────────
   const handleCopy = useCallback((text: string, field: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   }, []);
 
-  // ── SECTION 3: Build Canvas ───────────────────────────────────────────────
+  // ── File Upload Handlers ───────────────────────────────────────────────
+
+  const handleSourceFileUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const sql = ev.target?.result as string;
+        const tables = parseAllDDL(sql);
+        setSourceFileTables(tables);
+        setSourceFileTableName('');
+        const detected = detectDialectFromSQL(sql);
+        if (detected) setSourceDialect(detected);
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    },
+    []
+  );
+
+  const handleTargetFileUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const sql = ev.target?.result as string;
+        const tables = parseAllDDL(sql);
+        setTargetFileTables(tables);
+        setTargetFileTableName('');
+        const detected = detectDialectFromSQL(sql);
+        if (detected) setTargetDialect(detected);
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    },
+    []
+  );
+
+  // ── Build Canvas ───────────────────────────────────────────────────────
 
   const buildCanvas = useCallback(() => {
-    let resolvedSource: { name: string; columns: Column[] } | null = null;
-    let resolvedTarget: { name: string; columns: Column[] } | null = null;
+    let resolvedSource: ParsedTable | null = null;
+    let resolvedTarget: ParsedTable | null = null;
 
-    if (dataMode === 'project') {
+    // Resolve source
+    if (sourceMode === 'project') {
       if (!projectTables) return;
       const srcT = projectTables.find((t) => t.id === sourceTableId);
-      const tgtT = projectTables.find((t) => t.id === targetTableId);
-      if (!srcT || !tgtT) return;
-      resolvedSource = {
-        name: srcT.name,
-        columns: srcT.columns,
-      };
-      resolvedTarget = {
-        name: tgtT.name,
-        columns: tgtT.columns,
-      };
-    } else {
+      if (!srcT) return;
+      resolvedSource = { name: srcT.name, columns: srcT.columns };
+    } else if (sourceMode === 'paste') {
       resolvedSource = parseDDL(sourcePasteDDL);
+    } else if (sourceMode === 'file') {
+      resolvedSource =
+        sourceFileTables.find((t) => t.name === sourceFileTableName) || null;
+    }
+
+    // Resolve target
+    if (targetMode === 'project') {
+      if (!projectTables) return;
+      const tgtT = projectTables.find((t) => t.id === targetTableId);
+      if (!tgtT) return;
+      resolvedTarget = { name: tgtT.name, columns: tgtT.columns };
+    } else if (targetMode === 'paste') {
       resolvedTarget = parseDDL(targetPasteDDL);
+    } else if (targetMode === 'file') {
+      resolvedTarget =
+        targetFileTables.find((t) => t.name === targetFileTableName) || null;
     }
 
     if (!resolvedSource || !resolvedTarget) return;
@@ -339,17 +549,22 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
     setShowTransformPanel(false);
     setCanvasReady(true);
   }, [
-    dataMode,
+    sourceMode,
+    targetMode,
     projectTables,
     sourceTableId,
     targetTableId,
     sourcePasteDDL,
     targetPasteDDL,
+    sourceFileTables,
+    targetFileTables,
+    sourceFileTableName,
+    targetFileTableName,
     setNodes,
     setEdges,
   ]);
 
-  // ── SECTION 4: Edge Building from Mappings ────────────────────────────────
+  // ── Edge Building from Mappings ────────────────────────────────────────
 
   useEffect(() => {
     if (!sourceTable || !targetTable) return;
@@ -421,7 +636,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
     );
   }, [mappings, sourceTable, targetTable, setEdges, setNodes]);
 
-  // ── SECTION 5: onConnect Handler ──────────────────────────────────────────
+  // ── onConnect Handler ──────────────────────────────────────────────────
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -436,7 +651,6 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
       const srcColName = connection.sourceHandle.replace('source-', '');
       const tgtColName = connection.targetHandle.replace('target-', '');
 
-      // Prevent duplicate
       if (
         mappings.some(
           (m) =>
@@ -445,7 +659,6 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
       )
         return;
 
-      // Replace existing mapping to same target (1 source per target)
       const filtered = mappings.filter(
         (m) => m.targetColumn !== tgtColName
       );
@@ -477,7 +690,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
     [mappings, sourceTable, targetTable]
   );
 
-  // ── SECTION 6: Auto-Map ──────────────────────────────────────────────────
+  // ── Auto-Map ───────────────────────────────────────────────────────────
 
   const handleAutoMap = useCallback(() => {
     if (!sourceTable || !targetTable) return;
@@ -489,14 +702,12 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
       n.toLowerCase().replace(/_/g, '');
 
     for (const srcCol of sourceTable.columns) {
-      // Exact name match (case-insensitive)
       let matchedTarget = targetTable.columns.find(
         (tc) =>
           tc.name.toLowerCase() === srcCol.name.toLowerCase() &&
           !usedTargets.has(tc.name)
       );
 
-      // Fuzzy: normalize by removing underscores, lowercasing
       if (!matchedTarget) {
         matchedTarget = targetTable.columns.find(
           (tc) =>
@@ -534,7 +745,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
     setMappings(newMappings);
   }, [sourceTable, targetTable]);
 
-  // ── SECTION 7: AI Suggest ─────────────────────────────────────────────────
+  // ── AI Suggest ─────────────────────────────────────────────────────────
 
   const handleAISuggest = useCallback(async () => {
     if (!sourceTable || !targetTable) return;
@@ -601,7 +812,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
 
       setMappings(aiMappings);
     } catch {
-      // Error handled silently; mutation state carries error info
+      // Error handled by mutation state
     } finally {
       clearInterval(interval);
       setAiProgress(-1);
@@ -615,7 +826,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
     suggestMapping,
   ]);
 
-  // ── SECTION 9: SQL Generation ─────────────────────────────────────────────
+  // ── SQL Generation ─────────────────────────────────────────────────────
 
   const generateMigrationSQL = useCallback(() => {
     if (!sourceTable || !targetTable || mappings.length === 0) return;
@@ -653,7 +864,6 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
           expr = mapping.sourceColumn;
       }
 
-      // Null handling
       if (
         mapping.nullHandling === 'default' &&
         mapping.defaultValue &&
@@ -695,7 +905,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
     setShowSQLPanel(true);
   }, [mappings, sourceTable, targetTable, sourceDialect, targetDialect]);
 
-  // ── SECTION 11: Export / Import ───────────────────────────────────────────
+  // ── Export / Import (JSON config) ──────────────────────────────────────
 
   const handleExport = useCallback(() => {
     if (!sourceTable || !targetTable) return;
@@ -716,7 +926,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
     );
   }, [sourceTable, targetTable, sourceDialect, targetDialect, mappings]);
 
-  const handleImport = useCallback(
+  const handleImportConfig = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
@@ -737,7 +947,6 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
             return;
           }
 
-          // Validate each mapping has required fields
           const validMappings = config.mappings.filter(
             (m) =>
               m.id &&
@@ -757,14 +966,250 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
         }
       };
       reader.readAsText(file);
-
-      // Reset file input so the same file can be re-imported
       event.target.value = '';
     },
     []
   );
 
-  // ── Derived values ────────────────────────────────────────────────────────
+  // ── Save / Load / Delete Mapping ───────────────────────────────────────
+
+  const handleSave = useCallback(async () => {
+    if (!sourceTable || !targetTable || mappings.length === 0) return;
+
+    if (activeMappingId) {
+      // Update existing
+      const data: SavedMappingData = {
+        columnMappings: mappings,
+        sourceColumns: sourceTable.columns,
+        targetColumns: targetTable.columns,
+      };
+      await updateMapping.mutateAsync({
+        projectId,
+        mappingId: activeMappingId,
+        data: {
+          name: mappingName || `${sourceTable.name} → ${targetTable.name}`,
+          sourceTableName: sourceTable.name,
+          targetTableName: targetTable.name,
+          sourceDialect,
+          targetDialect,
+          mappings: JSON.stringify(data),
+        },
+      });
+    } else {
+      // Need a name — show dialog
+      setShowSaveDialog(true);
+    }
+  }, [
+    activeMappingId,
+    sourceTable,
+    targetTable,
+    mappings,
+    mappingName,
+    sourceDialect,
+    targetDialect,
+    projectId,
+    updateMapping,
+  ]);
+
+  const handleSaveWithName = useCallback(async () => {
+    if (!mappingName.trim() || !sourceTable || !targetTable) return;
+
+    const data: SavedMappingData = {
+      columnMappings: mappings,
+      sourceColumns: sourceTable.columns,
+      targetColumns: targetTable.columns,
+    };
+
+    const result = await createMapping.mutateAsync({
+      projectId,
+      data: {
+        name: mappingName,
+        sourceTableName: sourceTable.name,
+        targetTableName: targetTable.name,
+        sourceDialect,
+        targetDialect,
+        mappings: JSON.stringify(data),
+      },
+    });
+
+    setActiveMappingId(result.id);
+    setShowSaveDialog(false);
+  }, [
+    mappingName,
+    sourceTable,
+    targetTable,
+    mappings,
+    sourceDialect,
+    targetDialect,
+    projectId,
+    createMapping,
+  ]);
+
+  const loadSavedMapping = useCallback(
+    (saved: SavedColumnMapping) => {
+      setActiveMappingId(saved.id);
+      setMappingName(saved.name);
+      setSourceDialect(saved.sourceDialect);
+      setTargetDialect(saved.targetDialect);
+
+      let parsedData: SavedMappingData;
+      try {
+        const raw = JSON.parse(saved.mappings);
+        if (Array.isArray(raw)) {
+          // Legacy format — just column mappings, no column definitions
+          parsedData = {
+            columnMappings: raw,
+            sourceColumns: [],
+            targetColumns: [],
+          };
+        } else {
+          parsedData = raw as SavedMappingData;
+        }
+      } catch {
+        return;
+      }
+
+      // Try project tables first, fall back to saved column definitions
+      let srcColumns = parsedData.sourceColumns;
+      let tgtColumns = parsedData.targetColumns;
+
+      if (projectTables) {
+        const projSrc = projectTables.find(
+          (t) => t.name === saved.sourceTableName
+        );
+        if (projSrc && projSrc.columns.length > 0) {
+          srcColumns = projSrc.columns;
+        }
+        const projTgt = projectTables.find(
+          (t) => t.name === saved.targetTableName
+        );
+        if (projTgt && projTgt.columns.length > 0) {
+          tgtColumns = projTgt.columns;
+        }
+      }
+
+      // If we still have no columns, reconstruct from mappings
+      if (srcColumns.length === 0) {
+        srcColumns = parsedData.columnMappings.map((m, i) => ({
+          id: `saved-src-${m.sourceColumn}-${i}`,
+          name: m.sourceColumn,
+          dataType: 'UNKNOWN',
+          nullable: true,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          isUnique: false,
+          ordinalPosition: i + 1,
+        }));
+      }
+      if (tgtColumns.length === 0) {
+        tgtColumns = parsedData.columnMappings.map((m, i) => ({
+          id: `saved-tgt-${m.targetColumn}-${i}`,
+          name: m.targetColumn,
+          dataType: 'UNKNOWN',
+          nullable: true,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          isUnique: false,
+          ordinalPosition: i + 1,
+        }));
+      }
+
+      const src: ParsedTable = {
+        name: saved.sourceTableName,
+        columns: srcColumns,
+      };
+      const tgt: ParsedTable = {
+        name: saved.targetTableName,
+        columns: tgtColumns,
+      };
+
+      setSourceTable(src);
+      setTargetTable(tgt);
+
+      const sourceNode: Node<ColumnMappingNodeData> = {
+        id: 'source-table',
+        type: 'sourceTable',
+        position: { x: 50, y: 50 },
+        data: {
+          tableId: 'source',
+          tableName: src.name,
+          columns: src.columns,
+          mappedColumnNames: new Set<string>(),
+        },
+        draggable: false,
+      };
+
+      const targetNode: Node<ColumnMappingNodeData> = {
+        id: 'target-table',
+        type: 'targetTable',
+        position: { x: 700, y: 50 },
+        data: {
+          tableId: 'target',
+          tableName: tgt.name,
+          columns: tgt.columns,
+          mappedColumnNames: new Set<string>(),
+        },
+        draggable: false,
+      };
+
+      setNodes([sourceNode, targetNode]);
+      setMappings(parsedData.columnMappings);
+      setSelectedEdgeId(null);
+      setShowTransformPanel(false);
+      setGeneratedSQL('');
+      setShowSQLPanel(false);
+      setCanvasReady(true);
+    },
+    [projectTables, setNodes]
+  );
+
+  const handleDeleteMapping = useCallback(
+    async (id: string) => {
+      await deleteMapping.mutateAsync({ projectId, mappingId: id });
+      if (activeMappingId === id) {
+        setActiveMappingId(null);
+        setMappingName('');
+        setCanvasReady(false);
+        setMappings([]);
+        setSourceTable(null);
+        setTargetTable(null);
+        setNodes([]);
+        setEdges([]);
+        setSelectedEdgeId(null);
+        setShowTransformPanel(false);
+        setGeneratedSQL('');
+        setShowSQLPanel(false);
+      }
+    },
+    [activeMappingId, projectId, deleteMapping, setNodes, setEdges]
+  );
+
+  const handleNewMapping = useCallback(() => {
+    setActiveMappingId(null);
+    setMappingName('');
+    setCanvasReady(false);
+    setMappings([]);
+    setSourceTable(null);
+    setTargetTable(null);
+    setNodes([]);
+    setEdges([]);
+    setSelectedEdgeId(null);
+    setShowTransformPanel(false);
+    setGeneratedSQL('');
+    setShowSQLPanel(false);
+  }, [setNodes, setEdges]);
+
+  // ── Clear all mappings (keep tables) ───────────────────────────────────
+
+  const handleClearAll = useCallback(() => {
+    setMappings([]);
+    setSelectedEdgeId(null);
+    setShowTransformPanel(false);
+    setGeneratedSQL('');
+    setShowSQLPanel(false);
+  }, []);
+
+  // ── Derived values ─────────────────────────────────────────────────────
 
   const unmappedSourceCount = useMemo(() => {
     if (!sourceTable) return 0;
@@ -785,506 +1230,786 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
     [mappings, selectedEdgeId]
   );
 
-  // ── Clear all ─────────────────────────────────────────────────────────────
+  const canLoadSource =
+    (sourceMode === 'project' && !!sourceTableId) ||
+    (sourceMode === 'paste' && !!sourcePasteDDL.trim()) ||
+    (sourceMode === 'file' && !!sourceFileTableName);
 
-  const handleClearAll = useCallback(() => {
-    setMappings([]);
-    setSelectedEdgeId(null);
-    setShowTransformPanel(false);
-    setGeneratedSQL('');
-    setShowSQLPanel(false);
-  }, []);
+  const canLoadTarget =
+    (targetMode === 'project' && !!targetTableId) ||
+    (targetMode === 'paste' && !!targetPasteDDL.trim()) ||
+    (targetMode === 'file' && !!targetFileTableName);
 
-  // ── SECTION 8 & 12: Main Render ───────────────────────────────────────────
+  const canLoad = canLoadSource && canLoadTarget;
+
+  // ── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Columns3 className="w-5 h-5 text-purple-600" />
-          <h2 className="text-lg font-bold text-slate-800">
-            Column Mapping
-          </h2>
+    <div className="flex gap-4">
+      {/* ── Saved Mappings Sidebar ── */}
+      <aside
+        className="w-72 shrink-0 bg-card border border-slate-200 rounded-xl overflow-y-auto"
+        style={{ maxHeight: 'calc(100vh - 200px)' }}
+      >
+        <div className="p-4 border-b border-slate-200">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-bold text-slate-700">
+              Saved Mappings
+            </h3>
+            <button
+              onClick={handleNewMapping}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              New
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-400">
+            Save and manage multiple table-pair mappings
+          </p>
         </div>
-        <p className="text-sm text-slate-500">
-          Visually map columns between source and target tables with
-          drag-to-connect. Configure transformations, generate migration
-          SQL, or let AI suggest mappings.
-        </p>
-      </div>
 
-      {/* Table Selection Section */}
-      <div className="bg-card border border-slate-200 rounded-xl p-4 space-y-4">
-        {/* Mode toggle */}
-        <div className="flex items-center gap-2">
+        <div className="p-3 space-y-2">
+          {savedLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+            </div>
+          ) : !savedMappings || savedMappings.length === 0 ? (
+            <div className="text-center py-8 px-2">
+              <Columns3 className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <p className="text-xs text-slate-400">No saved mappings yet</p>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Create a mapping and save it to see it here
+              </p>
+            </div>
+          ) : (
+            savedMappings.map((sm) => (
+              <div
+                key={sm.id}
+                onClick={() => loadSavedMapping(sm)}
+                className={cn(
+                  'p-3 rounded-lg border cursor-pointer transition-colors group',
+                  activeMappingId === sm.id
+                    ? 'border-purple-400 bg-purple-50'
+                    : 'border-slate-200 hover:bg-slate-50'
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-sm font-medium text-slate-800 truncate">
+                    {sm.name}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteMapping(sm.id);
+                    }}
+                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-50 transition-all"
+                  >
+                    <Trash2 className="w-3 h-3 text-red-500" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
+                  <span className="truncate max-w-[80px]">
+                    {sm.sourceTableName}
+                  </span>
+                  <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span className="truncate max-w-[80px]">
+                    {sm.targetTableName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">
+                    {sm.sourceDialect}
+                  </span>
+                  <ArrowRight className="w-2.5 h-2.5 text-slate-300" />
+                  <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">
+                    {sm.targetDialect}
+                  </span>
+                  <span className="text-[10px] text-slate-400 ml-auto">
+                    {getSavedMappingCount(sm)} cols
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1">
+                  {new Date(sm.updatedAt).toLocaleDateString()}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </aside>
+
+      {/* ── Main Content ── */}
+      <div className="flex-1 min-w-0 space-y-4">
+        {/* Header */}
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Columns3 className="w-5 h-5 text-purple-600" />
+            <h2 className="text-lg font-bold text-slate-800">
+              Column Mapping
+            </h2>
+            {activeMappingId && mappingName && (
+              <span className="text-sm text-purple-600 font-medium ml-2">
+                — {mappingName}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-slate-500">
+            Visually map columns between source and target tables with
+            drag-to-connect. Upload SQL files, use project tables, or paste
+            DDL. Save mappings for reuse.
+          </p>
+        </div>
+
+        {/* Table Selection Section */}
+        <div className="bg-card border border-slate-200 rounded-xl p-4 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* ── Source Side ── */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                Source
+              </h4>
+              <div className="flex items-center gap-1 flex-wrap">
+                <ModeButton
+                  active={sourceMode === 'project'}
+                  onClick={() => setSourceMode('project')}
+                  icon={Database}
+                  label="Project"
+                />
+                <ModeButton
+                  active={sourceMode === 'paste'}
+                  onClick={() => setSourceMode('paste')}
+                  icon={FileCode2}
+                  label="Paste DDL"
+                />
+                <ModeButton
+                  active={sourceMode === 'file'}
+                  onClick={() => setSourceMode('file')}
+                  icon={FileUp}
+                  label="Upload File"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  Source Dialect
+                </label>
+                <select
+                  value={sourceDialect}
+                  onChange={(e) => setSourceDialect(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  {DATABASE_DIALECTS.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {sourceMode === 'project' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Source Table
+                  </label>
+                  <select
+                    value={sourceTableId}
+                    onChange={(e) => setSourceTableId(e.target.value)}
+                    disabled={tablesLoading}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                  >
+                    <option value="">
+                      {tablesLoading
+                        ? 'Loading tables...'
+                        : 'Select source table'}
+                    </option>
+                    {projectTables?.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.schema ? `${t.schema}.` : ''}
+                        {t.name} ({t.columns.length} cols)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {sourceMode === 'paste' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Source DDL
+                  </label>
+                  <textarea
+                    value={sourcePasteDDL}
+                    onChange={(e) => setSourcePasteDDL(e.target.value)}
+                    placeholder={`CREATE TABLE users (\n  id INT NOT NULL PRIMARY KEY,\n  name VARCHAR(255) NOT NULL,\n  email VARCHAR(255)\n);`}
+                    className="w-full h-32 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y placeholder:text-slate-500"
+                    spellCheck={false}
+                  />
+                </div>
+              )}
+
+              {sourceMode === 'file' && (
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept=".sql,.txt,.ddl"
+                    onChange={handleSourceFileUpload}
+                    ref={sourceFileRef}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => sourceFileRef.current?.click()}
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-slate-300 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors w-full justify-center"
+                  >
+                    <Upload className="w-4 h-4" />
+                    {sourceFileTables.length > 0
+                      ? `${sourceFileTables.length} tables found — click to re-upload`
+                      : 'Upload SQL file'}
+                  </button>
+                  {sourceFileTables.length > 0 && (
+                    <select
+                      value={sourceFileTableName}
+                      onChange={(e) =>
+                        setSourceFileTableName(e.target.value)
+                      }
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">Select table from file...</option>
+                      {sourceFileTables.map((t) => (
+                        <option key={t.name} value={t.name}>
+                          {t.name} ({t.columns.length} cols)
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ── Target Side ── */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                Target
+              </h4>
+              <div className="flex items-center gap-1 flex-wrap">
+                <ModeButton
+                  active={targetMode === 'project'}
+                  onClick={() => setTargetMode('project')}
+                  icon={Database}
+                  label="Project"
+                />
+                <ModeButton
+                  active={targetMode === 'paste'}
+                  onClick={() => setTargetMode('paste')}
+                  icon={FileCode2}
+                  label="Paste DDL"
+                />
+                <ModeButton
+                  active={targetMode === 'file'}
+                  onClick={() => setTargetMode('file')}
+                  icon={FileUp}
+                  label="Upload File"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  Target Dialect
+                </label>
+                <select
+                  value={targetDialect}
+                  onChange={(e) => setTargetDialect(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  {DATABASE_DIALECTS.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {targetMode === 'project' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Target Table
+                  </label>
+                  <select
+                    value={targetTableId}
+                    onChange={(e) => setTargetTableId(e.target.value)}
+                    disabled={tablesLoading}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                  >
+                    <option value="">
+                      {tablesLoading
+                        ? 'Loading tables...'
+                        : 'Select target table'}
+                    </option>
+                    {projectTables?.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.schema ? `${t.schema}.` : ''}
+                        {t.name} ({t.columns.length} cols)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {targetMode === 'paste' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Target DDL
+                  </label>
+                  <textarea
+                    value={targetPasteDDL}
+                    onChange={(e) => setTargetPasteDDL(e.target.value)}
+                    placeholder={`CREATE TABLE customers (\n  customer_id BIGINT NOT NULL PRIMARY KEY,\n  full_name VARCHAR(500) NOT NULL,\n  email_address VARCHAR(320)\n);`}
+                    className="w-full h-32 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y placeholder:text-slate-500"
+                    spellCheck={false}
+                  />
+                </div>
+              )}
+
+              {targetMode === 'file' && (
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept=".sql,.txt,.ddl"
+                    onChange={handleTargetFileUpload}
+                    ref={targetFileRef}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => targetFileRef.current?.click()}
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-slate-300 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors w-full justify-center"
+                  >
+                    <Upload className="w-4 h-4" />
+                    {targetFileTables.length > 0
+                      ? `${targetFileTables.length} tables found — click to re-upload`
+                      : 'Upload SQL file'}
+                  </button>
+                  {targetFileTables.length > 0 && (
+                    <select
+                      value={targetFileTableName}
+                      onChange={(e) =>
+                        setTargetFileTableName(e.target.value)
+                      }
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">Select table from file...</option>
+                      {targetFileTables.map((t) => (
+                        <option key={t.name} value={t.name}>
+                          {t.name} ({t.columns.length} cols)
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Load Tables Button */}
           <button
-            onClick={() => setDataMode('project')}
+            onClick={buildCanvas}
+            disabled={!canLoad}
             className={cn(
-              'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
-              dataMode === 'project'
-                ? 'bg-purple-600 text-white border-purple-600'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+              'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+              canLoad
+                ? 'bg-purple-600 text-white hover:bg-purple-700'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             )}
           >
-            <Database className="w-4 h-4" />
-            Project Schema
-          </button>
-          <button
-            onClick={() => setDataMode('paste')}
-            className={cn(
-              'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
-              dataMode === 'paste'
-                ? 'bg-purple-600 text-white border-purple-600'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-            )}
-          >
-            <FileCode2 className="w-4 h-4" />
-            Paste DDL
+            <Zap className="w-4 h-4" />
+            Load Tables
           </button>
         </div>
 
-        {/* Dialect selectors */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              Source Dialect
-            </label>
-            <select
-              value={sourceDialect}
-              onChange={(e) => setSourceDialect(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        {/* Action Toolbar */}
+        {canvasReady && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleAutoMap}
+              className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
             >
-              {DATABASE_DIALECTS.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              Target Dialect
-            </label>
-            <select
-              value={targetDialect}
-              onChange={(e) => setTargetDialect(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              <Wand2 className="w-3.5 h-3.5" />
+              Auto-Map
+            </button>
+            <button
+              onClick={handleAISuggest}
+              disabled={aiProgress >= 0}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                aiProgress >= 0
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white'
+              )}
             >
-              {DATABASE_DIALECTS.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+              <Sparkles className="w-3.5 h-3.5" />
+              AI Suggest
+            </button>
 
-        {/* Table selectors or DDL textareas */}
-        {dataMode === 'project' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Source Table
-              </label>
-              <select
-                value={sourceTableId}
-                onChange={(e) => setSourceTableId(e.target.value)}
-                disabled={tablesLoading}
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-              >
-                <option value="">
-                  {tablesLoading
-                    ? 'Loading tables...'
-                    : 'Select source table'}
-                </option>
-                {projectTables?.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.schema ? `${t.schema}.` : ''}
-                    {t.name} ({t.columns.length} cols)
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Target Table
-              </label>
-              <select
-                value={targetTableId}
-                onChange={(e) => setTargetTableId(e.target.value)}
-                disabled={tablesLoading}
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-              >
-                <option value="">
-                  {tablesLoading
-                    ? 'Loading tables...'
-                    : 'Select target table'}
-                </option>
-                {projectTables?.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.schema ? `${t.schema}.` : ''}
-                    {t.name} ({t.columns.length} cols)
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Source DDL
-              </label>
-              <textarea
-                value={sourcePasteDDL}
-                onChange={(e) => setSourcePasteDDL(e.target.value)}
-                placeholder={`CREATE TABLE users (\n  id INT NOT NULL PRIMARY KEY,\n  name VARCHAR(255) NOT NULL,\n  email VARCHAR(255)\n);`}
-                className="w-full h-36 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y placeholder:text-slate-500"
-                spellCheck={false}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Target DDL
-              </label>
-              <textarea
-                value={targetPasteDDL}
-                onChange={(e) => setTargetPasteDDL(e.target.value)}
-                placeholder={`CREATE TABLE users (\n  user_id BIGINT NOT NULL PRIMARY KEY,\n  full_name VARCHAR(500) NOT NULL,\n  email_address VARCHAR(320)\n);`}
-                className="w-full h-36 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y placeholder:text-slate-500"
-                spellCheck={false}
-              />
+            <div className="w-px h-6 bg-slate-200" />
+
+            <button
+              onClick={generateMigrationSQL}
+              disabled={mappings.length === 0}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                mappings.length > 0
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              )}
+            >
+              <Play className="w-3.5 h-3.5" />
+              Generate SQL
+            </button>
+
+            <button
+              onClick={handleSave}
+              disabled={
+                mappings.length === 0 ||
+                createMapping.isPending ||
+                updateMapping.isPending
+              }
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                mappings.length > 0
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              )}
+            >
+              {createMapping.isPending || updateMapping.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Save className="w-3.5 h-3.5" />
+              )}
+              {activeMappingId ? 'Update' : 'Save'}
+            </button>
+
+            <div className="w-px h-6 bg-slate-200" />
+
+            <button
+              onClick={handleExport}
+              disabled={mappings.length === 0}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                mappings.length > 0
+                  ? 'border border-slate-200 hover:bg-slate-50 text-slate-700'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              )}
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export
+            </button>
+            <button
+              onClick={() => configFileRef.current?.click()}
+              className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Import
+            </button>
+            <input
+              ref={configFileRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportConfig}
+              className="hidden"
+            />
+
+            <div className="w-px h-6 bg-slate-200" />
+
+            <button
+              onClick={handleClearAll}
+              disabled={mappings.length === 0}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                mappings.length > 0
+                  ? 'border border-red-200 hover:bg-red-50 text-red-600'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              )}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Clear All
+            </button>
+
+            <div className="ml-auto">
+              <span className="text-sm text-slate-500">
+                Mapped: {mappings.length} /{' '}
+                {targetTable?.columns.length ?? 0}
+              </span>
             </div>
           </div>
         )}
 
-        {/* Load Tables button */}
-        <button
-          onClick={buildCanvas}
-          disabled={
-            dataMode === 'project'
-              ? !sourceTableId || !targetTableId
-              : !sourcePasteDDL.trim() || !targetPasteDDL.trim()
-          }
-          className={cn(
-            'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
-            (dataMode === 'project'
-              ? sourceTableId && targetTableId
-              : sourcePasteDDL.trim() && targetPasteDDL.trim())
-              ? 'bg-purple-600 text-white hover:bg-purple-700'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-          )}
-        >
-          <Zap className="w-4 h-4" />
-          Load Tables
-        </button>
-      </div>
-
-      {/* Action Toolbar */}
-      {canvasReady && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={handleAutoMap}
-            className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-          >
-            <Wand2 className="w-3.5 h-3.5" />
-            Auto-Map
-          </button>
-          <button
-            onClick={handleAISuggest}
-            disabled={aiProgress >= 0}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-              aiProgress >= 0
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white'
-            )}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            AI Suggest
-          </button>
-
-          <div className="w-px h-6 bg-slate-200" />
-
-          <button
-            onClick={generateMigrationSQL}
-            disabled={mappings.length === 0}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-              mappings.length > 0
-                ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            )}
-          >
-            <Play className="w-3.5 h-3.5" />
-            Generate SQL
-          </button>
-          <button
-            onClick={handleExport}
-            disabled={mappings.length === 0}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-              mappings.length > 0
-                ? 'border border-slate-200 hover:bg-slate-50 text-slate-700'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            )}
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export
-          </button>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            Import
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleImport}
-            className="hidden"
-          />
-
-          <div className="w-px h-6 bg-slate-200" />
-
-          <button
-            onClick={handleClearAll}
-            disabled={mappings.length === 0}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-              mappings.length > 0
-                ? 'border border-red-200 hover:bg-red-50 text-red-600'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            )}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            Clear All
-          </button>
-
-          <div className="ml-auto">
-            <span className="text-sm text-slate-500">
-              Mapped: {mappings.length} /{' '}
-              {targetTable?.columns.length ?? 0}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* AI Progress Stepper */}
-      {aiProgress >= 0 && (
-        <div className="bg-card border border-slate-200 rounded-xl p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <Loader2 className="w-4 h-4 text-purple-600 animate-spin" />
-            <span className="text-sm font-medium">AI Column Mapping</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {AI_STEPS.map((step, i) => (
-              <div key={step} className="flex items-center gap-1.5">
-                <div
-                  className={cn(
-                    'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
-                    i < aiProgress
-                      ? 'bg-purple-100 text-purple-700'
-                      : i === aiProgress
-                        ? 'bg-purple-600 text-white animate-pulse'
-                        : 'bg-slate-100 text-slate-400'
-                  )}
-                >
-                  {i < aiProgress ? (
-                    <Check className="w-3 h-3" />
-                  ) : (
-                    i + 1
+        {/* AI Progress Stepper */}
+        {aiProgress >= 0 && (
+          <div className="bg-card border border-slate-200 rounded-xl p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Loader2 className="w-4 h-4 text-purple-600 animate-spin" />
+              <span className="text-sm font-medium">AI Column Mapping</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {AI_STEPS.map((step, i) => (
+                <div key={step} className="flex items-center gap-1.5">
+                  <div
+                    className={cn(
+                      'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
+                      i < aiProgress
+                        ? 'bg-purple-100 text-purple-700'
+                        : i === aiProgress
+                          ? 'bg-purple-600 text-white animate-pulse'
+                          : 'bg-slate-100 text-slate-400'
+                    )}
+                  >
+                    {i < aiProgress ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      i + 1
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      'text-xs',
+                      i === aiProgress
+                        ? 'text-purple-700 font-medium'
+                        : 'text-slate-400'
+                    )}
+                  >
+                    {step}
+                  </span>
+                  {i < AI_STEPS.length - 1 && (
+                    <div className="w-6 h-px bg-slate-200" />
                   )}
                 </div>
-                <span
-                  className={cn(
-                    'text-xs',
-                    i === aiProgress
-                      ? 'text-purple-700 font-medium'
-                      : 'text-slate-400'
-                  )}
-                >
-                  {step}
-                </span>
-                {i < AI_STEPS.length - 1 && (
-                  <div className="w-6 h-px bg-slate-200" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Canvas */}
-      {canvasReady && (
-        <div
-          className="relative border border-slate-200 rounded-xl overflow-hidden"
-          style={{ height: 'calc(100vh - 420px)', minHeight: '500px' }}
-        >
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onEdgeClick={(_, edge) => {
-              setSelectedEdgeId(edge.id);
-              setShowTransformPanel(true);
-            }}
-            nodeTypes={columnMappingNodeTypes}
-            edgeTypes={columnMappingEdgeTypes}
-            fitView
-            fitViewOptions={{ padding: 0.15 }}
-            minZoom={0.3}
-            maxZoom={1.5}
-            connectionLineStyle={{
-              stroke: '#8b5cf6',
-              strokeWidth: 2,
-            }}
-            connectionLineType={ConnectionLineType.SmoothStep}
-            defaultEdgeOptions={{ type: 'mapping' }}
-            proOptions={{ hideAttribution: true }}
-            snapToGrid
-            snapGrid={[10, 10]}
-          >
-            <Background
-              variant={BackgroundVariant.Dots}
-              gap={20}
-              size={1}
-              color="#e2e8f0"
-            />
-            <Controls
-              showInteractive={false}
-              className="!shadow-md !rounded-lg !border !border-slate-200"
-            />
-          </ReactFlow>
-
-          {/* SECTION 8: Transformation Panel */}
-          {showTransformPanel && selectedEdgeId && selectedMapping && (
-            <TransformPanel
-              mapping={selectedMapping}
-              sourceTable={sourceTable}
-              targetTable={targetTable}
-              targetDialect={targetDialect}
-              onClose={() => {
-                setSelectedEdgeId(null);
-                setShowTransformPanel(false);
-              }}
-              onUpdate={(updated) => {
-                setMappings((prev) =>
-                  prev.map((m) =>
-                    m.id === selectedEdgeId ? updated : m
-                  )
-                );
-              }}
-              onRemove={() => {
-                setMappings((prev) =>
-                  prev.filter((m) => m.id !== selectedEdgeId)
-                );
-                setSelectedEdgeId(null);
-                setShowTransformPanel(false);
-              }}
-            />
-          )}
-
-          {/* Unmapped columns summary */}
-          <div className="absolute bottom-3 left-3 bg-card/90 backdrop-blur-sm border border-slate-200 rounded-lg px-3 py-2 shadow-sm">
-            <div className="flex items-center gap-3 text-xs">
-              {unmappedSourceCount > 0 && (
-                <span className="flex items-center gap-1 text-amber-600">
-                  <AlertTriangle className="w-3 h-3" />
-                  {unmappedSourceCount} unmapped source
-                </span>
-              )}
-              {unmappedTargetCount > 0 && (
-                <span className="flex items-center gap-1 text-amber-600">
-                  <AlertTriangle className="w-3 h-3" />
-                  {unmappedTargetCount} unmapped target
-                </span>
-              )}
-              {unmappedSourceCount === 0 && unmappedTargetCount === 0 && (
-                <span className="flex items-center gap-1 text-green-600">
-                  <CheckCircle2 className="w-3 h-3" />
-                  All columns mapped
-                </span>
-              )}
+              ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Not loaded state */}
-      {!canvasReady && (
-        <div className="border border-dashed border-slate-300 rounded-xl p-12 text-center">
-          <Columns3 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 font-medium">
-            Select source and target tables to start mapping columns
-          </p>
-          <p className="text-xs text-slate-400 mt-1">
-            Choose tables from your project schema or paste DDL
-            statements, then click "Load Tables"
-          </p>
-        </div>
-      )}
-
-      {/* SECTION 10: SQL Output Panel */}
-      {showSQLPanel && generatedSQL && (
-        <div className="bg-card border border-slate-200 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <FileCode2 className="w-4 h-4 text-purple-600" />
-              Generated Migration SQL
-            </h3>
-            <button
-              onClick={() => setShowSQLPanel(false)}
-              className="p-1 rounded hover:bg-slate-100 transition-colors"
+        {/* Canvas */}
+        {canvasReady && (
+          <div
+            className="relative border border-slate-200 rounded-xl overflow-hidden"
+            style={{ height: 'calc(100vh - 420px)', minHeight: '500px' }}
+          >
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onEdgeClick={(_, edge) => {
+                setSelectedEdgeId(edge.id);
+                setShowTransformPanel(true);
+              }}
+              nodeTypes={columnMappingNodeTypes}
+              edgeTypes={columnMappingEdgeTypes}
+              fitView
+              fitViewOptions={{ padding: 0.15 }}
+              minZoom={0.3}
+              maxZoom={1.5}
+              connectionLineStyle={{
+                stroke: '#8b5cf6',
+                strokeWidth: 2,
+              }}
+              connectionLineType={ConnectionLineType.SmoothStep}
+              defaultEdgeOptions={{ type: 'mapping' }}
+              proOptions={{ hideAttribution: true }}
+              snapToGrid
+              snapGrid={[10, 10]}
             >
-              <X className="w-4 h-4 text-slate-500" />
-            </button>
+              <Background
+                variant={BackgroundVariant.Dots}
+                gap={20}
+                size={1}
+                color="#e2e8f0"
+              />
+              <Controls
+                showInteractive={false}
+                className="!shadow-md !rounded-lg !border !border-slate-200"
+              />
+            </ReactFlow>
+
+            {/* Transformation Panel */}
+            {showTransformPanel && selectedEdgeId && selectedMapping && (
+              <TransformPanel
+                mapping={selectedMapping}
+                sourceTable={sourceTable}
+                targetTable={targetTable}
+                targetDialect={targetDialect}
+                onClose={() => {
+                  setSelectedEdgeId(null);
+                  setShowTransformPanel(false);
+                }}
+                onUpdate={(updated) => {
+                  setMappings((prev) =>
+                    prev.map((m) =>
+                      m.id === selectedEdgeId ? updated : m
+                    )
+                  );
+                }}
+                onRemove={() => {
+                  setMappings((prev) =>
+                    prev.filter((m) => m.id !== selectedEdgeId)
+                  );
+                  setSelectedEdgeId(null);
+                  setShowTransformPanel(false);
+                }}
+              />
+            )}
+
+            {/* Unmapped columns summary */}
+            <div className="absolute bottom-3 left-3 bg-card/90 backdrop-blur-sm border border-slate-200 rounded-lg px-3 py-2 shadow-sm">
+              <div className="flex items-center gap-3 text-xs">
+                {unmappedSourceCount > 0 && (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <AlertTriangle className="w-3 h-3" />
+                    {unmappedSourceCount} unmapped source
+                  </span>
+                )}
+                {unmappedTargetCount > 0 && (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <AlertTriangle className="w-3 h-3" />
+                    {unmappedTargetCount} unmapped target
+                  </span>
+                )}
+                {unmappedSourceCount === 0 && unmappedTargetCount === 0 && (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CheckCircle2 className="w-3 h-3" />
+                    All columns mapped
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
+        )}
 
-          <pre className="bg-[#1e293b] text-slate-100 font-mono text-sm p-4 rounded-lg overflow-auto max-h-[300px] whitespace-pre-wrap">
-            {generatedSQL}
-          </pre>
+        {/* Not loaded state */}
+        {!canvasReady && (
+          <div className="border border-dashed border-slate-300 rounded-xl p-12 text-center">
+            <Columns3 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium">
+              Select source and target tables to start mapping columns
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Choose tables from your project schema, paste DDL, or upload
+              SQL files, then click "Load Tables"
+            </p>
+          </div>
+        )}
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleCopy(generatedSQL, 'sql')}
-              className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-            >
-              {copiedField === 'sql' ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-green-600" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  Copy
-                </>
-              )}
-            </button>
-            <button
-              onClick={() =>
-                downloadTextFile(
-                  generatedSQL,
-                  `migration-${sourceTable?.name ?? 'source'}-to-${targetTable?.name ?? 'target'}.sql`
-                )
-              }
-              className="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Download .sql
-            </button>
-            <button
-              onClick={() => setShowSQLPanel(false)}
-              className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-            >
-              Close
-            </button>
+        {/* SQL Output Panel */}
+        {showSQLPanel && generatedSQL && (
+          <div className="bg-card border border-slate-200 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <FileCode2 className="w-4 h-4 text-purple-600" />
+                Generated Migration SQL
+              </h3>
+              <button
+                onClick={() => setShowSQLPanel(false)}
+                className="p-1 rounded hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+
+            <pre className="bg-[#1e293b] text-slate-100 font-mono text-sm p-4 rounded-lg overflow-auto max-h-[300px] whitespace-pre-wrap">
+              {generatedSQL}
+            </pre>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleCopy(generatedSQL, 'sql')}
+                className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              >
+                {copiedField === 'sql' ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-green-600" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    Copy
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() =>
+                  downloadTextFile(
+                    generatedSQL,
+                    `migration-${sourceTable?.name ?? 'source'}-to-${targetTable?.name ?? 'target'}.sql`
+                  )
+                }
+                className="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download .sql
+              </button>
+              <button
+                onClick={() => setShowSQLPanel(false)}
+                className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Save Dialog Modal */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-96 shadow-xl space-y-4">
+            <h3 className="text-sm font-bold text-slate-800">
+              Save Column Mapping
+            </h3>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                Mapping Name
+              </label>
+              <input
+                type="text"
+                value={mappingName}
+                onChange={(e) => setMappingName(e.target.value)}
+                placeholder={`e.g., ${sourceTable?.name ?? 'source'} → ${targetTable?.name ?? 'target'} migration`}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && mappingName.trim()) {
+                    handleSaveWithName();
+                  }
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                onClick={() => setShowSaveDialog(false)}
+                className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveWithName}
+                disabled={
+                  !mappingName.trim() || createMapping.isPending
+                }
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg font-medium transition-colors',
+                  mappingName.trim()
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                )}
+              >
+                {createMapping.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Save className="w-3.5 h-3.5" />
+                )}
+                Save
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1292,12 +2017,12 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
   );
 }
 
-// ── SECTION 8: Transformation Panel Component ────────────────────────────────
+// ── Transformation Panel Component ───────────────────────────────────────────
 
 interface TransformPanelProps {
   mapping: ColumnMapping;
-  sourceTable: { name: string; columns: Column[] } | null;
-  targetTable: { name: string; columns: Column[] } | null;
+  sourceTable: ParsedTable | null;
+  targetTable: ParsedTable | null;
   targetDialect: string;
   onClose: () => void;
   onUpdate: (mapping: ColumnMapping) => void;
@@ -1315,7 +2040,6 @@ function TransformPanel({
 }: TransformPanelProps) {
   const [localMapping, setLocalMapping] = useState<ColumnMapping>(mapping);
 
-  // Sync when selected mapping changes
   useEffect(() => {
     setLocalMapping(mapping);
   }, [mapping]);
@@ -1354,7 +2078,7 @@ function TransformPanel({
               tgtCol?.dataType || ''
             )
           : localMapping.transformationType === 'cast'
-            ? true // Cast is intentional, treat as valid
+            ? true
             : localMapping.transformationType === 'expression'
               ? !!localMapping.expression
               : localMapping.transformationType === 'default'
