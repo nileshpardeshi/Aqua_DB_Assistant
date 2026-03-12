@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   ArrowRightLeft,
@@ -7,76 +7,42 @@ import {
   CheckCircle2,
   ArrowRight,
   FileText,
+  Download,
+  Play,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DATABASE_DIALECTS } from '@/config/constants';
-import { useConvertDialect } from '@/hooks/use-migrations';
+import { useConvertDialect, type ConversionChange } from '@/hooks/use-migrations';
 
 const DIALECTS = DATABASE_DIALECTS.filter((d) =>
   ['postgresql', 'mysql', 'oracle', 'sqlserver', 'mariadb', 'snowflake', 'bigquery'].includes(d.value)
 );
 
-// Mock conversion changes for demonstration
-const MOCK_CHANGES: Record<string, string[]> = {
-  mysql: [
-    'Changed SERIAL to INT AUTO_INCREMENT',
-    'Changed BOOLEAN to TINYINT(1)',
-    'Changed TEXT to LONGTEXT for large fields',
-    'Replaced NOW() with CURRENT_TIMESTAMP',
-    'Changed TIMESTAMP to DATETIME for wider range',
-    'Added ENGINE=InnoDB DEFAULT CHARSET=utf8mb4',
-  ],
-  oracle: [
-    'Changed SERIAL to NUMBER GENERATED ALWAYS AS IDENTITY',
-    'Changed VARCHAR to VARCHAR2',
-    'Changed BOOLEAN to NUMBER(1)',
-    'Replaced NOW() with SYSTIMESTAMP',
-    'Changed TIMESTAMP to TIMESTAMP WITH TIME ZONE',
-    'Added semicolons after each statement',
-  ],
-  sqlserver: [
-    'Changed SERIAL to INT IDENTITY(1,1)',
-    'Changed BOOLEAN to BIT',
-    'Changed TEXT to NVARCHAR(MAX)',
-    'Replaced NOW() with GETDATE()',
-    'Changed double quotes to square brackets for identifiers',
-    'Added GO statement between batches',
-  ],
-  postgresql: [
-    'Changed AUTO_INCREMENT to SERIAL',
-    'Changed TINYINT to SMALLINT',
-    'Changed DATETIME to TIMESTAMP',
-    'Changed LONGTEXT to TEXT',
-    'Replaced GETDATE()/SYSDATE with NOW()',
-  ],
-};
+const SAMPLE_SQL = `CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(100) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL,
+  full_name VARCHAR(200),
+  password_hash TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  role VARCHAR(50) DEFAULT 'user',
+  profile JSONB,
+  login_count INTEGER DEFAULT 0,
+  last_login_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
 
-function getMockTargetSql(source: string, targetDialect: string): string {
-  // Simple mock transformation
-  let result = source;
+CREATE INDEX idx_users_email ON users (email);
+CREATE INDEX idx_users_username ON users (username);`;
 
-  if (targetDialect === 'mysql') {
-    result = result
-      .replace(/SERIAL/gi, 'INT AUTO_INCREMENT')
-      .replace(/BOOLEAN/gi, 'TINYINT(1)')
-      .replace(/NOW\(\)/gi, 'CURRENT_TIMESTAMP')
-      .replace(/TIMESTAMP/gi, 'DATETIME');
-  } else if (targetDialect === 'oracle') {
-    result = result
-      .replace(/SERIAL/gi, 'NUMBER GENERATED ALWAYS AS IDENTITY')
-      .replace(/VARCHAR\(/gi, 'VARCHAR2(')
-      .replace(/BOOLEAN/gi, 'NUMBER(1)')
-      .replace(/NOW\(\)/gi, 'SYSTIMESTAMP');
-  } else if (targetDialect === 'sqlserver') {
-    result = result
-      .replace(/SERIAL/gi, 'INT IDENTITY(1,1)')
-      .replace(/BOOLEAN/gi, 'BIT')
-      .replace(/TEXT/gi, 'NVARCHAR(MAX)')
-      .replace(/NOW\(\)/gi, 'GETDATE()');
-  }
-
-  return result;
-}
+const PROGRESS_STEPS = [
+  'Parsing',
+  'Mapping types',
+  'Transforming syntax',
+  'Complete',
+] as const;
 
 export function DialectConverter() {
   const { projectId } = useParams();
@@ -86,43 +52,79 @@ export function DialectConverter() {
   const [targetDialect, setTargetDialect] = useState('mysql');
   const [sourceSql, setSourceSql] = useState('');
   const [targetSql, setTargetSql] = useState('');
-  const [changesLog, setChangesLog] = useState<string[]>([]);
+  const [changes, setChanges] = useState<ConversionChange[]>([]);
   const [isConverting, setIsConverting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [progressStep, setProgressStep] = useState(-1);
+
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const startProgress = useCallback(() => {
+    setProgressStep(0);
+    let step = 0;
+    progressIntervalRef.current = setInterval(() => {
+      step += 1;
+      if (step >= PROGRESS_STEPS.length - 1) {
+        // Stop before "Complete" — that gets set when the API returns
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+          progressIntervalRef.current = null;
+        }
+      }
+      setProgressStep(step);
+    }, 800);
+  }, []);
+
+  const stopProgress = useCallback(() => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    setProgressStep(PROGRESS_STEPS.length - 1); // "Complete"
+  }, []);
 
   const handleConvert = useCallback(async () => {
     if (!sourceSql.trim() || !projectId) return;
     setIsConverting(true);
     setTargetSql('');
-    setChangesLog([]);
+    setChanges([]);
+    startProgress();
 
     try {
-      await convertDialect.mutateAsync({
+      const result = await convertDialect.mutateAsync({
         projectId,
+        sql: sourceSql,
         sourceDialect,
         targetDialect,
-        sourceSql,
       });
 
-      // Simulate conversion result
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      setTargetSql(getMockTargetSql(sourceSql, targetDialect));
-      setChangesLog(MOCK_CHANGES[targetDialect] || ['No changes needed']);
-    } catch {
-      // Use mock results on error
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setTargetSql(getMockTargetSql(sourceSql, targetDialect));
-      setChangesLog(MOCK_CHANGES[targetDialect] || ['No changes needed']);
+      setTargetSql(result.sql);
+      setChanges(result.changes);
+    } catch (error) {
+      console.error('Dialect conversion failed:', error);
+      setTargetSql('-- Conversion failed. Please check your SQL and try again.');
+      setChanges([]);
     } finally {
+      stopProgress();
       setIsConverting(false);
     }
-  }, [sourceSql, sourceDialect, targetDialect, projectId, convertDialect]);
+  }, [sourceSql, sourceDialect, targetDialect, projectId, convertDialect, startProgress, stopProgress]);
 
   const handleCopy = useCallback(() => {
     if (!targetSql) return;
     navigator.clipboard.writeText(targetSql);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
   }, [targetSql]);
 
   const handleSwapDialects = useCallback(() => {
@@ -131,9 +133,31 @@ export function DialectConverter() {
     if (targetSql) {
       setSourceSql(targetSql);
       setTargetSql('');
-      setChangesLog([]);
+      setChanges([]);
+      setProgressStep(-1);
     }
   }, [sourceDialect, targetDialect, targetSql]);
+
+  const handleLoadSample = useCallback(() => {
+    setSourceSql(SAMPLE_SQL);
+    setSourceDialect('postgresql');
+    setTargetSql('');
+    setChanges([]);
+    setProgressStep(-1);
+  }, []);
+
+  const handleDownload = useCallback(() => {
+    if (!targetSql) return;
+    const blob = new Blob([targetSql], { type: 'text/sql;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `converted_${targetDialect}.sql`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [targetSql, targetDialect]);
 
   const sourceDialectInfo = DIALECTS.find((d) => d.value === sourceDialect);
   const targetDialectInfo = DIALECTS.find((d) => d.value === targetDialect);
@@ -204,6 +228,13 @@ export function DialectConverter() {
                 </span>
               )}
             </label>
+            <button
+              onClick={handleLoadSample}
+              className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-aqua-600 transition-colors"
+            >
+              <Sparkles className="w-3 h-3" />
+              Load Sample
+            </button>
           </div>
           <textarea
             value={sourceSql}
@@ -232,24 +263,36 @@ export function DialectConverter() {
                 </span>
               )}
             </label>
-            {targetSql && (
-              <button
-                onClick={handleCopy}
-                className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-slate-700 transition-colors"
-              >
-                {copied ? (
-                  <>
-                    <CheckCircle2 className="w-3 h-3 text-green-600" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3 h-3" />
-                    Copy
-                  </>
-                )}
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {targetSql && (
+                <>
+                  <button
+                    onClick={handleDownload}
+                    className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                    title="Download as .sql file"
+                  >
+                    <Download className="w-3 h-3" />
+                    Download
+                  </button>
+                  <button
+                    onClick={handleCopy}
+                    className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                  >
+                    {copied ? (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-green-600" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        Copy
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
           <textarea
             value={targetSql}
@@ -262,7 +305,7 @@ export function DialectConverter() {
         </div>
       </div>
 
-      {/* Convert Button */}
+      {/* Convert Button & Compatibility Summary */}
       <div className="flex items-center gap-3">
         <button
           onClick={handleConvert}
@@ -281,7 +324,7 @@ export function DialectConverter() {
             </>
           ) : (
             <>
-              <ArrowRight className="w-4 h-4" />
+              <Play className="w-4 h-4" />
               Convert
             </>
           )}
@@ -289,30 +332,108 @@ export function DialectConverter() {
 
         {sourceDialectInfo && targetDialectInfo && (
           <span className="text-xs text-slate-500">
-            {sourceDialectInfo.label} → {targetDialectInfo.label}
+            {sourceDialectInfo.label} <ArrowRight className="w-3 h-3 inline" /> {targetDialectInfo.label}
+          </span>
+        )}
+
+        {changes.length > 0 && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-aqua-100 text-aqua-700">
+            <CheckCircle2 className="w-3 h-3" />
+            {changes.length} change{changes.length !== 1 ? 's' : ''} applied
           </span>
         )}
       </div>
 
+      {/* Progress Stepper */}
+      {progressStep >= 0 && (
+        <div className="flex items-center gap-1">
+          {PROGRESS_STEPS.map((step, idx) => {
+            const isActive = progressStep === idx && idx < PROGRESS_STEPS.length - 1;
+            const isCompleted = progressStep > idx || (progressStep === PROGRESS_STEPS.length - 1 && idx === PROGRESS_STEPS.length - 1);
+
+            return (
+              <div key={step} className="flex items-center gap-1">
+                {idx > 0 && (
+                  <div
+                    className={cn(
+                      'w-8 h-px',
+                      isCompleted || progressStep > idx ? 'bg-aqua-500' : 'bg-slate-200'
+                    )}
+                  />
+                )}
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className={cn(
+                      'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all',
+                      isCompleted
+                        ? 'bg-aqua-600 text-white'
+                        : isActive
+                          ? 'bg-aqua-100 text-aqua-700 animate-pulse'
+                          : 'bg-slate-100 text-slate-400'
+                    )}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle2 className="w-3 h-3" />
+                    ) : (
+                      idx + 1
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      'text-[11px] font-medium whitespace-nowrap',
+                      isCompleted
+                        ? 'text-aqua-700'
+                        : isActive
+                          ? 'text-aqua-600 animate-pulse'
+                          : 'text-slate-400'
+                    )}
+                  >
+                    {step}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Changes Log */}
-      {changesLog.length > 0 && (
+      {changes.length > 0 && (
         <div className="bg-card border border-slate-200 rounded-lg overflow-hidden">
           <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
             <FileText className="w-3.5 h-3.5 text-slate-500" />
             <h4 className="text-xs font-semibold text-slate-700">
-              Conversion Changes ({changesLog.length})
+              Conversion Changes
             </h4>
+            <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-aqua-100 text-aqua-700">
+              {changes.length}
+            </span>
           </div>
           <ul className="divide-y divide-slate-100">
-            {changesLog.map((change, idx) => (
+            {changes.map((change, idx) => (
               <li
                 key={idx}
-                className="px-4 py-2 text-sm text-slate-700 flex items-start gap-2"
+                className="px-4 py-2.5 text-sm text-slate-700"
               >
-                <span className="text-aqua-500 mt-0.5 flex-shrink-0">
-                  <ArrowRight className="w-3 h-3" />
-                </span>
-                {change}
+                <div className="flex items-start gap-2">
+                  <span className="text-aqua-500 mt-0.5 flex-shrink-0">
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <code className="px-1.5 py-0.5 text-xs font-mono bg-red-50 text-red-700 rounded">
+                        {change.original}
+                      </code>
+                      <ArrowRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                      <code className="px-1.5 py-0.5 text-xs font-mono bg-green-50 text-green-700 rounded">
+                        {change.converted}
+                      </code>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      {change.reason}
+                    </p>
+                  </div>
+                </div>
               </li>
             ))}
           </ul>

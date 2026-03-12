@@ -8,7 +8,10 @@ export interface SavedQuery {
   title: string;
   sql: string;
   dialect: string;
-  description?: string;
+  description?: string | null;
+  category?: string | null;
+  isFavorite: boolean;
+  tags?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,6 +21,9 @@ export interface CreateQueryInput {
   sql: string;
   dialect: string;
   description?: string;
+  category?: string;
+  isFavorite?: boolean;
+  tags?: string;
 }
 
 export interface UpdateQueryInput {
@@ -25,6 +31,9 @@ export interface UpdateQueryInput {
   sql?: string;
   dialect?: string;
   description?: string;
+  category?: string;
+  isFavorite?: boolean;
+  tags?: string;
 }
 
 export interface ExecuteQueryInput {
@@ -56,6 +65,10 @@ export interface QueryExecution {
   executedAt: string;
 }
 
+export interface QueryHistoryItem extends QueryExecution {
+  savedQuery?: { id: string; title: string } | null;
+}
+
 // Query keys
 const queryKeys = {
   all: ['queries'] as const,
@@ -63,19 +76,49 @@ const queryKeys = {
   list: (projectId: string) => [...queryKeys.lists(), projectId] as const,
   details: () => [...queryKeys.all, 'detail'] as const,
   detail: (id: string) => [...queryKeys.details(), id] as const,
+  history: (projectId: string) => ['query-history', projectId] as const,
 };
 
 /**
- * Fetch all saved queries for a project.
+ * Fetch all saved queries for a project, with optional filters.
  */
-export function useSavedQueries(projectId: string | null | undefined) {
+export function useSavedQueries(
+  projectId: string | null | undefined,
+  filters?: { search?: string; category?: string; isFavorite?: boolean },
+) {
   return useQuery({
-    queryKey: queryKeys.list(projectId!),
+    queryKey: [...queryKeys.list(projectId!), filters],
     queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters?.search) params.set('search', filters.search);
+      if (filters?.category) params.set('category', filters.category);
+      if (filters?.isFavorite !== undefined)
+        params.set('isFavorite', String(filters.isFavorite));
+      const qs = params.toString();
       const response = await apiClient.get(
-        `/projects/${projectId}/queries`
+        `/projects/${projectId}/queries${qs ? `?${qs}` : ''}`,
       );
       return response as unknown as SavedQuery[];
+    },
+    enabled: !!projectId,
+  });
+}
+
+/**
+ * Fetch query execution history for a project.
+ */
+export function useQueryHistory(
+  projectId: string | null | undefined,
+  limit?: number,
+) {
+  return useQuery({
+    queryKey: queryKeys.history(projectId!),
+    queryFn: async () => {
+      const params = limit ? `?limit=${limit}` : '';
+      const response = await apiClient.get(
+        `/projects/${projectId}/queries/history${params}`,
+      );
+      return response as unknown as QueryHistoryItem[];
     },
     enabled: !!projectId,
   });
@@ -97,7 +140,7 @@ export function useSaveQuery() {
     }) => {
       const response = await apiClient.post(
         `/projects/${projectId}/queries`,
-        data
+        data,
       );
       return response as unknown as SavedQuery;
     },
@@ -127,7 +170,7 @@ export function useUpdateQuery() {
     }) => {
       const response = await apiClient.patch(
         `/projects/${projectId}/queries/${queryId}`,
-        data
+        data,
       );
       return response as unknown as SavedQuery;
     },
@@ -137,6 +180,36 @@ export function useUpdateQuery() {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.detail(variables.queryId),
+      });
+    },
+  });
+}
+
+/**
+ * Toggle favorite status on a saved query.
+ */
+export function useToggleFavorite() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      queryId,
+      isFavorite,
+    }: {
+      projectId: string;
+      queryId: string;
+      isFavorite: boolean;
+    }) => {
+      const response = await apiClient.patch(
+        `/projects/${projectId}/queries/${queryId}`,
+        { isFavorite },
+      );
+      return response as unknown as SavedQuery;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.list(variables.projectId),
       });
     },
   });
@@ -157,7 +230,7 @@ export function useDeleteQuery() {
       queryId: string;
     }) => {
       await apiClient.delete(
-        `/projects/${projectId}/queries/${queryId}`
+        `/projects/${projectId}/queries/${queryId}`,
       );
     },
     onSuccess: (_data, variables) => {
@@ -184,14 +257,13 @@ export function useExecuteQuery() {
     }) => {
       const response = await apiClient.post(
         `/projects/${projectId}/queries/execute`,
-        data
+        data,
       );
       return response as unknown as QueryExecution;
     },
     onSuccess: (_data, variables) => {
-      // Invalidate query history so it refreshes
       queryClient.invalidateQueries({
-        queryKey: ['query-history', variables.projectId],
+        queryKey: queryKeys.history(variables.projectId),
       });
     },
   });

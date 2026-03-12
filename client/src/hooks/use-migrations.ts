@@ -1,48 +1,71 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../lib/api-client';
 
-// Types
+// ── Types (aligned with Prisma Migration model) ─────────────────────────────
+
 export interface Migration {
   id: string;
   projectId: string;
-  name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  version: string;
+  title: string;
+  description: string | null;
+  upSQL: string;
+  downSQL: string | null;
+  status: string; // draft | pending | running | completed | failed | rolled_back
+  appliedAt: string | null;
   sourceDialect: string;
   targetDialect: string;
-  sourceSql: string;
-  targetSql?: string;
-  changesLog?: string[];
+  checksum: string;
+  dependsOn: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateMigrationInput {
   projectId: string;
-  name: string;
+  version: string;
+  title: string;
+  description?: string;
+  upSQL: string;
+  downSQL?: string;
+  status?: string;
   sourceDialect: string;
   targetDialect: string;
-  sourceSql: string;
+  dependsOn?: string;
 }
 
 export interface UpdateMigrationInput {
-  name?: string;
+  title?: string;
+  description?: string;
+  upSQL?: string;
+  downSQL?: string;
   status?: string;
-  targetSql?: string;
+  appliedAt?: string;
+  dependsOn?: string;
 }
 
 export interface ConvertDialectInput {
   projectId: string;
   sourceDialect: string;
   targetDialect: string;
-  sourceSql: string;
+  sql: string;
+}
+
+export interface ConversionChange {
+  original: string;
+  converted: string;
+  reason: string;
 }
 
 export interface ConvertDialectResult {
-  targetSql: string;
-  changesLog: string[];
+  sql: string;
+  changes: ConversionChange[];
+  sourceDialect: string;
+  targetDialect: string;
 }
 
-// Query keys
+// ── Query Keys ───────────────────────────────────────────────────────────────
+
 const migrationKeys = {
   all: ['migrations'] as const,
   lists: () => [...migrationKeys.all, 'list'] as const,
@@ -52,7 +75,7 @@ const migrationKeys = {
     [...migrationKeys.details(), projectId, migrationId] as const,
 };
 
-// Hooks
+// ── Hooks ────────────────────────────────────────────────────────────────────
 
 /**
  * Fetch all migrations for a project.
@@ -99,7 +122,17 @@ export function useCreateMigration() {
     mutationFn: async (input: CreateMigrationInput) => {
       const response = await apiClient.post(
         `/projects/${input.projectId}/migrations`,
-        input
+        {
+          version: input.version,
+          title: input.title,
+          description: input.description,
+          upSQL: input.upSQL,
+          downSQL: input.downSQL,
+          status: input.status,
+          sourceDialect: input.sourceDialect,
+          targetDialect: input.targetDialect,
+          dependsOn: input.dependsOn,
+        }
       );
       return response as unknown as Migration;
     },
@@ -178,7 +211,11 @@ export function useConvertDialect() {
     mutationFn: async (input: ConvertDialectInput) => {
       const response = await apiClient.post(
         `/projects/${input.projectId}/migrations/convert`,
-        input
+        {
+          sql: input.sql,
+          sourceDialect: input.sourceDialect,
+          targetDialect: input.targetDialect,
+        }
       );
       return response as unknown as ConvertDialectResult;
     },

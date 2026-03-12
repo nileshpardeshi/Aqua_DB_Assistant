@@ -42,4 +42,13 @@ router.post('/datagen/data-distribution', aiController.simulateDataDistribution)
 // POST /ai/docs/generate - Generate database documentation
 router.post('/docs/generate', aiController.generateDocumentation);
 
+// POST /ai/migration/assess - AI migration risk assessment
+router.post('/migration/assess', aiController.assessMigration);
+
+// POST /ai/migration/generate-scripts - AI migration script generation
+router.post('/migration/generate-scripts', aiController.generateMigrationScripts);
+
+// POST /ai/migration/suggest-column-mapping - AI column mapping suggestions
+router.post('/migration/suggest-column-mapping', aiController.suggestColumnMapping);
+
 export default router;

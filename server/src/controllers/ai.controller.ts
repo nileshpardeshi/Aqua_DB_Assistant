@@ -14,6 +14,9 @@ import { buildSyntheticDataPrompt } from '../services/ai/prompt-templates/synthe
 import { buildQueryPlannerPrompt } from '../services/ai/prompt-templates/query-planner-simulation.prompt.js';
 import { buildDataDistributionPrompt } from '../services/ai/prompt-templates/data-distribution-simulation.prompt.js';
 import { buildDocumentationPrompt } from '../services/ai/prompt-templates/documentation-generator.prompt.js';
+import { buildMigrationAssessmentPrompt } from '../services/ai/prompt-templates/migration-assessment.prompt.js';
+import { buildMigrationScriptGeneratorPrompt } from '../services/ai/prompt-templates/migration-script-generator.prompt.js';
+import { buildColumnMappingPrompt } from '../services/ai/prompt-templates/column-mapping.prompt.js';
 import { prisma } from '../config/prisma.js';
 import { logger } from '../config/logger.js';
 
@@ -942,6 +945,225 @@ export const generateDocumentation = asyncHandler(
         documentation,
         usage: docResponse.usage,
         model: docResponse.model,
+      },
+    });
+  },
+);
+
+// ---------- Migration Assessment ----------
+
+export const assessMigration = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { projectId, sourceDialect, targetDialect } = req.body as {
+      projectId: string;
+      sourceDialect: string;
+      targetDialect: string;
+    };
+
+    if (!projectId || !sourceDialect || !targetDialect) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'BAD_REQUEST',
+          message: 'projectId, sourceDialect, and targetDialect are required',
+        },
+      });
+      return;
+    }
+
+    const schemaContext = await AIContextBuilder.buildSchemaContext(projectId);
+
+    if (schemaContext.startsWith('-- No tables found')) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'NO_SCHEMA',
+          message:
+            'No tables found in this project. Import a schema first before requesting migration assessment.',
+        },
+      });
+      return;
+    }
+
+    const messages = buildMigrationAssessmentPrompt(
+      schemaContext,
+      sourceDialect,
+      targetDialect,
+    );
+
+    const provider = await AIProviderFactory.getDefault();
+    const response = await provider.chat({
+      messages,
+      temperature: 0.2,
+      maxTokens: 8192,
+      jsonMode: true,
+    });
+
+    let assessment: unknown;
+    try {
+      assessment = JSON.parse(response.content);
+    } catch {
+      assessment = { rawResponse: response.content };
+    }
+
+    res.json({
+      success: true,
+      data: {
+        assessment,
+        usage: response.usage,
+        model: response.model,
+      },
+    });
+  },
+);
+
+// ---------- Migration Script Generation ----------
+
+export const generateMigrationScripts = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { projectId, sourceDialect, targetDialect, tables } = req.body as {
+      projectId: string;
+      sourceDialect: string;
+      targetDialect: string;
+      tables?: string[];
+    };
+
+    if (!projectId || !sourceDialect || !targetDialect) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'BAD_REQUEST',
+          message: 'projectId, sourceDialect, and targetDialect are required',
+        },
+      });
+      return;
+    }
+
+    const schemaContext = await AIContextBuilder.buildSchemaContext(projectId);
+
+    if (schemaContext.startsWith('-- No tables found')) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'NO_SCHEMA',
+          message:
+            'No tables found in this project. Import a schema first before generating migration scripts.',
+        },
+      });
+      return;
+    }
+
+    const messages = buildMigrationScriptGeneratorPrompt(
+      schemaContext,
+      sourceDialect,
+      targetDialect,
+      tables,
+    );
+
+    const provider = await AIProviderFactory.getDefault();
+    const response = await provider.chat({
+      messages,
+      temperature: 0.2,
+      maxTokens: 16384,
+      jsonMode: true,
+    });
+
+    let scripts: unknown;
+    try {
+      scripts = JSON.parse(response.content);
+    } catch {
+      scripts = { rawResponse: response.content };
+    }
+
+    res.json({
+      success: true,
+      data: {
+        scripts,
+        usage: response.usage,
+        model: response.model,
+      },
+    });
+  },
+);
+
+// ---------- Column Mapping Suggestion ----------
+
+export const suggestColumnMapping = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { projectId, sourceTable, targetTable, sourceDialect, targetDialect } =
+      req.body as {
+        projectId?: string;
+        sourceTable: {
+          name: string;
+          columns: Array<{
+            name: string;
+            dataType: string;
+            nullable: boolean;
+            isPrimaryKey: boolean;
+          }>;
+        };
+        targetTable: {
+          name: string;
+          columns: Array<{
+            name: string;
+            dataType: string;
+            nullable: boolean;
+            isPrimaryKey: boolean;
+          }>;
+        };
+        sourceDialect: string;
+        targetDialect: string;
+      };
+
+    if (!sourceTable || !targetTable || !sourceDialect || !targetDialect) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'BAD_REQUEST',
+          message:
+            'sourceTable, targetTable, sourceDialect, and targetDialect are required',
+        },
+      });
+      return;
+    }
+
+    let schemaContext: string | undefined;
+    if (projectId) {
+      const ctx = await AIContextBuilder.buildSchemaContext(projectId);
+      if (!ctx.startsWith('-- No tables found')) {
+        schemaContext = ctx;
+      }
+    }
+
+    const messages = buildColumnMappingPrompt(
+      sourceTable,
+      targetTable,
+      sourceDialect,
+      targetDialect,
+      schemaContext,
+    );
+
+    const provider = await AIProviderFactory.getDefault();
+    const response = await provider.chat({
+      messages,
+      temperature: 0.2,
+      maxTokens: 4096,
+      jsonMode: true,
+    });
+
+    let result: unknown;
+    try {
+      result = JSON.parse(response.content);
+    } catch {
+      result = { rawResponse: response.content };
+    }
+
+    res.json({
+      success: true,
+      data: {
+        result,
+        usage: response.usage,
+        model: response.model,
       },
     });
   },

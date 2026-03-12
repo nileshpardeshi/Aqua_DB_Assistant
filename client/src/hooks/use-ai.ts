@@ -25,31 +25,52 @@ export interface SchemaSuggestion {
 }
 
 export interface QueryOptimization {
-  originalQuery: string;
-  optimizedQuery: string;
-  suggestions: Array<{
-    type: string;
+  optimizedSQL: string;
+  changes: Array<{
     description: string;
-    impact: 'high' | 'medium' | 'low';
+    impact: 'HIGH' | 'MEDIUM' | 'LOW';
+    category: string;
   }>;
+  indexRecommendations: Array<{
+    createStatement: string;
+    reason: string;
+    estimatedImpact: string;
+  }>;
+  warnings: string[];
   estimatedImprovement: string;
 }
 
 export interface GeneratedSQL {
-  query: string;
+  sql: string;
   explanation: string;
+  assumptions: string[];
+  alternativeApproaches: Array<{
+    sql: string;
+    description: string;
+  }>;
   warnings: string[];
 }
 
 export interface QueryExplanation {
   summary: string;
-  steps: Array<{
-    step: number;
-    operation: string;
-    description: string;
-    tables: string[];
+  stepByStep: Array<{
+    clause: string;
+    sql: string;
+    explanation: string;
   }>;
-  suggestedIndexes: string[];
+  tablesUsed: Array<{
+    name: string;
+    alias: string;
+    role: string;
+  }>;
+  outputColumns: Array<{
+    expression: string;
+    alias: string;
+    description: string;
+  }>;
+  filters: string[];
+  performanceNotes: string[];
+  complexity: 'SIMPLE' | 'MODERATE' | 'COMPLEX' | 'VERY_COMPLEX';
 }
 
 export interface TriggerAnalysis {
@@ -98,48 +119,54 @@ export function useSuggestSchema() {
 
 /**
  * Optimize an existing SQL query with AI.
+ * Backend expects { sql, dialect, projectId }, returns { optimization, usage, model }
  */
 export function useOptimizeQuery() {
   return useMutation({
     mutationFn: async (input: {
       projectId: string;
-      query: string;
+      sql: string;
       dialect?: string;
     }) => {
       const response = await apiClient.post('/ai/query/optimize', input);
-      return response as unknown as QueryOptimization;
+      const wrapper = response as unknown as { optimization: QueryOptimization };
+      return wrapper.optimization;
     },
   });
 }
 
 /**
  * Generate SQL from a natural language description.
+ * Backend expects { naturalLanguage, dialect, projectId }, returns { result, usage, model }
  */
 export function useGenerateSQL() {
   return useMutation({
     mutationFn: async (input: {
       projectId: string;
-      prompt: string;
+      naturalLanguage: string;
       dialect?: string;
     }) => {
       const response = await apiClient.post('/ai/query/generate', input);
-      return response as unknown as GeneratedSQL;
+      const wrapper = response as unknown as { result: GeneratedSQL };
+      return wrapper.result;
     },
   });
 }
 
 /**
  * Explain an SQL query in plain English.
+ * Backend expects { sql, dialect, projectId }, returns { explanation, usage, model }
  */
 export function useExplainQuery() {
   return useMutation({
     mutationFn: async (input: {
       projectId: string;
-      query: string;
+      sql: string;
       dialect?: string;
     }) => {
       const response = await apiClient.post('/ai/query/explain', input);
-      return response as unknown as QueryExplanation;
+      const wrapper = response as unknown as { explanation: QueryExplanation };
+      return wrapper.explanation;
     },
   });
 }
