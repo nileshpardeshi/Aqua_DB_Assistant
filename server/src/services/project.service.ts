@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 import { NotFoundError } from '../middleware/error-handler.js';
 import { buildPaginatedResponse } from '../utils/pagination.js';
+import * as auditService from './audit.service.js';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -41,11 +42,36 @@ export async function listProjects(query: ProjectListQuery) {
       orderBy,
       skip,
       take: limit,
+      include: {
+        _count: {
+          select: {
+            tables: true,
+            savedQueries: true,
+            files: true,
+            aiConversations: true,
+          },
+        },
+      },
     }),
     prisma.project.count({ where }),
   ]);
 
-  return buildPaginatedResponse(projects, totalItems, page, limit);
+  // Flatten _count into top-level fields for the client
+  const mapped = projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    dialect: p.dialect,
+    status: p.status,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+    tableCount: p._count.tables,
+    queryCount: p._count.savedQueries,
+    fileCount: p._count.files,
+    conversationCount: p._count.aiConversations,
+  }));
+
+  return buildPaginatedResponse(mapped, totalItems, page, limit);
 }
 
 // ---------- Get by ID ----------
@@ -82,6 +108,14 @@ export async function createProject(data: CreateProjectInput) {
       status: data.status ?? 'active',
     },
   });
+
+  auditService.logAction({
+    projectId: project.id,
+    action: 'project.create',
+    entity: 'Project',
+    entityId: project.id,
+    details: `Created project "${project.name}" (${project.dialect})`,
+  }).catch(() => {});
 
   return project;
 }
@@ -125,6 +159,14 @@ export async function removeProject(projectId: string) {
     data: { status: 'archived' },
   });
 
+  auditService.logAction({
+    projectId: project.id,
+    action: 'project.archive',
+    entity: 'Project',
+    entityId: project.id,
+    details: `Archived project "${project.name}"`,
+  }).catch(() => {});
+
   return project;
 }
 
@@ -154,4 +196,19 @@ export async function getProjectStats(projectId: string) {
     files: fileCount,
     conversations: conversationCount,
   };
+}
+
+// ---------- Global Stats (across all active projects) ----------
+
+export async function getGlobalStats() {
+  const activeFilter = { project: { status: { not: 'archived' } } };
+
+  const [projects, tables, queries, conversations] = await Promise.all([
+    prisma.project.count({ where: { status: { not: 'archived' } } }),
+    prisma.tableMetadata.count({ where: activeFilter }),
+    prisma.savedQuery.count({ where: activeFilter }),
+    prisma.aIConversation.count({ where: activeFilter }),
+  ]);
+
+  return { projects, tables, queries, conversations };
 }

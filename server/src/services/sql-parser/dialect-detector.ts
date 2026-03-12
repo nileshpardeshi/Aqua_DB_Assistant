@@ -155,6 +155,35 @@ export function detectDialect(
 }
 
 /**
+ * Detect the SQL dialect and also return all dialect scores plus a confidence value.
+ */
+export function detectDialectWithScores(
+  sql: string,
+): { dialect: SQLDialect; confidence: number; scores: Record<string, number> } {
+  const scores = computeScores(sql);
+  const topDialect = scores[0];
+
+  // MariaDB piggyback check
+  let dialect = topDialect.dialect;
+  if (dialect === 'mysql') {
+    if (/\bSEQUENCE\b/i.test(sql) || /\bROWNUM\b/i.test(sql)) {
+      dialect = 'mariadb';
+    }
+  }
+
+  // Compute confidence as a ratio of top score to total scores
+  const totalScore = scores.reduce((sum, s) => sum + s.score, 0);
+  const confidence = totalScore > 0 ? topDialect.score / totalScore : 0;
+
+  const scoreMap: Record<string, number> = {};
+  for (const s of scores) {
+    scoreMap[s.dialect] = s.score;
+  }
+
+  return { dialect, confidence, scores: scoreMap };
+}
+
+/**
  * Compute dialect scores from detection rules.
  * Returns an array sorted descending by score.
  */

@@ -52,6 +52,19 @@ export interface QueryExplanation {
   suggestedIndexes: string[];
 }
 
+export interface TriggerAnalysis {
+  isValid: boolean;
+  issues: Array<{
+    severity: 'error' | 'warning' | 'info';
+    message: string;
+    suggestion: string;
+  }>;
+  optimizedBody: string | null;
+  explanation: string;
+  dialectNotes: string;
+  bestPractices: string[];
+}
+
 export interface SchemaReview {
   score: number;
   issues: Array<{
@@ -141,6 +154,27 @@ export function useReviewSchema() {
     }) => {
       const response = await apiClient.post('/ai/schema/review', input);
       return response as unknown as SchemaReview;
+    },
+  });
+}
+
+/**
+ * Analyze a trigger with AI for validation, optimization, and best practices.
+ */
+export function useAnalyzeTrigger() {
+  return useMutation({
+    mutationFn: async (input: {
+      projectId: string;
+      tableId: string;
+      triggerName: string;
+      timing: string;
+      event: string;
+      triggerBody: string;
+      description?: string;
+      dialect: string;
+    }) => {
+      const response = await apiClient.post('/ai/schema/trigger-analysis', input);
+      return (response as unknown as { analysis: TriggerAnalysis }).analysis;
     },
   });
 }

@@ -5,11 +5,12 @@ import apiClient from '../lib/api-client';
 
 export interface AuditLog {
   id: string;
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'VIEW' | 'EXPORT' | 'UPLOAD';
-  entityType: 'project' | 'schema' | 'query' | 'migration' | 'connection' | 'settings' | 'file';
-  entityId: string;
+  action: string;
+  entityType?: string;
+  entity?: string;
+  entityId?: string;
   entityName?: string;
-  details: string;
+  details?: string;
   projectId?: string;
   createdAt: string;
   ipAddress?: string;

@@ -12,10 +12,14 @@ import {
   Plug,
   Settings,
   Bot,
-  ChevronLeft,
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
+  ArrowRightLeft,
+  FlaskConical,
+  ScrollText,
+  Wand2,
+  FileText,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { APP_NAME, APP_TAGLINE, getDialect } from '../../config/constants';
@@ -34,6 +38,13 @@ const mainNavItems: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/', end: true },
 ];
 
+const toolNavItems: NavItem[] = [
+  { label: 'SQL Converter', icon: ArrowRightLeft, path: '/tools/sql-converter' },
+  { label: 'JPA Query Lab', icon: FlaskConical, path: '/tools/jpa-lab' },
+  { label: 'DB Connections', icon: Plug, path: '/tools/connections' },
+  { label: 'Audit Logs', icon: ScrollText, path: '/audit-logs' },
+];
+
 function getProjectNavItems(projectId: string): NavItem[] {
   return [
     { label: 'Overview', icon: FolderOpen, path: `/project/${projectId}`, end: true },
@@ -41,9 +52,10 @@ function getProjectNavItems(projectId: string): NavItem[] {
     { label: 'ER Diagram', icon: GitFork, path: `/project/${projectId}/schema/er-diagram` },
     { label: 'Query Intelligence', icon: Terminal, path: `/project/${projectId}/query` },
     { label: 'Performance Lab', icon: Gauge, path: `/project/${projectId}/performance` },
+    { label: 'Data Generator', icon: Wand2, path: `/project/${projectId}/datagen` },
+    { label: 'DB Docs', icon: FileText, path: `/project/${projectId}/docs` },
     { label: 'Data Lifecycle', icon: Shield, path: `/project/${projectId}/data-lifecycle` },
     { label: 'Migration Studio', icon: GitBranch, path: `/project/${projectId}/migrations` },
-    { label: 'Connections', icon: Plug, path: `/project/${projectId}/connections` },
   ];
 }
 
@@ -62,14 +74,12 @@ export function Sidebar() {
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Sync URL project ID with store
   useEffect(() => {
     if (projectId && projectId !== activeProjectId) {
       setActiveProject(projectId);
     }
   }, [projectId, activeProjectId, setActiveProject]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -94,7 +104,7 @@ export function Sidebar() {
     <aside
       className={cn(
         'flex flex-col h-screen bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out',
-        sidebarCollapsed ? 'w-[68px]' : 'w-64'
+        sidebarCollapsed ? 'w-[68px]' : 'w-64',
       )}
     >
       {/* Logo and Brand */}
@@ -129,7 +139,7 @@ export function Sidebar() {
             <ChevronDown
               className={cn(
                 'w-3.5 h-3.5 ml-2 flex-shrink-0 transition-transform',
-                projectDropdownOpen && 'rotate-180'
+                projectDropdownOpen && 'rotate-180',
               )}
             />
           </button>
@@ -146,7 +156,7 @@ export function Sidebar() {
                       'flex items-center gap-2 w-full px-3 py-2 text-xs text-left hover:bg-slate-700 transition-colors',
                       project.id === displayProjectId
                         ? 'text-aqua-400 bg-slate-700/50'
-                        : 'text-slate-300'
+                        : 'text-slate-300',
                     )}
                   >
                     <span
@@ -166,6 +176,19 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
         {/* Main Nav */}
         {mainNavItems.map((item) => (
+          <SidebarLink key={item.path} item={item} collapsed={sidebarCollapsed} />
+        ))}
+
+        {/* Tools Section */}
+        {!sidebarCollapsed && (
+          <div className="pt-4 pb-1 px-3">
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+              Tools
+            </p>
+          </div>
+        )}
+        {sidebarCollapsed && <div className="my-2 border-t border-sidebar-border" />}
+        {toolNavItems.map((item) => (
           <SidebarLink key={item.path} item={item} collapsed={sidebarCollapsed} />
         ))}
 
@@ -204,7 +227,7 @@ export function Sidebar() {
             'flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
             aiPanelOpen
               ? 'bg-aqua-600 text-white shadow-lg shadow-aqua-600/25'
-              : 'text-slate-400 hover:text-white hover:bg-sidebar-accent'
+              : 'text-slate-400 hover:text-white hover:bg-sidebar-accent',
           )}
           title="AI Copilot"
         >
@@ -250,7 +273,7 @@ function SidebarLink({
           'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative',
           isActive
             ? 'bg-aqua-600/15 text-aqua-400'
-            : 'text-slate-400 hover:text-slate-200 hover:bg-sidebar-accent'
+            : 'text-slate-400 hover:text-slate-200 hover:bg-sidebar-accent',
         )
       }
       title={collapsed ? item.label : undefined}

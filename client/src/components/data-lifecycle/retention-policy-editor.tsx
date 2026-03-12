@@ -79,7 +79,7 @@ export function RetentionPolicyEditor() {
             value={tableName}
             onChange={(e) => setTableName(e.target.value)}
             placeholder="e.g., audit_logs, user_sessions, temp_data"
-            className="w-full pl-10 pr-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
+            className="w-full pl-10 pr-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
           />
         </div>
       </div>
@@ -97,12 +97,12 @@ export function RetentionPolicyEditor() {
               value={retentionPeriod}
               onChange={(e) => setRetentionPeriod(Math.max(1, parseInt(e.target.value) || 1))}
               min={1}
-              className="flex-1 px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+              className="flex-1 px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
             />
             <select
               value={retentionUnit}
               onChange={(e) => setRetentionUnit(e.target.value as 'days' | 'months' | 'years')}
-              className="px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+              className="px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
             >
               <option value="days">Days</option>
               <option value="months">Months</option>
@@ -122,7 +122,7 @@ export function RetentionPolicyEditor() {
           <select
             value={retentionColumn}
             onChange={(e) => setRetentionColumn(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
           >
             {RETENTION_COLUMNS.map((col) => (
               <option key={col} value={col}>
@@ -169,7 +169,7 @@ export function RetentionPolicyEditor() {
                 'px-3 py-2.5 text-sm font-medium rounded-lg border transition-all text-center',
                 priority === opt.value
                   ? cn(opt.bg, opt.color, 'shadow-sm')
-                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
               )}
             >
               {opt.label}
@@ -179,7 +179,7 @@ export function RetentionPolicyEditor() {
       </div>
 
       {/* Active Toggle */}
-      <div className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-4">
+      <div className="flex items-center justify-between bg-card border border-slate-200 rounded-lg p-4">
         <div>
           <p className="text-sm font-medium text-slate-700">Active Status</p>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -197,7 +197,7 @@ export function RetentionPolicyEditor() {
         >
           <span
             className={cn(
-              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm',
+              'inline-block h-4 w-4 transform rounded-full bg-card transition-transform shadow-sm',
               active ? 'translate-x-6' : 'translate-x-1'
             )}
           />

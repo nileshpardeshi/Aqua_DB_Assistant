@@ -128,7 +128,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                 'inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors',
                 showFilters
                   ? 'bg-aqua-50 border-aqua-200 text-aqua-700'
-                  : 'bg-white border-border text-foreground hover:bg-slate-50'
+                  : 'bg-card border-border text-foreground hover:bg-slate-50'
               )}
             >
               <Filter className="w-4 h-4" />
@@ -141,7 +141,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
         </div>
         <button
           onClick={exportToCsv}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-white border border-border rounded-lg hover:bg-slate-50 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-slate-50 transition-colors"
         >
           <Download className="w-4 h-4" />
           Export CSV
@@ -150,7 +150,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
 
       {/* Filters */}
       {showFilters && !compact && (
-        <div className="bg-white rounded-xl border border-border p-4 shadow-sm">
+        <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Action Type */}
             <div>
@@ -161,7 +161,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                 <select
                   value={filters.action || ''}
                   onChange={(e) => handleFilterChange('action', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
+                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
                 >
                   {ACTION_TYPES.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -182,7 +182,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                 <select
                   value={filters.entityType || ''}
                   onChange={(e) => handleFilterChange('entityType', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
+                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
                 >
                   {ENTITY_TYPES.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -204,7 +204,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                   type="date"
                   value={filters.startDate || ''}
                   onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent"
                 />
               </div>
             </div>
@@ -219,7 +219,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                   type="date"
                   value={filters.endDate || ''}
                   onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent"
                 />
               </div>
             </div>
@@ -228,7 +228,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
       )}
 
       {/* Log Entries */}
-      <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="w-8 h-8 border-2 border-aqua-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -362,7 +362,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
               <button
                 disabled={meta.page <= 1}
                 onClick={() => handlePageChange(meta.page - 1)}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm text-muted-foreground hover:bg-white hover:text-foreground border border-transparent hover:border-border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm text-muted-foreground hover:bg-card hover:text-foreground border border-transparent hover:border-border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -374,7 +374,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                     'inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                     page === meta.page
                       ? 'bg-aqua-600 text-white shadow-sm'
-                      : 'text-muted-foreground hover:bg-white hover:text-foreground border border-transparent hover:border-border'
+                      : 'text-muted-foreground hover:bg-card hover:text-foreground border border-transparent hover:border-border'
                   )}
                 >
                   {page}
@@ -383,7 +383,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
               <button
                 disabled={meta.page >= meta.totalPages}
                 onClick={() => handlePageChange(meta.page + 1)}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm text-muted-foreground hover:bg-white hover:text-foreground border border-transparent hover:border-border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm text-muted-foreground hover:bg-card hover:text-foreground border border-transparent hover:border-border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

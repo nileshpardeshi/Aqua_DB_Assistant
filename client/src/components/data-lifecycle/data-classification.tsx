@@ -274,7 +274,7 @@ export function DataClassification() {
           return (
             <div
               key={table.name}
-              className="bg-white border border-slate-200 rounded-lg overflow-hidden"
+              className="bg-card border border-slate-200 rounded-lg overflow-hidden"
             >
               {/* Table Header */}
               <button

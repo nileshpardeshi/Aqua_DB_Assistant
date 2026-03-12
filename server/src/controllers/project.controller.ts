@@ -80,3 +80,16 @@ export const getStats = asyncHandler(async (req: Request, res: Response) => {
     data: stats,
   });
 });
+
+// ---------- Global Stats ----------
+
+export const getGlobalStats = asyncHandler(
+  async (_req: Request, res: Response) => {
+    const stats = await projectService.getGlobalStats();
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  },
+);

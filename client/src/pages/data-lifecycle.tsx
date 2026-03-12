@@ -91,7 +91,7 @@ export function DataLifecycle() {
           return (
             <div
               key={stat.label}
-              className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3"
+              className="bg-card border border-slate-200 rounded-xl p-4 flex items-center gap-3"
             >
               <div
                 className={cn(

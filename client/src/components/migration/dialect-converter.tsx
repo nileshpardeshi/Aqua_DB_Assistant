@@ -149,7 +149,7 @@ export function DialectConverter() {
           <select
             value={sourceDialect}
             onChange={(e) => setSourceDialect(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
           >
             {DIALECTS.map((d) => (
               <option key={d.value} value={d.value}>
@@ -161,7 +161,7 @@ export function DialectConverter() {
 
         <button
           onClick={handleSwapDialects}
-          className="mt-5 p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-aqua-600 transition-all"
+          className="mt-5 p-2.5 rounded-lg border border-slate-200 bg-card hover:bg-slate-50 text-slate-500 hover:text-aqua-600 transition-all"
           title="Swap dialects"
         >
           <ArrowRightLeft className="w-4 h-4" />
@@ -174,7 +174,7 @@ export function DialectConverter() {
           <select
             value={targetDialect}
             onChange={(e) => setTargetDialect(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
           >
             {DIALECTS.map((d) => (
               <option key={d.value} value={d.value}>
@@ -296,7 +296,7 @@ export function DialectConverter() {
 
       {/* Changes Log */}
       {changesLog.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div className="bg-card border border-slate-200 rounded-lg overflow-hidden">
           <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
             <FileText className="w-3.5 h-3.5 text-slate-500" />
             <h4 className="text-xs font-semibold text-slate-700">

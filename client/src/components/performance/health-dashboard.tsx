@@ -148,7 +148,7 @@ export function HealthDashboard() {
       {/* Top Row: Health Score + Connection Pool */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Health Score Gauge */}
-        <div className="bg-white rounded-xl border border-border p-6 shadow-sm flex flex-col items-center justify-center">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm flex flex-col items-center justify-center">
           <h3 className="text-sm font-semibold text-foreground mb-4 self-start flex items-center gap-2">
             <Activity className="w-4 h-4 text-aqua-500" />
             Overall Health Score
@@ -212,7 +212,7 @@ export function HealthDashboard() {
         </div>
 
         {/* Connection Pool Status */}
-        <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
             <Server className="w-4 h-4 text-aqua-500" />
             Connection Pool
@@ -261,7 +261,7 @@ export function HealthDashboard() {
         </div>
 
         {/* Storage Usage Pie Chart */}
-        <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
             <HardDrive className="w-4 h-4 text-aqua-500" />
             Storage Breakdown
@@ -308,7 +308,7 @@ export function HealthDashboard() {
       </div>
 
       {/* Table Growth Chart */}
-      <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+      <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-aqua-500" />
@@ -373,7 +373,7 @@ export function HealthDashboard() {
       {/* Index Usage + Slow Queries */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Index Usage Chart */}
-        <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-foreground mb-5 flex items-center gap-2">
             <Zap className="w-4 h-4 text-aqua-500" />
             Index Usage Analysis
@@ -418,7 +418,7 @@ export function HealthDashboard() {
         </div>
 
         {/* Slow Queries List */}
-        <div className="bg-white rounded-xl border border-border shadow-sm">
+        <div className="bg-card rounded-xl border border-border shadow-sm">
           <div className="px-6 py-4 border-b border-border">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-500" />

@@ -281,7 +281,7 @@ export function Connections() {
             return (
               <div
                 key={conn.id}
-                className="bg-white border border-slate-200 rounded-xl p-5 hover:border-slate-300 hover:shadow-md transition-all group"
+                className="bg-card border border-slate-200 rounded-xl p-5 hover:border-slate-300 hover:shadow-md transition-all group"
               >
                 {/* Card Header */}
                 <div className="flex items-start justify-between mb-3">
@@ -468,7 +468,7 @@ export function Connections() {
               resetForm();
             }}
           />
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-card rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-sm font-semibold text-foreground">
@@ -497,7 +497,7 @@ export function Connections() {
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="e.g., Production DB"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   autoFocus
                 />
               </div>
@@ -510,7 +510,7 @@ export function Connections() {
                 <select
                   value={formDialect}
                   onChange={(e) => handleDialectChange(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                 >
                   {DIALECTS.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -531,7 +531,7 @@ export function Connections() {
                     value={formHost}
                     onChange={(e) => setFormHost(e.target.value)}
                     placeholder="localhost or db.example.com"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   />
                 </div>
                 <div>
@@ -542,7 +542,7 @@ export function Connections() {
                     type="number"
                     value={formPort}
                     onChange={(e) => setFormPort(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   />
                 </div>
               </div>
@@ -557,7 +557,7 @@ export function Connections() {
                   value={formDatabase}
                   onChange={(e) => setFormDatabase(e.target.value)}
                   placeholder="my_database"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                 />
               </div>
 
@@ -572,7 +572,7 @@ export function Connections() {
                     value={formUsername}
                     onChange={(e) => setFormUsername(e.target.value)}
                     placeholder="db_user"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   />
                 </div>
                 <div>
@@ -585,7 +585,7 @@ export function Connections() {
                       value={formPassword}
                       onChange={(e) => setFormPassword(e.target.value)}
                       placeholder={editingConnection ? '(unchanged)' : 'password'}
-                      className="w-full px-3 py-2 pr-9 text-sm border border-slate-200 rounded-lg bg-white text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                      className="w-full px-3 py-2 pr-9 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                     />
                     <button
                       type="button"
@@ -622,7 +622,7 @@ export function Connections() {
                 >
                   <span
                     className={cn(
-                      'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm',
+                      'inline-block h-3.5 w-3.5 transform rounded-full bg-card transition-transform shadow-sm',
                       formSsl ? 'translate-x-4.5' : 'translate-x-0.5'
                     )}
                   />

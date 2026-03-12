@@ -176,7 +176,7 @@ export function QueryHistoryPanel({
                     e.stopPropagation();
                     onLoadQuery?.(item.sql);
                   }}
-                  className="absolute top-3 right-3 p-1.5 bg-white rounded-md border border-border shadow-sm hover:bg-slate-50 transition-colors"
+                  className="absolute top-3 right-3 p-1.5 bg-card rounded-md border border-border shadow-sm hover:bg-slate-50 transition-colors"
                   title="Load into editor"
                 >
                   <Copy className="w-3.5 h-3.5 text-muted-foreground" />

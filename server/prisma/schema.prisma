@@ -17,6 +17,7 @@ model Project {
   description String?
   dialect     String   // postgresql | mysql | oracle | sqlserver | snowflake | bigquery | mongodb | mariadb
   status      String   @default("active")
+  schemas     String?  // JSON array of schema names, e.g. ["public", "auth", "billing"]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -102,6 +103,7 @@ model TableMetadata {
   columns     ColumnMetadata[]
   indexes     IndexMetadata[]
   constraints ConstraintMetadata[]
+  triggers    TriggerMetadata[]
 
   outgoingRelationships RelationshipMetadata[] @relation("SourceTable")
   incomingRelationships RelationshipMetadata[] @relation("TargetTable")
@@ -178,6 +180,24 @@ model RelationshipMetadata {
 
   @@index([sourceTableId])
   @@index([targetTableId])
+}
+
+model TriggerMetadata {
+  id          String   @id @default(uuid())
+  tableId     String
+  triggerName String
+  timing      String   // BEFORE | AFTER | INSTEAD OF
+  event       String   // INSERT | UPDATE | DELETE
+  triggerBody String
+  isEnabled   Boolean  @default(true)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  table TableMetadata @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@unique([tableId, triggerName])
+  @@index([tableId])
 }
 
 // ============================================================

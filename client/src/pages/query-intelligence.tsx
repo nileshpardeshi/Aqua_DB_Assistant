@@ -10,6 +10,7 @@ import {
   Bot,
   Terminal,
   Loader2,
+  Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getDialect } from '@/config/constants';
@@ -162,6 +163,39 @@ export function QueryIntelligence() {
     }
   };
 
+  const handleExportQuery = () => {
+    if (!activeTab?.sql.trim()) return;
+    const blob = new Blob([activeTab.sql], { type: 'text/sql' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(activeTab.title || 'query').replace(/\s+/g, '_')}.sql`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportResults = () => {
+    if (!hasResults || resultColumns.length === 0) return;
+    const csvLines = [resultColumns.join(',')];
+    for (const row of resultRows) {
+      csvLines.push(
+        row.map((cell) => {
+          const str = String(cell ?? '');
+          return str.includes(',') || str.includes('"') || str.includes('\n')
+            ? `"${str.replace(/"/g, '""')}"`
+            : str;
+        }).join(',')
+      );
+    }
+    const blob = new Blob([csvLines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'query_results.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const bottomTabs: { id: BottomTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'results', label: 'Results', icon: Table2 },
     { id: 'history', label: 'History', icon: History },
@@ -178,7 +212,7 @@ export function QueryIntelligence() {
         {/* ===== TOP SECTION: Editor (60%) ===== */}
         <div className="flex flex-col" style={{ flex: '0 0 60%' }}>
           {/* Editor Toolbar */}
-          <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-border">
+          <div className="flex items-center justify-between px-4 py-2 bg-card border-b border-border">
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium text-foreground">
@@ -213,7 +247,7 @@ export function QueryIntelligence() {
                   'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all',
                   bottomTab === 'ai-assistant'
                     ? 'bg-aqua-50 text-aqua-700 border border-aqua-200'
-                    : 'text-muted-foreground bg-white border border-input hover:bg-secondary'
+                    : 'text-muted-foreground bg-card border border-input hover:bg-secondary'
                 )}
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -224,7 +258,7 @@ export function QueryIntelligence() {
               <button
                 onClick={handleFormatQuery}
                 disabled={!activeTab?.sql.trim()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-white border border-input rounded-md hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-input rounded-md hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <AlignLeft className="w-3.5 h-3.5" />
                 Format
@@ -234,7 +268,7 @@ export function QueryIntelligence() {
               <button
                 onClick={handleSaveQuery}
                 disabled={!activeTab?.sql.trim() || isSaving}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-white border border-input rounded-md hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-input rounded-md hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>
@@ -247,6 +281,16 @@ export function QueryIntelligence() {
                     Save
                   </>
                 )}
+              </button>
+
+              {/* Export Query Button */}
+              <button
+                onClick={handleExportQuery}
+                disabled={!activeTab?.sql.trim()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-input rounded-md hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export .sql
               </button>
 
               {/* Run Button */}
@@ -288,7 +332,7 @@ export function QueryIntelligence() {
         </div>
 
         {/* ===== BOTTOM SECTION: Results / History / AI (40%) ===== */}
-        <div className="flex flex-col border-t border-border bg-white" style={{ flex: '0 0 40%' }}>
+        <div className="flex flex-col border-t border-border bg-card" style={{ flex: '0 0 40%' }}>
           {/* Bottom Tab Bar */}
           <div className="flex items-center justify-between border-b border-border px-2 bg-slate-50">
             <div className="flex items-center gap-0.5">
@@ -302,8 +346,8 @@ export function QueryIntelligence() {
                     className={cn(
                       'flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors',
                       isActive
-                        ? 'border-aqua-500 text-aqua-700 bg-white'
-                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-white/50'
+                        ? 'border-aqua-500 text-aqua-700 bg-card'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-card/50'
                     )}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -313,17 +357,26 @@ export function QueryIntelligence() {
               })}
             </div>
 
-            {/* Execution time badge */}
-            {hasResults && executionTime !== null && bottomTab === 'results' && (
+            {/* Execution time badge + Export */}
+            {hasResults && bottomTab === 'results' && (
               <div className="flex items-center gap-2 mr-2">
                 {errorMessage && (
                   <span className="text-[10px] text-red-600 px-2 py-1 bg-red-50 rounded border border-red-200">
                     Error
                   </span>
                 )}
-                <span className="text-[10px] text-muted-foreground px-2 py-1 bg-white rounded border border-border/50">
-                  Executed in {executionTime}ms
-                </span>
+                {executionTime !== null && (
+                  <span className="text-[10px] text-muted-foreground px-2 py-1 bg-card rounded border border-border/50">
+                    Executed in {executionTime}ms
+                  </span>
+                )}
+                <button
+                  onClick={handleExportResults}
+                  className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 px-2 py-1 bg-card rounded border border-border/50 hover:bg-slate-50 transition-colors"
+                >
+                  <Download className="w-3 h-3" />
+                  CSV
+                </button>
               </div>
             )}
           </div>

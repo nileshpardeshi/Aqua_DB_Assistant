@@ -11,6 +11,7 @@ import migrationRoutes from './migration.routes.js';
 import dataLifecycleRoutes from './data-lifecycle.routes.js';
 import connectionRoutes from './connection.routes.js';
 import auditRoutes from './audit.routes.js';
+import toolsRoutes from './tools.routes.js';
 
 const router = Router();
 
@@ -29,5 +30,6 @@ router.use('/api/v1/projects/:projectId/connections', connectionRoutes);
 router.use('/api/v1/ai', aiRoutes);
 router.use('/api/v1/settings', settingsRoutes);
 router.use('/api/v1/audit-logs', auditRoutes);
+router.use('/api/v1/tools', toolsRoutes);
 
 export default router;

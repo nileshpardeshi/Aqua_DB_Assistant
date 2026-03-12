@@ -77,7 +77,7 @@ export function QueryResultsTable({
                 key={rowIdx}
                 className={cn(
                   'border-b border-border/30 hover:bg-aqua-50/30 transition-colors',
-                  rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
+                  rowIdx % 2 === 0 ? 'bg-card' : 'bg-slate-50/50'
                 )}
               >
                 {/* Row Number */}

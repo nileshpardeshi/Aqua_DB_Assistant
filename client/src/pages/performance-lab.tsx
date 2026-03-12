@@ -9,14 +9,18 @@ import {
   TrendingUp,
   Zap,
   BarChart3,
+  Layers,
+  FlaskConical,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePerformanceRuns } from '@/hooks/use-performance';
 import { SyntheticDataGenerator } from '@/components/performance/synthetic-data-generator';
 import { QueryBenchmark } from '@/components/performance/query-benchmark';
 import { IndexAdvisor } from '@/components/performance/index-advisor';
+import { PartitionAdvisor } from '@/components/performance/partition-advisor';
+import { JPAQueryLabContent } from '@/pages/jpa-query-lab';
 
-type PerformanceTab = 'benchmarks' | 'data-generator' | 'index-advisor';
+type PerformanceTab = 'benchmarks' | 'data-generator' | 'index-advisor' | 'partition-advisor' | 'jpa-lab';
 
 const TABS: {
   id: PerformanceTab;
@@ -26,6 +30,8 @@ const TABS: {
   { id: 'benchmarks', label: 'Benchmarks', icon: Timer },
   { id: 'data-generator', label: 'Data Generator', icon: Database },
   { id: 'index-advisor', label: 'Index Advisor', icon: Search },
+  { id: 'partition-advisor', label: 'Partition Advisor', icon: Layers },
+  { id: 'jpa-lab', label: 'JPA Query Lab', icon: FlaskConical },
 ];
 
 export function PerformanceLab() {
@@ -37,6 +43,7 @@ export function PerformanceLab() {
   const benchmarkRuns = runs?.filter((r) => r.type === 'benchmark').length ?? 0;
   const completedRuns = runs?.filter((r) => r.status === 'completed').length ?? 0;
   const indexAnalyses = runs?.filter((r) => r.type === 'index-analysis').length ?? 0;
+  const jpaAnalyses = runs?.filter((r) => r.type === 'jpa-analysis').length ?? 0;
 
   return (
     <div className="p-6 lg:p-8 max-w-6xl space-y-6">
@@ -51,14 +58,15 @@ export function PerformanceLab() {
               Performance Lab
             </h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Benchmark queries, generate test data, and optimize indexes
+              Benchmark queries, generate test data, optimize indexes,
+              partitions & JPA queries
             </p>
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           {
             label: 'Total Runs',
@@ -88,12 +96,19 @@ export function PerformanceLab() {
             color: 'text-amber-600',
             bg: 'bg-amber-50',
           },
+          {
+            label: 'JPA Analyses',
+            value: jpaAnalyses,
+            icon: FlaskConical,
+            color: 'text-violet-600',
+            bg: 'bg-violet-50',
+          },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
             <div
               key={stat.label}
-              className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3"
+              className="bg-card border border-slate-200 rounded-xl p-4 flex items-center gap-3"
             >
               <div
                 className={cn(
@@ -147,6 +162,8 @@ export function PerformanceLab() {
         {activeTab === 'benchmarks' && <QueryBenchmark />}
         {activeTab === 'data-generator' && <SyntheticDataGenerator />}
         {activeTab === 'index-advisor' && <IndexAdvisor />}
+        {activeTab === 'partition-advisor' && <PartitionAdvisor />}
+        {activeTab === 'jpa-lab' && <JPAQueryLabContent />}
       </div>
     </div>
   );

@@ -222,7 +222,7 @@ export function AIChatPanel({
   return (
     <div
       className={cn(
-        'flex flex-col bg-white',
+        'flex flex-col bg-card',
         embedded ? 'h-full' : 'h-full border-l border-border shadow-lg',
         className
       )}
@@ -249,13 +249,13 @@ export function AIChatPanel({
           <div className="relative" ref={contextMenuRef}>
             <button
               onClick={() => setShowContextMenu(!showContextMenu)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground bg-white rounded-md border border-border hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground bg-card rounded-md border border-border hover:bg-slate-50 transition-colors"
             >
               {contextOptions.find((c) => c.value === context)?.label}
               <ChevronDown className="w-3 h-3" />
             </button>
             {showContextMenu && (
-              <div className="absolute right-0 top-full mt-1 z-20 w-36 bg-white rounded-lg border border-border shadow-lg py-1">
+              <div className="absolute right-0 top-full mt-1 z-20 w-36 bg-card rounded-lg border border-border shadow-lg py-1">
                 {contextOptions.map((opt) => (
                   <button
                     key={opt.value}
@@ -280,7 +280,7 @@ export function AIChatPanel({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-white transition-colors"
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -380,7 +380,7 @@ export function AIChatPanel({
       </div>
 
       {/* Input Area */}
-      <div className="flex-shrink-0 border-t border-border px-4 py-3 bg-white">
+      <div className="flex-shrink-0 border-t border-border px-4 py-3 bg-card">
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}

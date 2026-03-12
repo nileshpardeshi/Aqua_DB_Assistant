@@ -92,6 +92,10 @@ const schemaKeys = {
     [...schemaKeys.all(projectId), 'er-diagram'] as const,
   snapshots: (projectId: string) =>
     [...schemaKeys.all(projectId), 'snapshots'] as const,
+  schemas: (projectId: string) =>
+    [...schemaKeys.all(projectId), 'schemas'] as const,
+  triggers: (projectId: string, tableId: string) =>
+    [...schemaKeys.table(projectId, tableId), 'triggers'] as const,
 };
 
 // ── Hooks ────────────────────────────────────────────────────────────────────
@@ -233,6 +237,292 @@ export function useCreateSnapshot() {
       queryClient.invalidateQueries({
         queryKey: schemaKeys.snapshots(variables.projectId),
       });
+    },
+  });
+}
+
+// ── Create Table Input ──────────────────────────────────────────────────────
+
+export interface CreateTableInput {
+  tableName: string;
+  schemaName?: string;
+  tableType?: string;
+  description?: string;
+  columns: Array<{
+    columnName: string;
+    dataType: string;
+    isNullable?: boolean;
+    isPrimaryKey?: boolean;
+    isUnique?: boolean;
+    defaultValue?: string;
+    comment?: string;
+  }>;
+  indexes?: Array<{
+    indexName: string;
+    indexType?: string;
+    isUnique?: boolean;
+    columns: string[];
+  }>;
+  constraints?: Array<{
+    constraintName: string;
+    constraintType: string;
+    columns: string[];
+  }>;
+}
+
+export interface UpdateTableInput {
+  tableName?: string;
+  description?: string;
+  columns?: CreateTableInput['columns'];
+  indexes?: CreateTableInput['indexes'];
+  constraints?: CreateTableInput['constraints'];
+}
+
+/**
+ * Create a new table manually.
+ */
+export function useCreateTable() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      data,
+    }: {
+      projectId: string;
+      data: CreateTableInput;
+    }) => {
+      const response = await apiClient.post(
+        `/projects/${projectId}/schema/tables`,
+        data
+      );
+      return response as unknown as Table;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: schemaKeys.all(variables.projectId),
+      });
+    },
+  });
+}
+
+/**
+ * Update an existing table.
+ */
+export function useUpdateTable() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      tableId,
+      data,
+    }: {
+      projectId: string;
+      tableId: string;
+      data: UpdateTableInput;
+    }) => {
+      const response = await apiClient.put(
+        `/projects/${projectId}/schema/tables/${tableId}`,
+        data
+      );
+      return response as unknown as Table;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: schemaKeys.all(variables.projectId),
+      });
+    },
+  });
+}
+
+/**
+ * Delete a table.
+ */
+export function useDeleteTable() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      tableId,
+    }: {
+      projectId: string;
+      tableId: string;
+    }) => {
+      await apiClient.delete(
+        `/projects/${projectId}/schema/tables/${tableId}`
+      );
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: schemaKeys.all(variables.projectId),
+      });
+    },
+  });
+}
+
+// ── Schema Namespace Hooks ──────────────────────────────────────────────────
+
+export function useSchemas(projectId: string | undefined) {
+  return useQuery({
+    queryKey: schemaKeys.schemas(projectId!),
+    queryFn: async () => {
+      const response = await apiClient.get(
+        `/projects/${projectId}/schema/schemas`
+      );
+      return response as unknown as string[];
+    },
+    enabled: !!projectId,
+  });
+}
+
+export function useCreateSchema() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, schemaName }: { projectId: string; schemaName: string }) => {
+      const response = await apiClient.post(
+        `/projects/${projectId}/schema/schemas`,
+        { schemaName }
+      );
+      return response as unknown as string[];
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: schemaKeys.all(variables.projectId) });
+    },
+  });
+}
+
+export function useRenameSchema() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, oldName, newName }: { projectId: string; oldName: string; newName: string }) => {
+      const response = await apiClient.put(
+        `/projects/${projectId}/schema/schemas/${encodeURIComponent(oldName)}`,
+        { newName }
+      );
+      return response as unknown as string[];
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: schemaKeys.all(variables.projectId) });
+    },
+  });
+}
+
+export function useDeleteSchema() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, schemaName }: { projectId: string; schemaName: string }) => {
+      await apiClient.delete(
+        `/projects/${projectId}/schema/schemas/${encodeURIComponent(schemaName)}`
+      );
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: schemaKeys.all(variables.projectId) });
+    },
+  });
+}
+
+// ── Trigger Types & Hooks ───────────────────────────────────────────────────
+
+export interface Trigger {
+  id: string;
+  tableId: string;
+  triggerName: string;
+  timing: string;
+  event: string;
+  triggerBody: string;
+  isEnabled: boolean;
+  description?: string | null;
+}
+
+export function useTriggers(projectId: string | undefined, tableId: string | undefined) {
+  return useQuery({
+    queryKey: schemaKeys.triggers(projectId!, tableId!),
+    queryFn: async () => {
+      const response = await apiClient.get(
+        `/projects/${projectId}/schema/tables/${tableId}/triggers`
+      );
+      return response as unknown as Trigger[];
+    },
+    enabled: !!projectId && !!tableId,
+  });
+}
+
+export function useCreateTrigger() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      projectId, tableId, data,
+    }: {
+      projectId: string;
+      tableId: string;
+      data: { triggerName: string; timing: string; event: string; triggerBody: string; isEnabled?: boolean; description?: string };
+    }) => {
+      const response = await apiClient.post(
+        `/projects/${projectId}/schema/tables/${tableId}/triggers`,
+        data
+      );
+      return response as unknown as Trigger;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: schemaKeys.triggers(variables.projectId, variables.tableId) });
+    },
+  });
+}
+
+export function useUpdateTrigger() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      projectId, tableId, triggerId, data,
+    }: {
+      projectId: string;
+      tableId: string;
+      triggerId: string;
+      data: Partial<{ triggerName: string; timing: string; event: string; triggerBody: string; isEnabled: boolean; description: string }>;
+    }) => {
+      const response = await apiClient.put(
+        `/projects/${projectId}/schema/tables/${tableId}/triggers/${triggerId}`,
+        data
+      );
+      return response as unknown as Trigger;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: schemaKeys.triggers(variables.projectId, variables.tableId) });
+    },
+  });
+}
+
+export function useDeleteTrigger() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      projectId, tableId, triggerId,
+    }: { projectId: string; tableId: string; triggerId: string }) => {
+      await apiClient.delete(
+        `/projects/${projectId}/schema/tables/${tableId}/triggers/${triggerId}`
+      );
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: schemaKeys.triggers(variables.projectId, variables.tableId) });
+    },
+  });
+}
+
+export function useToggleTrigger() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      projectId, tableId, triggerId,
+    }: { projectId: string; tableId: string; triggerId: string }) => {
+      const response = await apiClient.patch(
+        `/projects/${projectId}/schema/tables/${tableId}/triggers/${triggerId}/toggle`
+      );
+      return response as unknown as Trigger;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: schemaKeys.triggers(variables.projectId, variables.tableId) });
     },
   });
 }

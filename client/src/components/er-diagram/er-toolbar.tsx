@@ -1,4 +1,5 @@
-import { useReactFlow } from 'reactflow';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useReactFlow, type Node } from 'reactflow';
 import {
   ArrowDownUp,
   ArrowLeftRight,
@@ -8,14 +9,44 @@ import {
   Columns3,
   Tag,
   Download,
+  Image,
+  FileCode2,
+  FileText,
+  Search,
+  X,
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useERDiagramStore } from '@/stores/use-er-diagram-store';
+import {
+  exportDiagramAsPNG,
+  exportDiagramAsSVG,
+  generateDDL,
+  downloadTextFile,
+} from '@/lib/export-utils';
+import type { ERTableNodeData } from './er-table-node';
+
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+interface ERToolbarProps {
+  tables: Array<{
+    name: string;
+    columns: Array<{
+      name: string;
+      dataType: string;
+      nullable: boolean;
+      isPrimaryKey: boolean;
+      defaultValue?: string | null;
+    }>;
+  }>;
+  nodes: Node<ERTableNodeData>[];
+}
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function ERToolbar() {
-  const { zoomIn, zoomOut, fitView } = useReactFlow();
+export function ERToolbar({ tables, nodes }: ERToolbarProps) {
+  const reactFlowInstance = useReactFlow();
+  const { zoomIn, zoomOut, fitView } = reactFlowInstance;
 
   const {
     layoutDirection,
@@ -26,8 +57,88 @@ export function ERToolbar() {
     toggleLabels,
   } = useERDiagramStore();
 
+  // ── Export dropdown state ────────────────────────────────────────────
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (exportRef.current && !exportRef.current.contains(e.target as HTMLElement)) {
+        setExportOpen(false);
+      }
+    }
+    if (exportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [exportOpen]);
+
+  const handleExportPNG = useCallback(async () => {
+    setExportOpen(false);
+    await exportDiagramAsPNG();
+  }, []);
+
+  const handleExportSVG = useCallback(async () => {
+    setExportOpen(false);
+    await exportDiagramAsSVG();
+  }, []);
+
+  const handleExportDDL = useCallback(() => {
+    setExportOpen(false);
+    const ddl = generateDDL(tables, 'SQL');
+    downloadTextFile(ddl, 'er-diagram.sql');
+  }, [tables]);
+
+  // ── Search state ────────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const matchingNodes = searchQuery.trim()
+    ? nodes.filter((n) =>
+        n.data.tableName.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      )
+    : [];
+
+  const handleSearchSelect = useCallback(
+    (nodeId: string) => {
+      const node = nodes.find((n) => n.id === nodeId);
+      if (node) {
+        reactFlowInstance.fitView({
+          nodes: [node],
+          padding: 0.5,
+          duration: 400,
+        });
+      }
+      setSearchQuery('');
+      setSearchOpen(false);
+    },
+    [nodes, reactFlowInstance]
+  );
+
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' && matchingNodes.length > 0) {
+        handleSearchSelect(matchingNodes[0].id);
+      }
+      if (e.key === 'Escape') {
+        setSearchQuery('');
+        setSearchOpen(false);
+      }
+    },
+    [matchingNodes, handleSearchSelect]
+  );
+
+  // Focus input when search opens
+  useEffect(() => {
+    if (searchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [searchOpen]);
+
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-1.5 px-4 py-2.5 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div className="sticky top-0 z-10 flex items-center gap-1.5 px-4 py-2.5 bg-card/95 backdrop-blur border-b border-slate-200">
       {/* ── Layout Direction ──────────────────────────────────────────── */}
       <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
         <ToolbarButton
@@ -81,14 +192,109 @@ export function ERToolbar() {
 
       <Separator />
 
-      {/* ── Export ─────────────────────────────────────────────────────── */}
-      <ToolbarButton
-        icon={Download}
-        label="Export"
-        onClick={() => {
-          // Placeholder for export functionality
-        }}
-      />
+      {/* ── Search ─────────────────────────────────────────────────────── */}
+      <div className="relative">
+        {searchOpen ? (
+          <div className="flex items-center gap-1">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Search tables..."
+                className="w-48 pl-7 pr-2 py-1.5 text-xs border border-slate-200 rounded-md bg-card focus:outline-none focus:border-aqua-400 focus:ring-1 focus:ring-aqua-400"
+              />
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchOpen(false);
+                }}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Search results dropdown */}
+            {searchQuery.trim() && matchingNodes.length > 0 && (
+              <div className="absolute top-full left-0 mt-1 w-56 bg-card border border-slate-200 rounded-lg shadow-lg py-1 z-50 max-h-48 overflow-y-auto">
+                {matchingNodes.slice(0, 10).map((node) => (
+                  <button
+                    key={node.id}
+                    onClick={() => handleSearchSelect(node.id)}
+                    className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-aqua-50 hover:text-aqua-700 truncate"
+                  >
+                    {node.data.schema
+                      ? `${node.data.schema}.${node.data.tableName}`
+                      : node.data.tableName}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {searchQuery.trim() && matchingNodes.length === 0 && (
+              <div className="absolute top-full left-0 mt-1 w-56 bg-card border border-slate-200 rounded-lg shadow-lg py-2 z-50">
+                <p className="px-3 text-xs text-slate-400">No tables found</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <ToolbarButton
+            icon={Search}
+            label="Search Tables"
+            onClick={() => setSearchOpen(true)}
+          />
+        )}
+      </div>
+
+      <Separator />
+
+      {/* ── Export Dropdown ─────────────────────────────────────────────── */}
+      <div className="relative" ref={exportRef}>
+        <button
+          onClick={() => setExportOpen((prev) => !prev)}
+          title="Export"
+          className={cn(
+            'inline-flex items-center gap-0.5 justify-center h-8 px-2 rounded-md text-sm transition-colors',
+            exportOpen
+              ? 'bg-aqua-100 text-aqua-700'
+              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+          )}
+        >
+          <Download className="w-4 h-4" />
+          <ChevronDown className="w-3 h-3" />
+        </button>
+
+        {exportOpen && (
+          <div className="absolute top-full right-0 mt-1 w-44 bg-card border border-slate-200 rounded-lg shadow-lg py-1 z-50">
+            <ExportMenuItem
+              icon={Image}
+              label="Export as PNG"
+              onClick={handleExportPNG}
+            />
+            <ExportMenuItem
+              icon={FileCode2}
+              label="Export as SVG"
+              onClick={handleExportSVG}
+            />
+            <div className="h-px bg-slate-100 my-1" />
+            <ExportMenuItem
+              icon={FileText}
+              label="Export as SQL DDL"
+              onClick={handleExportDDL}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── Spacer + Table Count ───────────────────────────────────────── */}
+      <div className="flex-1" />
+      <span className="px-2 py-0.5 text-[11px] font-medium text-slate-500 bg-slate-100 rounded-full">
+        {nodes.length} table{nodes.length !== 1 ? 's' : ''}
+      </span>
     </div>
   );
 }
@@ -118,6 +324,26 @@ function ToolbarButton({
       )}
     >
       <Icon className="w-4 h-4" />
+    </button>
+  );
+}
+
+function ExportMenuItem({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-aqua-50 hover:text-aqua-700 transition-colors"
+    >
+      <Icon className="w-3.5 h-3.5" />
+      {label}
     </button>
   );
 }

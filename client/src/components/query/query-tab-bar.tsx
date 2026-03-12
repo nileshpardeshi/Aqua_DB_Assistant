@@ -34,8 +34,8 @@ export function QueryTabBar() {
               className={cn(
                 'group flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 border-r border-border/50 transition-all duration-150 min-w-0 max-w-[200px] relative',
                 isActive
-                  ? 'bg-white text-foreground border-b-aqua-500 shadow-sm'
-                  : 'bg-slate-50 text-muted-foreground border-b-transparent hover:bg-white/70 hover:text-foreground'
+                  ? 'bg-card text-foreground border-b-aqua-500 shadow-sm'
+                  : 'bg-slate-50 text-muted-foreground border-b-transparent hover:bg-card/70 hover:text-foreground'
               )}
             >
               <FileCode2
@@ -69,7 +69,7 @@ export function QueryTabBar() {
       {/* Add Tab Button */}
       <button
         onClick={() => addTab()}
-        className="flex items-center justify-center w-9 h-9 mx-1 text-muted-foreground hover:text-foreground hover:bg-white rounded-md transition-colors flex-shrink-0"
+        className="flex items-center justify-center w-9 h-9 mx-1 text-muted-foreground hover:text-foreground hover:bg-card rounded-md transition-colors flex-shrink-0"
         title="New Query Tab"
       >
         <Plus className="w-4 h-4" />

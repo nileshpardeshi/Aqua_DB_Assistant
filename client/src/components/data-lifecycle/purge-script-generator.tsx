@@ -209,7 +209,7 @@ export function PurgeScriptGenerator() {
         <select
           value={selectedRuleId}
           onChange={(e) => setSelectedRuleId(e.target.value)}
-          className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+          className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
         >
           <option value="">-- Select a rule --</option>
           {rules.map((rule) => (
@@ -252,7 +252,7 @@ export function PurgeScriptGenerator() {
           {selectedRule.condition && (
             <div className="mt-2 text-xs">
               <span className="text-slate-500 font-medium">Condition:</span>
-              <p className="font-mono text-slate-700 mt-0.5 bg-white px-2 py-1 rounded border border-slate-200">
+              <p className="font-mono text-slate-700 mt-0.5 bg-card px-2 py-1 rounded border border-slate-200">
                 {selectedRule.condition}
               </p>
             </div>
@@ -276,7 +276,7 @@ export function PurgeScriptGenerator() {
                   'flex-1 px-3 py-2.5 text-sm font-medium rounded-lg border transition-all',
                   batchSize === opt.value
                     ? 'bg-aqua-50 border-aqua-300 text-aqua-700 shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
                 )}
               >
                 {opt.label}
@@ -297,7 +297,7 @@ export function PurgeScriptGenerator() {
                 'flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-lg border transition-all',
                 dryRun
                   ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-sm'
-                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
               )}
             >
               <Shield className="w-3.5 h-3.5" />
@@ -309,7 +309,7 @@ export function PurgeScriptGenerator() {
                 'flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-lg border transition-all',
                 !dryRun
                   ? 'bg-red-50 border-red-300 text-red-700 shadow-sm'
-                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
               )}
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -362,7 +362,7 @@ export function PurgeScriptGenerator() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
               >
                 {copied ? (
                   <>
@@ -378,7 +378,7 @@ export function PurgeScriptGenerator() {
               </button>
               <button
                 onClick={handleDownload}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 Download .sql

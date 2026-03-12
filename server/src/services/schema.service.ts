@@ -8,6 +8,7 @@ import {
   NotFoundError,
   BadRequestError,
 } from '../middleware/error-handler.js';
+import * as auditService from './audit.service.js';
 import type { SQLParseResult } from './sql-parser/index.js';
 
 // ---------------------------------------------------------------------------
@@ -254,6 +255,14 @@ export async function persistParseResult(
     `Persisted parse result for project ${projectId}: ` +
       `${tablesUpserted} tables, ${relationshipsCreated} relationships in ${duration}ms`,
   );
+
+  auditService.logAction({
+    projectId,
+    action: 'schema.parse',
+    entity: 'Schema',
+    entityId: fileId,
+    details: `Parsed ${tablesUpserted} tables, ${relationshipsCreated} relationships in ${duration}ms`,
+  }).catch(() => {});
 
   return { tablesUpserted, relationshipsCreated };
 }
@@ -692,6 +701,7 @@ function mapTable(
       isPrimaryKey: boolean;
       isUnique: boolean;
       defaultValue: string | null;
+      description?: string | null;
       ordinalPosition: number;
     }>;
     indexes?: Array<{
@@ -726,7 +736,7 @@ function mapTable(
       isForeignKey: fkCols ? fkCols.has(col.columnName.toLowerCase()) : false,
       isUnique: col.isUnique,
       defaultValue: col.defaultValue,
-      comment: null,
+      comment: col.description ?? null,
       ordinalPosition: col.ordinalPosition,
       referencesTable: null,
       referencesColumn: null,
@@ -789,4 +799,621 @@ function inferRelationshipType(
   }
 
   return 'one-to-many';
+}
+
+// ---------------------------------------------------------------------------
+// createTable – Create a table manually (not from parse)
+// ---------------------------------------------------------------------------
+
+export async function createTable(
+  projectId: string,
+  input: {
+    tableName: string;
+    schemaName?: string;
+    tableType?: string;
+    description?: string;
+    columns: Array<{
+      columnName: string;
+      dataType: string;
+      isNullable?: boolean;
+      isPrimaryKey?: boolean;
+      isUnique?: boolean;
+      defaultValue?: string;
+      comment?: string;
+      description?: string;
+      ordinalPosition?: number;
+    }>;
+    indexes?: Array<{
+      indexName: string;
+      indexType?: string;
+      isUnique?: boolean;
+      columns: string[];
+    }>;
+    constraints?: Array<{
+      constraintName: string;
+      constraintType: string;
+      columns: string[];
+      definition?: string;
+    }>;
+  },
+) {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+  });
+  if (!project) throw new NotFoundError('Project');
+
+  const schemaName = input.schemaName || 'public';
+
+  // Check for duplicate
+  const existing = await prisma.tableMetadata.findUnique({
+    where: {
+      projectId_schemaName_tableName: {
+        projectId,
+        schemaName,
+        tableName: input.tableName,
+      },
+    },
+  });
+  if (existing) {
+    throw new BadRequestError(
+      `Table "${schemaName}.${input.tableName}" already exists`,
+    );
+  }
+
+  const table = await prisma.$transaction(async (tx) => {
+    const newTable = await tx.tableMetadata.create({
+      data: {
+        projectId,
+        schemaName,
+        tableName: input.tableName,
+        tableType: input.tableType || 'TABLE',
+        description: input.description || null,
+      },
+    });
+
+    // Create columns
+    for (let i = 0; i < input.columns.length; i++) {
+      const col = input.columns[i];
+      await tx.columnMetadata.create({
+        data: {
+          tableId: newTable.id,
+          columnName: col.columnName,
+          dataType: col.dataType,
+          normalizedType: col.dataType.toUpperCase(),
+          ordinalPosition: col.ordinalPosition ?? i + 1,
+          isNullable: col.isNullable ?? true,
+          isPrimaryKey: col.isPrimaryKey ?? false,
+          isUnique: col.isUnique ?? false,
+          defaultValue: col.defaultValue ?? null,
+          description: col.description ?? col.comment ?? null,
+        },
+      });
+    }
+
+    // Create indexes
+    if (input.indexes) {
+      for (const idx of input.indexes) {
+        await tx.indexMetadata.create({
+          data: {
+            tableId: newTable.id,
+            indexName: idx.indexName,
+            indexType: idx.indexType || 'BTREE',
+            isUnique: idx.isUnique ?? false,
+            isPrimary: false,
+            columns: JSON.stringify(idx.columns),
+          },
+        });
+      }
+    }
+
+    // Create constraints
+    if (input.constraints) {
+      for (const con of input.constraints) {
+        await tx.constraintMetadata.create({
+          data: {
+            tableId: newTable.id,
+            constraintName: con.constraintName,
+            constraintType: con.constraintType,
+            definition: con.definition ?? null,
+            columns: JSON.stringify(con.columns),
+          },
+        });
+      }
+    }
+
+    return newTable;
+  });
+
+  // Return full table with relations
+  const fullTable = await getTableById(table.id);
+
+  auditService.logAction({
+    projectId,
+    action: 'schema.createTable',
+    entity: 'Table',
+    entityId: table.id,
+    details: `Manually created table "${input.tableName}" with ${input.columns.length} columns`,
+  }).catch(() => {});
+
+  return fullTable;
+}
+
+// ---------------------------------------------------------------------------
+// updateTable – Update a table's metadata and columns
+// ---------------------------------------------------------------------------
+
+export async function updateTable(
+  tableId: string,
+  input: {
+    tableName?: string;
+    description?: string;
+    columns?: Array<{
+      columnName: string;
+      dataType: string;
+      isNullable?: boolean;
+      isPrimaryKey?: boolean;
+      isUnique?: boolean;
+      defaultValue?: string;
+      comment?: string;
+      ordinalPosition?: number;
+    }>;
+    indexes?: Array<{
+      indexName: string;
+      indexType?: string;
+      isUnique?: boolean;
+      columns: string[];
+    }>;
+    constraints?: Array<{
+      constraintName: string;
+      constraintType: string;
+      columns: string[];
+      definition?: string;
+    }>;
+  },
+) {
+  const existing = await prisma.tableMetadata.findUnique({
+    where: { id: tableId },
+  });
+  if (!existing) throw new NotFoundError('Table');
+
+  await prisma.$transaction(async (tx) => {
+    // Update table metadata
+    const updateData: any = {};
+    if (input.tableName) updateData.tableName = input.tableName;
+    if (input.description !== undefined) updateData.description = input.description;
+
+    if (Object.keys(updateData).length > 0) {
+      await tx.tableMetadata.update({
+        where: { id: tableId },
+        data: updateData,
+      });
+    }
+
+    // Replace columns if provided
+    if (input.columns) {
+      await tx.columnMetadata.deleteMany({ where: { tableId } });
+      for (let i = 0; i < input.columns.length; i++) {
+        const col = input.columns[i];
+        await tx.columnMetadata.create({
+          data: {
+            tableId,
+            columnName: col.columnName,
+            dataType: col.dataType,
+            normalizedType: col.dataType.toUpperCase(),
+            ordinalPosition: col.ordinalPosition ?? i + 1,
+            isNullable: col.isNullable ?? true,
+            isPrimaryKey: col.isPrimaryKey ?? false,
+            isUnique: col.isUnique ?? false,
+            defaultValue: col.defaultValue ?? null,
+            description: col.comment ?? null,
+          },
+        });
+      }
+    }
+
+    // Replace indexes if provided
+    if (input.indexes) {
+      await tx.indexMetadata.deleteMany({ where: { tableId } });
+      for (const idx of input.indexes) {
+        await tx.indexMetadata.create({
+          data: {
+            tableId,
+            indexName: idx.indexName,
+            indexType: idx.indexType || 'BTREE',
+            isUnique: idx.isUnique ?? false,
+            isPrimary: false,
+            columns: JSON.stringify(idx.columns),
+          },
+        });
+      }
+    }
+
+    // Replace constraints if provided
+    if (input.constraints) {
+      await tx.constraintMetadata.deleteMany({ where: { tableId } });
+      for (const con of input.constraints) {
+        await tx.constraintMetadata.create({
+          data: {
+            tableId,
+            constraintName: con.constraintName,
+            constraintType: con.constraintType,
+            definition: con.definition ?? null,
+            columns: JSON.stringify(con.columns),
+          },
+        });
+      }
+    }
+  });
+
+  const fullTable = await getTableById(tableId);
+
+  auditService.logAction({
+    projectId: existing.projectId,
+    action: 'schema.updateTable',
+    entity: 'Table',
+    entityId: tableId,
+    details: `Updated table "${existing.tableName}"`,
+  }).catch(() => {});
+
+  return fullTable;
+}
+
+// ---------------------------------------------------------------------------
+// deleteTable – Delete a table and all its children
+// ---------------------------------------------------------------------------
+
+export async function deleteTable(tableId: string) {
+  const existing = await prisma.tableMetadata.findUnique({
+    where: { id: tableId },
+  });
+  if (!existing) throw new NotFoundError('Table');
+
+  await prisma.$transaction(async (tx) => {
+    // Delete children first
+    await tx.columnMetadata.deleteMany({ where: { tableId } });
+    await tx.indexMetadata.deleteMany({ where: { tableId } });
+    await tx.constraintMetadata.deleteMany({ where: { tableId } });
+    await tx.relationshipMetadata.deleteMany({
+      where: {
+        OR: [
+          { sourceTableId: tableId },
+          { targetTableId: tableId },
+        ],
+      },
+    });
+    // Delete table
+    await tx.tableMetadata.delete({ where: { id: tableId } });
+  });
+
+  auditService.logAction({
+    projectId: existing.projectId,
+    action: 'schema.deleteTable',
+    entity: 'Table',
+    entityId: tableId,
+    details: `Deleted table "${existing.tableName}"`,
+  }).catch(() => {});
+
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// Schema Namespace Management
+// ---------------------------------------------------------------------------
+
+export async function getSchemas(projectId: string): Promise<string[]> {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+  });
+  if (!project) throw new NotFoundError('Project');
+
+  const explicitSchemas: string[] = project.schemas
+    ? JSON.parse(project.schemas)
+    : ['public'];
+
+  const tablesWithSchemas = await prisma.tableMetadata.findMany({
+    where: { projectId },
+    select: { schemaName: true },
+    distinct: ['schemaName'],
+  });
+  const usedSchemas = tablesWithSchemas.map((t) => t.schemaName);
+
+  return [...new Set([...explicitSchemas, ...usedSchemas])].sort();
+}
+
+export async function createSchema(
+  projectId: string,
+  schemaName: string,
+): Promise<string[]> {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+  });
+  if (!project) throw new NotFoundError('Project');
+
+  const existing: string[] = project.schemas
+    ? JSON.parse(project.schemas)
+    : ['public'];
+
+  if (existing.includes(schemaName)) {
+    throw new BadRequestError(`Schema "${schemaName}" already exists`);
+  }
+
+  const updated = [...existing, schemaName].sort();
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { schemas: JSON.stringify(updated) },
+  });
+
+  return updated;
+}
+
+export async function renameSchema(
+  projectId: string,
+  oldName: string,
+  newName: string,
+): Promise<string[]> {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+  });
+  if (!project) throw new NotFoundError('Project');
+
+  if (oldName === newName) return getSchemas(projectId);
+
+  // Check for table name conflicts in target schema
+  const tablesInOld = await prisma.tableMetadata.findMany({
+    where: { projectId, schemaName: oldName },
+    select: { tableName: true },
+  });
+  for (const t of tablesInOld) {
+    const dup = await prisma.tableMetadata.findUnique({
+      where: {
+        projectId_schemaName_tableName: {
+          projectId,
+          schemaName: newName,
+          tableName: t.tableName,
+        },
+      },
+    });
+    if (dup) {
+      throw new BadRequestError(
+        `Cannot rename: table "${t.tableName}" already exists in schema "${newName}"`,
+      );
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.tableMetadata.updateMany({
+      where: { projectId, schemaName: oldName },
+      data: { schemaName: newName },
+    });
+
+    const schemas: string[] = project.schemas
+      ? JSON.parse(project.schemas)
+      : ['public'];
+    const idx = schemas.indexOf(oldName);
+    if (idx >= 0) schemas[idx] = newName;
+    if (!schemas.includes(newName)) schemas.push(newName);
+    await tx.project.update({
+      where: { id: projectId },
+      data: { schemas: JSON.stringify([...new Set(schemas)].sort()) },
+    });
+  });
+
+  return getSchemas(projectId);
+}
+
+export async function deleteSchema(
+  projectId: string,
+  schemaName: string,
+): Promise<string[]> {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+  });
+  if (!project) throw new NotFoundError('Project');
+
+  if (schemaName === 'public') {
+    throw new BadRequestError('Cannot delete the "public" schema');
+  }
+
+  const tables = await prisma.tableMetadata.findMany({
+    where: { projectId, schemaName },
+    select: { id: true },
+  });
+
+  await prisma.$transaction(async (tx) => {
+    for (const t of tables) {
+      await tx.columnMetadata.deleteMany({ where: { tableId: t.id } });
+      await tx.indexMetadata.deleteMany({ where: { tableId: t.id } });
+      await tx.constraintMetadata.deleteMany({ where: { tableId: t.id } });
+      await tx.triggerMetadata.deleteMany({ where: { tableId: t.id } });
+      await tx.relationshipMetadata.deleteMany({
+        where: { OR: [{ sourceTableId: t.id }, { targetTableId: t.id }] },
+      });
+      await tx.tableMetadata.delete({ where: { id: t.id } });
+    }
+
+    const schemas: string[] = project.schemas
+      ? JSON.parse(project.schemas)
+      : ['public'];
+    const filtered = schemas.filter((s) => s !== schemaName);
+    await tx.project.update({
+      where: { id: projectId },
+      data: { schemas: JSON.stringify(filtered) },
+    });
+  });
+
+  auditService.logAction({
+    projectId,
+    action: 'schema.deleteSchema',
+    entity: 'Schema',
+    details: `Deleted schema "${schemaName}" with ${tables.length} tables`,
+  }).catch(() => {});
+
+  return getSchemas(projectId);
+}
+
+// ---------------------------------------------------------------------------
+// Trigger CRUD
+// ---------------------------------------------------------------------------
+
+export async function getTriggers(tableId: string) {
+  const table = await prisma.tableMetadata.findUnique({
+    where: { id: tableId },
+  });
+  if (!table) throw new NotFoundError('Table');
+
+  const triggers = await prisma.triggerMetadata.findMany({
+    where: { tableId },
+    orderBy: { triggerName: 'asc' },
+  });
+
+  return triggers.map((t) => ({
+    id: t.id,
+    tableId: t.tableId,
+    triggerName: t.triggerName,
+    timing: t.timing,
+    event: t.event,
+    triggerBody: t.triggerBody,
+    isEnabled: t.isEnabled,
+    description: t.description,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+  }));
+}
+
+export async function createTrigger(
+  tableId: string,
+  input: {
+    triggerName: string;
+    timing: string;
+    event: string;
+    triggerBody: string;
+    isEnabled?: boolean;
+    description?: string;
+  },
+) {
+  const table = await prisma.tableMetadata.findUnique({
+    where: { id: tableId },
+  });
+  if (!table) throw new NotFoundError('Table');
+
+  const existing = await prisma.triggerMetadata.findUnique({
+    where: { tableId_triggerName: { tableId, triggerName: input.triggerName } },
+  });
+  if (existing) {
+    throw new BadRequestError(`Trigger "${input.triggerName}" already exists on this table`);
+  }
+
+  const trigger = await prisma.triggerMetadata.create({
+    data: {
+      tableId,
+      triggerName: input.triggerName,
+      timing: input.timing,
+      event: input.event,
+      triggerBody: input.triggerBody,
+      isEnabled: input.isEnabled ?? true,
+      description: input.description ?? null,
+    },
+  });
+
+  auditService.logAction({
+    projectId: table.projectId,
+    action: 'schema.createTrigger',
+    entity: 'Trigger',
+    entityId: trigger.id,
+    details: `Created trigger "${input.triggerName}" on table "${table.tableName}"`,
+  }).catch(() => {});
+
+  return {
+    id: trigger.id,
+    tableId: trigger.tableId,
+    triggerName: trigger.triggerName,
+    timing: trigger.timing,
+    event: trigger.event,
+    triggerBody: trigger.triggerBody,
+    isEnabled: trigger.isEnabled,
+    description: trigger.description,
+  };
+}
+
+export async function updateTrigger(
+  triggerId: string,
+  input: {
+    triggerName?: string;
+    timing?: string;
+    event?: string;
+    triggerBody?: string;
+    isEnabled?: boolean;
+    description?: string;
+  },
+) {
+  const existing = await prisma.triggerMetadata.findUnique({
+    where: { id: triggerId },
+  });
+  if (!existing) throw new NotFoundError('Trigger');
+
+  const trigger = await prisma.triggerMetadata.update({
+    where: { id: triggerId },
+    data: {
+      triggerName: input.triggerName ?? undefined,
+      timing: input.timing ?? undefined,
+      event: input.event ?? undefined,
+      triggerBody: input.triggerBody ?? undefined,
+      isEnabled: input.isEnabled ?? undefined,
+      description: input.description !== undefined ? input.description : undefined,
+    },
+  });
+
+  return {
+    id: trigger.id,
+    tableId: trigger.tableId,
+    triggerName: trigger.triggerName,
+    timing: trigger.timing,
+    event: trigger.event,
+    triggerBody: trigger.triggerBody,
+    isEnabled: trigger.isEnabled,
+    description: trigger.description,
+  };
+}
+
+export async function deleteTrigger(triggerId: string) {
+  const existing = await prisma.triggerMetadata.findUnique({
+    where: { id: triggerId },
+    include: { table: { select: { projectId: true, tableName: true } } },
+  });
+  if (!existing) throw new NotFoundError('Trigger');
+
+  await prisma.triggerMetadata.delete({ where: { id: triggerId } });
+
+  auditService.logAction({
+    projectId: existing.table.projectId,
+    action: 'schema.deleteTrigger',
+    entity: 'Trigger',
+    entityId: triggerId,
+    details: `Deleted trigger "${existing.triggerName}" from table "${existing.table.tableName}"`,
+  }).catch(() => {});
+
+  return { success: true };
+}
+
+export async function toggleTrigger(triggerId: string) {
+  const existing = await prisma.triggerMetadata.findUnique({
+    where: { id: triggerId },
+  });
+  if (!existing) throw new NotFoundError('Trigger');
+
+  const updated = await prisma.triggerMetadata.update({
+    where: { id: triggerId },
+    data: { isEnabled: !existing.isEnabled },
+  });
+
+  return {
+    id: updated.id,
+    tableId: updated.tableId,
+    triggerName: updated.triggerName,
+    timing: updated.timing,
+    event: updated.event,
+    triggerBody: updated.triggerBody,
+    isEnabled: updated.isEnabled,
+    description: updated.description,
+  };
 }

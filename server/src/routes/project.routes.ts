@@ -24,6 +24,9 @@ router.get(
   projectController.list,
 );
 
+// GET    /projects/stats/global – Global dashboard stats (MUST be before /:projectId)
+router.get('/stats/global', projectController.getGlobalStats);
+
 // GET    /projects/:projectId – Get a single project
 router.get(
   '/:projectId',

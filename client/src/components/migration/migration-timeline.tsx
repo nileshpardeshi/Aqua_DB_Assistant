@@ -178,7 +178,7 @@ export function MigrationTimeline() {
 
       {/* Create Migration Form */}
       {showCreateForm && (
-        <div className="bg-white border border-aqua-200 rounded-lg p-4 space-y-3">
+        <div className="bg-card border border-aqua-200 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h5 className="text-sm font-semibold text-slate-800">
               Create New Migration
@@ -196,7 +196,7 @@ export function MigrationTimeline() {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Migration name..."
-            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
           />
 
           <div className="grid grid-cols-2 gap-3">
@@ -207,7 +207,7 @@ export function MigrationTimeline() {
               <select
                 value={newSourceDialect}
                 onChange={(e) => setNewSourceDialect(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
               >
                 {DIALECTS.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -223,7 +223,7 @@ export function MigrationTimeline() {
               <select
                 value={newTargetDialect}
                 onChange={(e) => setNewTargetDialect(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
               >
                 {DIALECTS.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -312,7 +312,7 @@ export function MigrationTimeline() {
               <div className={cn('flex-1 pb-6', isLast && 'pb-0')}>
                 <button
                   onClick={() => handleToggleExpand(migration.id)}
-                  className="w-full text-left bg-white border border-slate-200 rounded-lg p-3 hover:border-slate-300 hover:shadow-sm transition-all"
+                  className="w-full text-left bg-card border border-slate-200 rounded-lg p-3 hover:border-slate-300 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

@@ -264,7 +264,7 @@ export function Settings() {
           {!isLoadingProviders && (
             <>
               {/* Anthropic */}
-              <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+              <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
                     <span className="text-sm font-bold text-orange-700">A</span>
@@ -306,7 +306,7 @@ export function Settings() {
                           }))
                         }
                         placeholder={anthropic.hasApiKey ? 'Enter new key to update...' : 'sk-ant-api...'}
-                        className="w-full px-3 py-2 pr-10 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
+                        className="w-full px-3 py-2 pr-10 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
                       />
                       <button
                         onClick={() =>
@@ -340,7 +340,7 @@ export function Settings() {
                             model: e.target.value,
                           }))
                         }
-                        className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
+                        className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
                       >
                         {anthropicModels.map((m) => (
                           <option key={m} value={m}>
@@ -387,7 +387,7 @@ export function Settings() {
               </div>
 
               {/* OpenAI */}
-              <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+              <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
                     <span className="text-sm font-bold text-green-700">O</span>
@@ -429,7 +429,7 @@ export function Settings() {
                           }))
                         }
                         placeholder={openai.hasApiKey ? 'Enter new key to update...' : 'sk-...'}
-                        className="w-full px-3 py-2 pr-10 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
+                        className="w-full px-3 py-2 pr-10 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
                       />
                       <button
                         onClick={() =>
@@ -463,7 +463,7 @@ export function Settings() {
                             model: e.target.value,
                           }))
                         }
-                        className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
+                        className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
                       >
                         {openaiModels.map((m) => (
                           <option key={m} value={m}>
@@ -510,7 +510,7 @@ export function Settings() {
               </div>
 
               {/* Ollama */}
-              <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+              <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
                     <Globe className="w-4 h-4 text-slate-600" />
@@ -543,7 +543,7 @@ export function Settings() {
                         setOllamaStatus('idle');
                       }}
                       placeholder="http://localhost:11434"
-                      className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
+                      className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
                     />
                   </div>
 
@@ -588,7 +588,7 @@ export function Settings() {
       {activeTab === 'general' && (
         <div className="space-y-6">
           {/* App Info */}
-          <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+          <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-foreground mb-4">
               Application Info
             </h3>
@@ -615,7 +615,7 @@ export function Settings() {
           </div>
 
           {/* About the Creator */}
-          <div className="bg-white rounded-xl border border-border overflow-hidden shadow-sm">
+          <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
             <div className="px-6 py-4 bg-gradient-to-r from-aqua-50 to-cyan-50 border-b border-aqua-100">
               <h3 className="text-sm font-semibold text-foreground">
                 About the Creator
@@ -686,7 +686,7 @@ export function Settings() {
           </div>
 
           {/* Tech Stack */}
-          <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+          <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-foreground mb-4">
               Technology Stack
             </h3>

@@ -222,7 +222,7 @@ const STATUS_STYLES: Record<DiffStatus, { bg: string; text: string; badge: strin
   added: { bg: 'bg-green-50', text: 'text-green-700', badge: 'bg-green-100 text-green-700' },
   removed: { bg: 'bg-red-50', text: 'text-red-700', badge: 'bg-red-100 text-red-700' },
   modified: { bg: 'bg-amber-50', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700' },
-  unchanged: { bg: 'bg-white', text: 'text-slate-700', badge: 'bg-slate-100 text-slate-500' },
+  unchanged: { bg: 'bg-card', text: 'text-slate-700', badge: 'bg-slate-100 text-slate-500' },
 };
 
 const STATUS_ICONS: Record<DiffStatus, React.ComponentType<{ className?: string }>> = {

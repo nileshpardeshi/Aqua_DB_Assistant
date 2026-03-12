@@ -7,6 +7,7 @@ import {
   Copy,
   ArrowRightLeft,
   X,
+  FlaskConical,
 } from 'lucide-react';
 import {
   BarChart,
@@ -182,7 +183,7 @@ export function QueryBenchmark() {
                   'px-3 py-1.5 text-xs font-medium rounded-md border transition-all',
                   iterations === opt
                     ? 'bg-aqua-50 border-aqua-300 text-aqua-700'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
                 )}
               >
                 {opt}
@@ -212,6 +213,25 @@ export function QueryBenchmark() {
               Run Benchmark
             </>
           )}
+        </button>
+
+        <button
+          onClick={() => {
+            setSql(
+              "SELECT o.id, o.total, u.name, u.email\nFROM orders o\nJOIN users u ON u.id = o.customer_id\nWHERE o.created_at > '2025-01-01'\n  AND o.status = 'completed'\nORDER BY o.created_at DESC\nLIMIT 100;"
+            );
+            setShowComparison(true);
+            setComparisonSql(
+              "SELECT o.id, o.total, u.name, u.email\nFROM orders o\nJOIN users u ON u.id = o.customer_id\nWHERE o.created_at > '2025-01-01'\n  AND o.status = 'completed'\n  AND o.customer_id IN (SELECT id FROM users WHERE active = true)\nORDER BY o.created_at DESC\nLIMIT 100;"
+            );
+            setIterations(100);
+            setResult(generateMockResults(100));
+            setComparisonResult(generateMockResults(100));
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+        >
+          <FlaskConical className="w-4 h-4" />
+          Load Demo
         </button>
       </div>
 
@@ -253,7 +273,7 @@ export function QueryBenchmark() {
                     (val, i) => (
                       <div
                         key={i}
-                        className="bg-white border border-slate-200 rounded-lg py-2 text-sm font-bold text-slate-800"
+                        className="bg-card border border-slate-200 rounded-lg py-2 text-sm font-bold text-slate-800"
                       >
                         {val}
                         <span className="text-[10px] text-slate-400 ml-0.5">ms</span>
@@ -279,7 +299,7 @@ export function QueryBenchmark() {
                               ? 'bg-green-50 border-green-200 text-green-700'
                               : isWorse
                               ? 'bg-red-50 border-red-200 text-red-700'
-                              : 'bg-white border-slate-200 text-slate-800'
+                              : 'bg-card border-slate-200 text-slate-800'
                           )}
                         >
                           {val}
@@ -302,7 +322,7 @@ export function QueryBenchmark() {
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="bg-white border border-slate-200 rounded-lg p-3 text-center"
+                  className="bg-card border border-slate-200 rounded-lg p-3 text-center"
                 >
                   <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">
                     {stat.label}
@@ -317,7 +337,7 @@ export function QueryBenchmark() {
           </div>
 
           {/* Chart */}
-          <div className="bg-white border border-slate-200 rounded-lg p-4">
+          <div className="bg-card border border-slate-200 rounded-lg p-4">
             <h5 className="text-xs font-semibold text-slate-700 mb-3">
               Execution Time Distribution
             </h5>

@@ -129,6 +129,36 @@ const DATA_TYPE_MAP: Record<string, Record<string, string>> = {
     'DATE': 'DATETIME',
   },
 
+  // MariaDB source types (MariaDB is mostly MySQL-compatible)
+  'mariadb->postgresql': {
+    'INT AUTO_INCREMENT': 'SERIAL',
+    'BIGINT AUTO_INCREMENT': 'BIGSERIAL',
+    'SMALLINT AUTO_INCREMENT': 'SMALLSERIAL',
+    'TINYINT(1)': 'BOOLEAN',
+    TINYINT: 'SMALLINT',
+    'DOUBLE': 'DOUBLE PRECISION',
+    FLOAT: 'REAL',
+    DATETIME: 'TIMESTAMP',
+    BLOB: 'BYTEA',
+    LONGBLOB: 'BYTEA',
+    LONGTEXT: 'TEXT',
+    MEDIUMTEXT: 'TEXT',
+    'ENUM': 'VARCHAR(255)',
+  },
+  'mariadb->sqlserver': {
+    'INT AUTO_INCREMENT': 'INT IDENTITY(1,1)',
+    'BIGINT AUTO_INCREMENT': 'BIGINT IDENTITY(1,1)',
+    'TINYINT(1)': 'BIT',
+    TEXT: 'NVARCHAR(MAX)',
+    LONGTEXT: 'NVARCHAR(MAX)',
+    MEDIUMTEXT: 'NVARCHAR(MAX)',
+    BLOB: 'VARBINARY(MAX)',
+    LONGBLOB: 'VARBINARY(MAX)',
+    DATETIME: 'DATETIME2',
+    JSON: 'NVARCHAR(MAX)',
+    'DOUBLE': 'FLOAT',
+  },
+
   // SQL Server source types
   'sqlserver->postgresql': {
     'INT IDENTITY(1,1)': 'SERIAL',
@@ -159,6 +189,61 @@ const DATA_TYPE_MAP: Record<string, Record<string, string>> = {
     IMAGE: 'LONGBLOB',
     MONEY: 'DECIMAL(19,4)',
     SMALLMONEY: 'DECIMAL(10,4)',
+  },
+
+  // Snowflake source types
+  'snowflake->postgresql': {
+    VARIANT: 'JSONB',
+    OBJECT: 'JSONB',
+    ARRAY: 'JSONB',
+    NUMBER: 'NUMERIC',
+    FLOAT: 'DOUBLE PRECISION',
+    STRING: 'TEXT',
+    BINARY: 'BYTEA',
+    TIMESTAMP_NTZ: 'TIMESTAMP',
+    TIMESTAMP_LTZ: 'TIMESTAMPTZ',
+    TIMESTAMP_TZ: 'TIMESTAMPTZ',
+  },
+  'snowflake->mysql': {
+    VARIANT: 'JSON',
+    OBJECT: 'JSON',
+    ARRAY: 'JSON',
+    NUMBER: 'DECIMAL',
+    FLOAT: 'DOUBLE',
+    STRING: 'TEXT',
+    BINARY: 'BLOB',
+    TIMESTAMP_NTZ: 'DATETIME',
+    TIMESTAMP_LTZ: 'DATETIME',
+    TIMESTAMP_TZ: 'DATETIME',
+  },
+
+  // BigQuery source types
+  'bigquery->postgresql': {
+    INT64: 'BIGINT',
+    FLOAT64: 'DOUBLE PRECISION',
+    NUMERIC: 'NUMERIC',
+    BIGNUMERIC: 'NUMERIC',
+    BOOL: 'BOOLEAN',
+    STRING: 'TEXT',
+    BYTES: 'BYTEA',
+    DATE: 'DATE',
+    DATETIME: 'TIMESTAMP',
+    TIMESTAMP: 'TIMESTAMPTZ',
+    GEOGRAPHY: 'GEOMETRY',
+    STRUCT: 'JSONB',
+  },
+  'bigquery->mysql': {
+    INT64: 'BIGINT',
+    FLOAT64: 'DOUBLE',
+    NUMERIC: 'DECIMAL',
+    BIGNUMERIC: 'DECIMAL',
+    BOOL: 'TINYINT(1)',
+    STRING: 'TEXT',
+    BYTES: 'BLOB',
+    DATE: 'DATE',
+    DATETIME: 'DATETIME',
+    TIMESTAMP: 'DATETIME',
+    STRUCT: 'JSON',
   },
 };
 
@@ -216,14 +301,14 @@ function applySyntaxTransformations(
   }
 
   // String concatenation
-  if (sourceDialect === 'mysql' && (targetDialect === 'postgresql' || targetDialect === 'oracle')) {
+  if ((sourceDialect === 'mysql' || sourceDialect === 'mariadb') && (targetDialect === 'postgresql' || targetDialect === 'oracle')) {
     // CONCAT() is universal, but || is preferred in PG/Oracle
     // Leave CONCAT as-is since it works in both
   }
 
   // LIMIT / OFFSET -> FETCH FIRST (Oracle / SQL Server)
   if (
-    (sourceDialect === 'postgresql' || sourceDialect === 'mysql') &&
+    (sourceDialect === 'postgresql' || sourceDialect === 'mysql' || sourceDialect === 'mariadb') &&
     (targetDialect === 'oracle' || targetDialect === 'sqlserver')
   ) {
     const limitOffsetRegex = /LIMIT\s+(\d+)(?:\s+OFFSET\s+(\d+))?/gi;
@@ -248,7 +333,7 @@ function applySyntaxTransformations(
 
   // FETCH FIRST -> LIMIT (reverse)
   if (
-    (targetDialect === 'postgresql' || targetDialect === 'mysql') &&
+    (targetDialect === 'postgresql' || targetDialect === 'mysql' || targetDialect === 'mariadb') &&
     (sourceDialect === 'oracle' || sourceDialect === 'sqlserver')
   ) {
     const fetchRegex = /OFFSET\s+(\d+)\s+ROWS\s+FETCH\s+NEXT\s+(\d+)\s+ROWS\s+ONLY/gi;
@@ -279,8 +364,8 @@ function applySyntaxTransformations(
     }
   }
 
-  // Backtick quoting (MySQL) vs double-quote quoting (PostgreSQL/Oracle)
-  if (sourceDialect === 'mysql' && targetDialect !== 'mysql') {
+  // Backtick quoting (MySQL/MariaDB) vs double-quote quoting (PostgreSQL/Oracle)
+  if ((sourceDialect === 'mysql' || sourceDialect === 'mariadb') && targetDialect !== 'mysql' && targetDialect !== 'mariadb') {
     const backtickRegex = /`([^`]+)`/g;
     if (backtickRegex.test(result)) {
       result = result.replace(/`([^`]+)`/g, '"$1"');
@@ -292,7 +377,7 @@ function applySyntaxTransformations(
     }
   }
 
-  if (sourceDialect !== 'mysql' && targetDialect === 'mysql') {
+  if (sourceDialect !== 'mysql' && sourceDialect !== 'mariadb' && (targetDialect === 'mysql' || targetDialect === 'mariadb')) {
     const doubleQuoteRegex = /"([^"]+)"/g;
     if (doubleQuoteRegex.test(result)) {
       result = result.replace(/"([^"]+)"/g, '`$1`');
@@ -333,7 +418,7 @@ function applySyntaxTransformations(
     }
   }
 
-  if (targetDialect === 'postgresql' || targetDialect === 'mysql') {
+  if (targetDialect === 'postgresql' || targetDialect === 'mysql' || targetDialect === 'mariadb') {
     if (/\bGETDATE\(\)/gi.test(result)) {
       result = result.replace(/\bGETDATE\(\)/gi, 'NOW()');
       changes.push({
@@ -366,8 +451,17 @@ export function convertDialect(
   sourceDialect: string,
   targetDialect: string,
 ): ConversionResult {
-  const normalizedSource = sourceDialect.toLowerCase();
-  const normalizedTarget = targetDialect.toLowerCase();
+  // Normalize aliases
+  const aliasMap: Record<string, string> = {
+    mssql: 'sqlserver',
+    'sql server': 'sqlserver',
+    postgres: 'postgresql',
+    pg: 'postgresql',
+    maria: 'mariadb',
+  };
+
+  const normalizedSource = aliasMap[sourceDialect.toLowerCase()] ?? sourceDialect.toLowerCase();
+  const normalizedTarget = aliasMap[targetDialect.toLowerCase()] ?? targetDialect.toLowerCase();
 
   if (normalizedSource === normalizedTarget) {
     return {

@@ -82,7 +82,7 @@ export function ProjectCreateDialog({ open, onClose }: ProjectCreateDialogProps)
       onClick={handleOverlayClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
     >
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl">
+      <div className="w-full max-w-lg bg-card rounded-2xl shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border">
           <div className="flex items-center gap-3">
@@ -130,7 +130,7 @@ export function ProjectCreateDialog({ open, onClose }: ProjectCreateDialogProps)
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., E-Commerce Platform"
-              className="w-full px-4 py-2.5 text-sm border border-input rounded-lg bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
+              className="w-full px-4 py-2.5 text-sm border border-input rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
             />
           </div>
 
@@ -146,7 +146,7 @@ export function ProjectCreateDialog({ open, onClose }: ProjectCreateDialogProps)
               id="project-dialect"
               value={dialect}
               onChange={(e) => setDialect(e.target.value)}
-              className="w-full px-4 py-2.5 text-sm border border-input rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all appearance-none cursor-pointer"
+              className="w-full px-4 py-2.5 text-sm border border-input rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all appearance-none cursor-pointer"
             >
               {DATABASE_DIALECTS.map((d) => (
                 <option key={d.value} value={d.value}>
@@ -170,7 +170,7 @@ export function ProjectCreateDialog({ open, onClose }: ProjectCreateDialogProps)
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief description of this database project..."
               rows={3}
-              className="w-full px-4 py-2.5 text-sm border border-input rounded-lg bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all resize-none"
+              className="w-full px-4 py-2.5 text-sm border border-input rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all resize-none"
             />
           </div>
 

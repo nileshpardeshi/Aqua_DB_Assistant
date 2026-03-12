@@ -13,6 +13,10 @@ import { PerformanceLab } from '../pages/performance-lab';
 import { DataLifecycle } from '../pages/data-lifecycle';
 import { MigrationStudio } from '../pages/migration-studio';
 import { Connections } from '../pages/connections';
+import { SQLConverterPage } from '../pages/sql-converter';
+import { JPAQueryLabPage } from '../pages/jpa-query-lab';
+import { SyntheticDataLab } from '../pages/synthetic-data-lab';
+import { DocumentationGenerator } from '../pages/documentation-generator';
 import { NotFound } from '../pages/not-found';
 
 export const router = createBrowserRouter([
@@ -32,6 +36,20 @@ export const router = createBrowserRouter([
         path: 'audit-logs',
         element: <AuditLogs />,
       },
+      // Independent tools
+      {
+        path: 'tools/sql-converter',
+        element: <SQLConverterPage />,
+      },
+      {
+        path: 'tools/jpa-lab',
+        element: <JPAQueryLabPage />,
+      },
+      {
+        path: 'tools/connections',
+        element: <Connections />,
+      },
+      // Project workspace
       {
         path: 'project/:projectId',
         element: <ProjectWorkspace />,
@@ -55,6 +73,14 @@ export const router = createBrowserRouter([
           {
             path: 'performance',
             element: <PerformanceLab />,
+          },
+          {
+            path: 'datagen',
+            element: <SyntheticDataLab />,
+          },
+          {
+            path: 'docs',
+            element: <DocumentationGenerator />,
           },
           {
             path: 'data-lifecycle',

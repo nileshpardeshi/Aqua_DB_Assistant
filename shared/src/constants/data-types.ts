@@ -114,3 +114,153 @@ export const DATA_TYPE_MAP: Record<string, Partial<Record<DatabaseDialect, strin
     [DatabaseDialect.BIGQUERY]: 'STRING',
   },
 };
+
+// ---------------------------------------------------------------------------
+// Comprehensive native data types per dialect for UI dropdowns
+// ---------------------------------------------------------------------------
+
+export const DIALECT_DATA_TYPES: Record<DatabaseDialect, string[]> = {
+  [DatabaseDialect.POSTGRESQL]: [
+    // Numeric
+    'SMALLINT', 'INTEGER', 'BIGINT', 'SERIAL', 'BIGSERIAL', 'SMALLSERIAL',
+    'DECIMAL(10,2)', 'NUMERIC', 'REAL', 'DOUBLE PRECISION', 'MONEY',
+    // Character
+    'CHAR(1)', 'VARCHAR(50)', 'VARCHAR(100)', 'VARCHAR(255)', 'TEXT',
+    // Binary
+    'BYTEA',
+    // Date/Time
+    'DATE', 'TIME', 'TIME WITH TIME ZONE', 'TIMESTAMP', 'TIMESTAMPTZ', 'INTERVAL',
+    // Boolean
+    'BOOLEAN',
+    // UUID
+    'UUID',
+    // JSON
+    'JSON', 'JSONB',
+    // Network
+    'INET', 'CIDR', 'MACADDR',
+    // Geometric
+    'POINT', 'LINE', 'POLYGON', 'CIRCLE',
+    // Other
+    'ARRAY', 'ENUM', 'XML', 'TSVECTOR', 'TSQUERY',
+  ],
+  [DatabaseDialect.MYSQL]: [
+    // Numeric
+    'TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT',
+    'DECIMAL(10,2)', 'FLOAT', 'DOUBLE',
+    // Character
+    'CHAR(1)', 'VARCHAR(50)', 'VARCHAR(100)', 'VARCHAR(255)',
+    'TINYTEXT', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT',
+    // Binary
+    'BINARY', 'VARBINARY(255)', 'TINYBLOB', 'BLOB', 'MEDIUMBLOB', 'LONGBLOB',
+    // Date/Time
+    'DATE', 'TIME', 'DATETIME', 'TIMESTAMP', 'YEAR',
+    // Boolean
+    'BOOLEAN', 'TINYINT(1)',
+    // JSON
+    'JSON',
+    // Other
+    'ENUM', 'SET',
+  ],
+  [DatabaseDialect.ORACLE]: [
+    // Numeric
+    'NUMBER', 'NUMBER(10)', 'NUMBER(10,2)', 'BINARY_FLOAT', 'BINARY_DOUBLE', 'FLOAT',
+    // Character
+    'CHAR(1)', 'VARCHAR2(50)', 'VARCHAR2(100)', 'VARCHAR2(255)',
+    'NCHAR(1)', 'NVARCHAR2(255)', 'CLOB', 'NCLOB',
+    // Binary
+    'BLOB', 'RAW(255)', 'LONG RAW',
+    // Date/Time
+    'DATE', 'TIMESTAMP', 'TIMESTAMP WITH TIME ZONE',
+    'TIMESTAMP WITH LOCAL TIME ZONE', 'INTERVAL YEAR TO MONTH', 'INTERVAL DAY TO SECOND',
+    // Boolean (Oracle 23c+)
+    'BOOLEAN',
+    // Other
+    'ROWID', 'UROWID', 'XMLTYPE', 'JSON',
+  ],
+  [DatabaseDialect.SQLSERVER]: [
+    // Numeric
+    'BIT', 'TINYINT', 'SMALLINT', 'INT', 'BIGINT',
+    'DECIMAL(10,2)', 'NUMERIC(10,2)', 'FLOAT', 'REAL', 'MONEY', 'SMALLMONEY',
+    // Character
+    'CHAR(1)', 'VARCHAR(50)', 'VARCHAR(100)', 'VARCHAR(255)', 'VARCHAR(MAX)',
+    'NCHAR(1)', 'NVARCHAR(50)', 'NVARCHAR(255)', 'NVARCHAR(MAX)',
+    'TEXT', 'NTEXT',
+    // Binary
+    'BINARY(50)', 'VARBINARY(255)', 'VARBINARY(MAX)', 'IMAGE',
+    // Date/Time
+    'DATE', 'TIME', 'DATETIME', 'DATETIME2', 'SMALLDATETIME', 'DATETIMEOFFSET',
+    // Other
+    'UNIQUEIDENTIFIER', 'XML', 'SQL_VARIANT', 'GEOGRAPHY', 'GEOMETRY',
+  ],
+  [DatabaseDialect.MARIADB]: [
+    // Numeric
+    'TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT',
+    'DECIMAL(10,2)', 'FLOAT', 'DOUBLE',
+    // Character
+    'CHAR(1)', 'VARCHAR(50)', 'VARCHAR(100)', 'VARCHAR(255)',
+    'TINYTEXT', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT',
+    // Binary
+    'BINARY', 'VARBINARY(255)', 'TINYBLOB', 'BLOB', 'MEDIUMBLOB', 'LONGBLOB',
+    // Date/Time
+    'DATE', 'TIME', 'DATETIME', 'TIMESTAMP', 'YEAR',
+    // Boolean
+    'BOOLEAN', 'TINYINT(1)',
+    // JSON
+    'JSON',
+    // Network
+    'INET4', 'INET6',
+    // Other
+    'UUID', 'ENUM', 'SET',
+  ],
+  [DatabaseDialect.SNOWFLAKE]: [
+    // Numeric
+    'NUMBER', 'NUMBER(10,2)', 'DECIMAL(10,2)', 'INT', 'INTEGER', 'BIGINT',
+    'SMALLINT', 'TINYINT', 'BYTEINT', 'FLOAT', 'FLOAT4', 'FLOAT8',
+    'DOUBLE', 'DOUBLE PRECISION', 'REAL',
+    // Character
+    'VARCHAR(50)', 'VARCHAR(255)', 'VARCHAR(16777216)', 'CHAR(1)', 'STRING', 'TEXT',
+    // Binary
+    'BINARY', 'VARBINARY',
+    // Boolean
+    'BOOLEAN',
+    // Date/Time
+    'DATE', 'TIME', 'TIMESTAMP', 'TIMESTAMP_NTZ', 'TIMESTAMP_LTZ', 'TIMESTAMP_TZ',
+    // Semi-structured
+    'VARIANT', 'OBJECT', 'ARRAY',
+    // Geospatial
+    'GEOGRAPHY', 'GEOMETRY',
+  ],
+  [DatabaseDialect.BIGQUERY]: [
+    // Numeric
+    'INT64', 'FLOAT64', 'NUMERIC', 'BIGNUMERIC',
+    // Boolean
+    'BOOL',
+    // String
+    'STRING', 'STRING(255)',
+    // Bytes
+    'BYTES',
+    // Date/Time
+    'DATE', 'TIME', 'DATETIME', 'TIMESTAMP',
+    // Complex
+    'ARRAY', 'STRUCT', 'JSON',
+    // Geographic
+    'GEOGRAPHY',
+    // Interval
+    'INTERVAL',
+  ],
+  [DatabaseDialect.MONGODB]: [
+    'String', 'Number', 'Boolean', 'Date', 'ObjectId',
+    'Array', 'Object', 'Binary', 'Decimal128',
+    'Int32', 'Int64', 'Double',
+    'Timestamp', 'RegExp', 'UUID',
+  ],
+};
+
+/**
+ * Get the data types for a given dialect.
+ * Falls back to PostgreSQL if dialect is unknown.
+ */
+export function getDialectDataTypes(dialect: string): string[] {
+  const d = dialect as DatabaseDialect;
+  return DIALECT_DATA_TYPES[d] ?? DIALECT_DATA_TYPES[DatabaseDialect.POSTGRESQL];
+}

@@ -138,7 +138,7 @@ This query performs a LEFT JOIN between the \`users\` and \`orders\` tables to f
             value={naturalLanguageInput}
             onChange={(e) => setNaturalLanguageInput(e.target.value)}
             placeholder="Describe what you want to query... e.g., 'Find top 10 customers by total spending in the last month'"
-            className="w-full px-3 py-2.5 text-sm bg-white rounded-lg border border-aqua-200 focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 resize-none"
+            className="w-full px-3 py-2.5 text-sm bg-card rounded-lg border border-aqua-200 focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 resize-none"
             rows={3}
           />
           <button
@@ -168,7 +168,7 @@ This query performs a LEFT JOIN between the \`users\` and \`orders\` tables to f
 
         {/* Generated Result */}
         {generatedSQL && (
-          <div className="mt-4 bg-white rounded-lg border border-aqua-200/50 overflow-hidden">
+          <div className="mt-4 bg-card rounded-lg border border-aqua-200/50 overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-border/50">
               <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
                 <Code2 className="w-3.5 h-3.5 text-aqua-500" />
@@ -213,7 +213,7 @@ This query performs a LEFT JOIN between the \`users\` and \`orders\` tables to f
             'flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
             isOptimizing || !activeTab?.sql.trim()
               ? 'bg-slate-50 border-border/50 cursor-not-allowed opacity-60'
-              : 'bg-white border-border hover:border-amber-300 hover:shadow-sm hover:bg-amber-50/30 group'
+              : 'bg-card border-border hover:border-amber-300 hover:shadow-sm hover:bg-amber-50/30 group'
           )}
         >
           <div
@@ -246,7 +246,7 @@ This query performs a LEFT JOIN between the \`users\` and \`orders\` tables to f
             'flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
             isExplaining || !activeTab?.sql.trim()
               ? 'bg-slate-50 border-border/50 cursor-not-allowed opacity-60'
-              : 'bg-white border-border hover:border-violet-300 hover:shadow-sm hover:bg-violet-50/30 group'
+              : 'bg-card border-border hover:border-violet-300 hover:shadow-sm hover:bg-violet-50/30 group'
           )}
         >
           <div

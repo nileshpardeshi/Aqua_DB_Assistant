@@ -366,7 +366,7 @@ export function CommandPalette() {
       {/* Command Palette Modal */}
       <div className="fixed inset-0 z-[101] flex items-start justify-center pt-[15vh]">
         <div
-          className="w-full max-w-lg bg-white rounded-xl shadow-2xl border border-border overflow-hidden"
+          className="w-full max-w-lg bg-card rounded-xl shadow-2xl border border-border overflow-hidden"
           onKeyDown={handleKeyDown}
         >
           {/* Search Input */}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FolderOpen,
@@ -9,52 +9,74 @@ import {
   Database,
   ArrowRight,
   Sparkles,
+  Search,
+  Filter,
+  ArrowUpDown,
+  MoreVertical,
+  Archive,
+  FileText,
 } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
-import { APP_NAME, APP_TAGLINE, getDialect } from '@/config/constants';
-import { useProjects, type Project } from '@/hooks/use-projects';
+import { APP_NAME, APP_TAGLINE, DATABASE_DIALECTS, getDialect } from '@/config/constants';
+import {
+  useProjects,
+  useGlobalStats,
+  useDeleteProject,
+  type Project,
+  type ProjectFilters,
+} from '@/hooks/use-projects';
 import { useProjectStore } from '@/stores/use-project-store';
 import { ProjectCreateDialog } from '@/components/project/project-create-dialog';
-
-interface StatCard {
-  label: string;
-  value: string | number;
-  icon: React.ComponentType<{ className?: string }>;
-  change?: string;
-  gradient: string;
-}
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 
 export function Dashboard() {
-  const { data: projects, isLoading } = useProjects();
-  const { setActiveProject } = useProjectStore();
   const navigate = useNavigate();
+  const { setActiveProject } = useProjectStore();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  const projectCount = projects?.length || 0;
-  const totalTables = projects?.reduce((sum: number, p: Project) => sum + (p.tableCount || 0), 0) || 0;
+  // Search & filter state
+  const [searchInput, setSearchInput] = useState('');
+  const [dialectFilter, setDialectFilter] = useState('');
+  const [sortBy, setSortBy] = useState<string>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const stats: StatCard[] = [
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
+
+  const filters: ProjectFilters = useMemo(
+    () => ({
+      search: debouncedSearch || undefined,
+      dialect: dialectFilter || undefined,
+      sortBy,
+      sortOrder,
+    }),
+    [debouncedSearch, dialectFilter, sortBy, sortOrder],
+  );
+
+  const { data: projects, isLoading } = useProjects(filters);
+  const { data: globalStats } = useGlobalStats();
+
+  const stats = [
     {
       label: 'Total Projects',
-      value: projectCount,
+      value: globalStats?.projects ?? 0,
       icon: FolderOpen,
       gradient: 'from-aqua-500 to-aqua-600',
     },
     {
       label: 'Total Tables',
-      value: totalTables,
+      value: globalStats?.tables ?? 0,
       icon: Table2,
       gradient: 'from-cyan-500 to-blue-500',
     },
     {
-      label: 'Active Queries',
-      value: 0,
+      label: 'Saved Queries',
+      value: globalStats?.queries ?? 0,
       icon: Terminal,
       gradient: 'from-violet-500 to-purple-600',
     },
     {
       label: 'AI Conversations',
-      value: 0,
+      value: globalStats?.conversations ?? 0,
       icon: MessageSquare,
       gradient: 'from-amber-500 to-orange-500',
     },
@@ -65,13 +87,22 @@ export function Dashboard() {
     navigate(`/project/${project.id}`);
   }
 
+  function handleExploreFeatures() {
+    if (projects && projects.length > 0) {
+      handleProjectClick(projects[0]);
+    } else {
+      setCreateDialogOpen(true);
+    }
+  }
+
+  const hasActiveFilters = !!debouncedSearch || !!dialectFilter;
+
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
       {/* Welcome Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-aqua-600 via-aqua-700 to-aqua-900 p-8 lg:p-10 text-white">
-        {/* Background decoration */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-white/5 rounded-full translate-y-1/2" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-card/5 rounded-full -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-card/5 rounded-full translate-y-1/2" />
 
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-3">
@@ -87,13 +118,14 @@ export function Dashboard() {
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               onClick={() => setCreateDialogOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-aqua-700 font-semibold rounded-lg hover:bg-aqua-50 transition-colors shadow-lg shadow-black/10"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-card text-aqua-700 font-semibold rounded-lg hover:bg-aqua-50 transition-colors shadow-lg shadow-black/10"
             >
               <Plus className="w-4 h-4" />
               New Project
             </button>
             <button
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/15 text-white font-medium rounded-lg hover:bg-white/25 transition-colors backdrop-blur-sm border border-white/20"
+              onClick={handleExploreFeatures}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-card/15 text-white font-medium rounded-lg hover:bg-card/25 transition-colors backdrop-blur-sm border border-white/20"
             >
               <Database className="w-4 h-4" />
               Explore Features
@@ -109,7 +141,7 @@ export function Dashboard() {
           return (
             <div
               key={stat.label}
-              className="group relative bg-white rounded-xl border border-border p-5 shadow-sm hover:shadow-md transition-all duration-200"
+              className="group relative bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md transition-all duration-200"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -121,7 +153,7 @@ export function Dashboard() {
                 <div
                   className={cn(
                     'flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br shadow-sm',
-                    stat.gradient
+                    stat.gradient,
                   )}
                 >
                   <Icon className="w-5 h-5 text-white" />
@@ -150,6 +182,72 @@ export function Dashboard() {
           </button>
         </div>
 
+        {/* Search & Filter Bar */}
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search projects..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400"
+            />
+          </div>
+
+          {/* Dialect Filter */}
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <select
+              value={dialectFilter}
+              onChange={(e) => setDialectFilter(e.target.value)}
+              className="pl-9 pr-8 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
+            >
+              <option value="">All Dialects</option>
+              {DATABASE_DIALECTS.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort */}
+          <div className="relative">
+            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [field, order] = e.target.value.split('-');
+                setSortBy(field);
+                setSortOrder(order as 'asc' | 'desc');
+              }}
+              className="pl-9 pr-8 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
+            >
+              <option value="createdAt-desc">Newest First</option>
+              <option value="createdAt-asc">Oldest First</option>
+              <option value="name-asc">Name A-Z</option>
+              <option value="name-desc">Name Z-A</option>
+              <option value="updatedAt-desc">Recently Updated</option>
+            </select>
+          </div>
+
+          {/* Clear filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setSearchInput('');
+                setDialectFilter('');
+              }}
+              className="px-3 py-2 text-xs font-medium text-aqua-600 hover:text-aqua-800 hover:bg-aqua-50 rounded-lg transition-colors"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+
+        {/* Project Grid */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
@@ -184,6 +282,27 @@ export function Dashboard() {
               <span className="text-sm font-medium">Create New Project</span>
             </button>
           </div>
+        ) : hasActiveFilters ? (
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-5">
+              <Search className="w-8 h-8 text-slate-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              No matching projects
+            </h3>
+            <p className="text-sm text-muted-foreground text-center max-w-md mb-4">
+              No projects match your current search and filter criteria.
+            </p>
+            <button
+              onClick={() => {
+                setSearchInput('');
+                setDialectFilter('');
+              }}
+              className="text-sm font-medium text-aqua-600 hover:text-aqua-700"
+            >
+              Clear all filters
+            </button>
+          </div>
         ) : (
           <EmptyState onCreateClick={() => setCreateDialogOpen(true)} />
         )}
@@ -206,13 +325,61 @@ function ProjectCard({
   onClick: () => void;
 }) {
   const dialect = getDialect(project.dialect);
+  const deleteProject = useDeleteProject();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmArchive, setConfirmArchive] = useState(false);
+
+  function handleArchive(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirmArchive) {
+      setConfirmArchive(true);
+      return;
+    }
+    deleteProject.mutate(project.id);
+    setMenuOpen(false);
+    setConfirmArchive(false);
+  }
 
   return (
-    <button
+    <div
       onClick={onClick}
-      className="group text-left rounded-xl border border-border bg-white p-5 shadow-sm hover:shadow-md hover:border-aqua-200 transition-all duration-200"
+      className="group relative text-left rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md hover:border-aqua-200 transition-all duration-200 cursor-pointer"
     >
-      <div className="flex items-start justify-between mb-3">
+      {/* Three-dot menu */}
+      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen(!menuOpen);
+            setConfirmArchive(false);
+          }}
+          className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+        >
+          <MoreVertical className="w-4 h-4" />
+        </button>
+
+        {menuOpen && (
+          <div
+            className="absolute right-0 top-full mt-1 w-44 bg-card rounded-lg border border-border shadow-lg py-1 z-20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleArchive}
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors',
+                confirmArchive
+                  ? 'text-red-600 bg-red-50 hover:bg-red-100 font-medium'
+                  : 'text-foreground hover:bg-slate-50',
+              )}
+            >
+              <Archive className="w-3.5 h-3.5" />
+              {confirmArchive ? 'Click again to confirm' : 'Archive Project'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-start justify-between mb-3 pr-6">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-aqua-50 flex items-center justify-center">
             <Database className="w-4 h-4 text-aqua-600" />
@@ -221,7 +388,7 @@ function ProjectCard({
             {project.name}
           </h3>
         </div>
-        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-aqua-500 group-hover:translate-x-0.5 transition-all" />
+        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-aqua-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
       </div>
 
       {/* Dialect Badge */}
@@ -253,12 +420,18 @@ function ProjectCard({
               {project.tableCount} tables
             </span>
           )}
+          {typeof project.queryCount === 'number' && project.queryCount > 0 && (
+            <span className="flex items-center gap-1">
+              <FileText className="w-3 h-3" />
+              {project.queryCount} queries
+            </span>
+          )}
         </div>
         <span className="text-xs text-muted-foreground">
           {formatDate(project.createdAt)}
         </span>
       </div>
-    </button>
+    </div>
   );
 }
 

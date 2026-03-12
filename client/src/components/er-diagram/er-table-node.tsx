@@ -32,7 +32,7 @@ function ERTableNodeComponent({ data, selected }: NodeProps<ERTableNodeData>) {
   return (
     <div
       className={cn(
-        'bg-white rounded-xl shadow-md border-2 transition-all duration-200 min-w-[220px] max-w-[320px]',
+        'bg-card rounded-xl shadow-md border-2 transition-all duration-200 min-w-[220px] max-w-[320px]',
         'hover:shadow-lg hover:scale-[1.02]',
         selected
           ? 'border-aqua-500 shadow-aqua-200/50'
@@ -77,7 +77,7 @@ function ERTableNodeComponent({ data, selected }: NodeProps<ERTableNodeData>) {
           </span>
         </div>
         {data.estimatedRows != null && (
-          <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-white/20 text-white rounded-full">
+          <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-card/20 text-white rounded-full">
             {data.estimatedRows.toLocaleString()} rows
           </span>
         )}
@@ -91,7 +91,7 @@ function ERTableNodeComponent({ data, selected }: NodeProps<ERTableNodeData>) {
               key={col.id || col.name}
               className={cn(
                 'flex items-center gap-2 px-3 py-1.5 text-xs',
-                idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'
+                idx % 2 === 0 ? 'bg-card' : 'bg-slate-50/70'
               )}
             >
               {/* Key icon */}

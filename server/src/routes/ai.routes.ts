@@ -24,4 +24,22 @@ router.post('/query/explain', aiController.explainQuery);
 // POST /ai/performance/recommend-indexes - AI index recommendations
 router.post('/performance/recommend-indexes', aiController.recommendIndexes);
 
+// POST /ai/performance/recommend-partitions - AI partition recommendations
+router.post('/performance/recommend-partitions', aiController.recommendPartitions);
+
+// POST /ai/schema/trigger-analysis - AI trigger validation and analysis
+router.post('/schema/trigger-analysis', aiController.analyzeTrigger);
+
+// POST /ai/datagen/synthetic-scripts - Generate synthetic INSERT scripts
+router.post('/datagen/synthetic-scripts', aiController.generateSyntheticData);
+
+// POST /ai/datagen/query-planner - Simulate query execution plan
+router.post('/datagen/query-planner', aiController.simulateQueryPlan);
+
+// POST /ai/datagen/data-distribution - Simulate data distribution statistics
+router.post('/datagen/data-distribution', aiController.simulateDataDistribution);
+
+// POST /ai/docs/generate - Generate database documentation
+router.post('/docs/generate', aiController.generateDocumentation);
+
 export default router;
