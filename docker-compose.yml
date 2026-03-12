@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aqua-db-postgres
+    environment:
+      POSTGRES_USER: aqua_user
+      POSTGRES_PASSWORD: aqua_password_123
+      POSTGRES_DB: aqua_db_copilot
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aqua_user -d aqua_db_copilot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
