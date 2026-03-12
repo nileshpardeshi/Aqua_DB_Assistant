@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Settings as SettingsIcon,
   Bot,
@@ -18,14 +18,23 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { APP_NAME, APP_TAGLINE } from '@/config/constants';
+import {
+  useAIProviders,
+  useUpsertAIProvider,
+  useTestAIProvider,
+} from '@/hooks/use-settings';
+import type { AIProviderConfig } from '@/hooks/use-settings';
 
 type SettingsTab = 'ai-providers' | 'general';
 
-interface AIProviderConfig {
+interface ProviderFormState {
   apiKey: string;
   model: string;
   showKey: boolean;
   status: 'idle' | 'testing' | 'success' | 'error';
+  serverId?: string; // The ID from the server for this provider config
+  hasApiKey: boolean; // Whether the server already has a key stored
+  apiKeyPreview: string | null;
 }
 
 const anthropicModels = [
@@ -41,49 +50,160 @@ const openaiModels = [
   'gpt-3.5-turbo',
 ];
 
+function findProviderConfig(
+  providers: AIProviderConfig[] | undefined,
+  providerName: string
+): AIProviderConfig | undefined {
+  if (!providers) return undefined;
+  return providers.find((p) => p.provider === providerName);
+}
+
 export function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('ai-providers');
 
-  const [anthropic, setAnthropic] = useState<AIProviderConfig>({
+  // Load AI providers from server
+  const { data: aiProviders, isLoading: isLoadingProviders } = useAIProviders();
+  const upsertProvider = useUpsertAIProvider();
+  const testProvider = useTestAIProvider();
+
+  const [anthropic, setAnthropic] = useState<ProviderFormState>({
     apiKey: '',
     model: 'claude-sonnet-4-20250514',
     showKey: false,
     status: 'idle',
+    hasApiKey: false,
+    apiKeyPreview: null,
   });
 
-  const [openai, setOpenai] = useState<AIProviderConfig>({
+  const [openai, setOpenai] = useState<ProviderFormState>({
     apiKey: '',
     model: 'gpt-4o',
     showKey: false,
     status: 'idle',
+    hasApiKey: false,
+    apiKeyPreview: null,
   });
 
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
+  const [ollamaServerId, setOllamaServerId] = useState<string | undefined>();
   const [ollamaStatus, setOllamaStatus] = useState<
     'idle' | 'testing' | 'success' | 'error'
   >('idle');
 
+  const [savingProvider, setSavingProvider] = useState<string | null>(null);
+
+  // Sync server data into local form state when providers load
+  useEffect(() => {
+    if (!aiProviders) return;
+
+    const anthropicConfig = findProviderConfig(aiProviders, 'anthropic');
+    if (anthropicConfig) {
+      setAnthropic((prev) => ({
+        ...prev,
+        model: anthropicConfig.model,
+        serverId: anthropicConfig.id,
+        hasApiKey: anthropicConfig.hasApiKey,
+        apiKeyPreview: anthropicConfig.apiKeyPreview,
+        // Don't overwrite apiKey the user may be typing
+        ...(prev.apiKey ? {} : { apiKey: '' }),
+      }));
+    }
+
+    const openaiConfig = findProviderConfig(aiProviders, 'openai');
+    if (openaiConfig) {
+      setOpenai((prev) => ({
+        ...prev,
+        model: openaiConfig.model,
+        serverId: openaiConfig.id,
+        hasApiKey: openaiConfig.hasApiKey,
+        apiKeyPreview: openaiConfig.apiKeyPreview,
+        ...(prev.apiKey ? {} : { apiKey: '' }),
+      }));
+    }
+
+    const ollamaConfig = findProviderConfig(aiProviders, 'ollama');
+    if (ollamaConfig) {
+      setOllamaServerId(ollamaConfig.id);
+      if (ollamaConfig.baseUrl) {
+        setOllamaUrl(ollamaConfig.baseUrl);
+      }
+    }
+  }, [aiProviders]);
+
+  const handleSaveProvider = async (
+    provider: 'anthropic' | 'openai' | 'ollama'
+  ) => {
+    setSavingProvider(provider);
+
+    try {
+      if (provider === 'anthropic') {
+        await upsertProvider.mutateAsync({
+          id: anthropic.serverId,
+          provider: 'anthropic',
+          model: anthropic.model,
+          ...(anthropic.apiKey ? { apiKey: anthropic.apiKey } : {}),
+        });
+        setAnthropic((prev) => ({ ...prev, status: 'idle' }));
+      } else if (provider === 'openai') {
+        await upsertProvider.mutateAsync({
+          id: openai.serverId,
+          provider: 'openai',
+          model: openai.model,
+          ...(openai.apiKey ? { apiKey: openai.apiKey } : {}),
+        });
+        setOpenai((prev) => ({ ...prev, status: 'idle' }));
+      } else {
+        await upsertProvider.mutateAsync({
+          id: ollamaServerId,
+          provider: 'ollama',
+          model: 'local',
+          baseUrl: ollamaUrl,
+        });
+        setOllamaStatus('idle');
+      }
+    } catch {
+      // Error handled by mutation
+    } finally {
+      setSavingProvider(null);
+    }
+  };
+
   const handleTestConnection = async (
     provider: 'anthropic' | 'openai' | 'ollama'
   ) => {
+    let providerId: string | undefined;
+
     if (provider === 'anthropic') {
+      providerId = anthropic.serverId;
+      if (!providerId) return;
       setAnthropic((prev) => ({ ...prev, status: 'testing' }));
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setAnthropic((prev) => ({
-        ...prev,
-        status: prev.apiKey ? 'success' : 'error',
-      }));
     } else if (provider === 'openai') {
+      providerId = openai.serverId;
+      if (!providerId) return;
       setOpenai((prev) => ({ ...prev, status: 'testing' }));
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setOpenai((prev) => ({
-        ...prev,
-        status: prev.apiKey ? 'success' : 'error',
-      }));
     } else {
+      providerId = ollamaServerId;
+      if (!providerId) return;
       setOllamaStatus('testing');
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setOllamaStatus(ollamaUrl ? 'success' : 'error');
+    }
+
+    try {
+      await testProvider.mutateAsync(providerId);
+      if (provider === 'anthropic') {
+        setAnthropic((prev) => ({ ...prev, status: 'success' }));
+      } else if (provider === 'openai') {
+        setOpenai((prev) => ({ ...prev, status: 'success' }));
+      } else {
+        setOllamaStatus('success');
+      }
+    } catch {
+      if (provider === 'anthropic') {
+        setAnthropic((prev) => ({ ...prev, status: 'error' }));
+      } else if (provider === 'openai') {
+        setOpenai((prev) => ({ ...prev, status: 'error' }));
+      } else {
+        setOllamaStatus('error');
+      }
     }
   };
 
@@ -133,265 +253,335 @@ export function Settings() {
       {/* Tab Content */}
       {activeTab === 'ai-providers' && (
         <div className="space-y-6">
-          {/* Anthropic */}
-          <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
-                <span className="text-sm font-bold text-orange-700">A</span>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">
-                  Anthropic (Claude)
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Claude models for AI-powered features
-                </p>
-              </div>
-              <StatusBadge status={anthropic.status} />
+          {/* Loading state */}
+          {isLoadingProviders && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 text-aqua-500 animate-spin" />
+              <span className="ml-2 text-sm text-muted-foreground">Loading AI provider settings...</span>
             </div>
+          )}
 
-            <div className="space-y-4">
-              {/* API Key */}
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Key className="w-3.5 h-3.5 text-muted-foreground" />
-                    API Key
+          {!isLoadingProviders && (
+            <>
+              {/* Anthropic */}
+              <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
+                    <span className="text-sm font-bold text-orange-700">A</span>
                   </div>
-                </label>
-                <div className="relative">
-                  <input
-                    type={anthropic.showKey ? 'text' : 'password'}
-                    value={anthropic.apiKey}
-                    onChange={(e) =>
-                      setAnthropic((prev) => ({
-                        ...prev,
-                        apiKey: e.target.value,
-                        status: 'idle',
-                      }))
-                    }
-                    placeholder="sk-ant-api..."
-                    className="w-full px-3 py-2 pr-10 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
-                  />
-                  <button
-                    onClick={() =>
-                      setAnthropic((prev) => ({
-                        ...prev,
-                        showKey: !prev.showKey,
-                      }))
-                    }
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-                  >
-                    {anthropic.showKey ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Model */}
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
-                  Model
-                </label>
-                <div className="relative">
-                  <select
-                    value={anthropic.model}
-                    onChange={(e) =>
-                      setAnthropic((prev) => ({
-                        ...prev,
-                        model: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
-                  >
-                    {anthropicModels.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Test Connection */}
-              <button
-                onClick={() => handleTestConnection('anthropic')}
-                disabled={anthropic.status === 'testing'}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-aqua-600 rounded-lg hover:bg-aqua-700 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {anthropic.status === 'testing' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Testing...
-                  </>
-                ) : (
-                  'Test Connection'
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* OpenAI */}
-          <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
-                <span className="text-sm font-bold text-green-700">O</span>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">
-                  OpenAI (GPT)
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  GPT models as an alternative AI provider
-                </p>
-              </div>
-              <StatusBadge status={openai.status} />
-            </div>
-
-            <div className="space-y-4">
-              {/* API Key */}
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Key className="w-3.5 h-3.5 text-muted-foreground" />
-                    API Key
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Anthropic (Claude)
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Claude models for AI-powered features
+                    </p>
                   </div>
-                </label>
-                <div className="relative">
-                  <input
-                    type={openai.showKey ? 'text' : 'password'}
-                    value={openai.apiKey}
-                    onChange={(e) =>
-                      setOpenai((prev) => ({
-                        ...prev,
-                        apiKey: e.target.value,
-                        status: 'idle',
-                      }))
-                    }
-                    placeholder="sk-..."
-                    className="w-full px-3 py-2 pr-10 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
-                  />
-                  <button
-                    onClick={() =>
-                      setOpenai((prev) => ({
-                        ...prev,
-                        showKey: !prev.showKey,
-                      }))
-                    }
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-                  >
-                    {openai.showKey ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
+                  <StatusBadge status={anthropic.status} />
                 </div>
-              </div>
 
-              {/* Model */}
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
-                  Model
-                </label>
-                <div className="relative">
-                  <select
-                    value={openai.model}
-                    onChange={(e) =>
-                      setOpenai((prev) => ({
-                        ...prev,
-                        model: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
-                  >
-                    {openaiModels.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Test Connection */}
-              <button
-                onClick={() => handleTestConnection('openai')}
-                disabled={openai.status === 'testing'}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-aqua-600 rounded-lg hover:bg-aqua-700 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {openai.status === 'testing' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Testing...
-                  </>
-                ) : (
-                  'Test Connection'
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Ollama */}
-          <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                <Globe className="w-4 h-4 text-slate-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">
-                  Ollama (Local)
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Run AI models locally with Ollama
-                </p>
-              </div>
-              <StatusBadge status={ollamaStatus} />
-            </div>
-
-            <div className="space-y-4">
-              {/* Base URL */}
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-muted-foreground" />
-                    Base URL
+                <div className="space-y-4">
+                  {/* API Key */}
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Key className="w-3.5 h-3.5 text-muted-foreground" />
+                        API Key
+                        {anthropic.hasApiKey && anthropic.apiKeyPreview && (
+                          <span className="text-[10px] text-muted-foreground font-normal ml-1">
+                            (saved: {anthropic.apiKeyPreview})
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={anthropic.showKey ? 'text' : 'password'}
+                        value={anthropic.apiKey}
+                        onChange={(e) =>
+                          setAnthropic((prev) => ({
+                            ...prev,
+                            apiKey: e.target.value,
+                            status: 'idle',
+                          }))
+                        }
+                        placeholder={anthropic.hasApiKey ? 'Enter new key to update...' : 'sk-ant-api...'}
+                        className="w-full px-3 py-2 pr-10 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
+                      />
+                      <button
+                        onClick={() =>
+                          setAnthropic((prev) => ({
+                            ...prev,
+                            showKey: !prev.showKey,
+                          }))
+                        }
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                      >
+                        {anthropic.showKey ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </label>
-                <input
-                  type="url"
-                  value={ollamaUrl}
-                  onChange={(e) => {
-                    setOllamaUrl(e.target.value);
-                    setOllamaStatus('idle');
-                  }}
-                  placeholder="http://localhost:11434"
-                  className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
-                />
+
+                  {/* Model */}
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-1.5">
+                      Model
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={anthropic.model}
+                        onChange={(e) =>
+                          setAnthropic((prev) => ({
+                            ...prev,
+                            model: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
+                      >
+                        {anthropicModels.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleSaveProvider('anthropic')}
+                      disabled={savingProvider === 'anthropic'}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-aqua-600 rounded-lg hover:bg-aqua-700 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {savingProvider === 'anthropic' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save'
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleTestConnection('anthropic')}
+                      disabled={anthropic.status === 'testing' || !anthropic.serverId}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-aqua-700 bg-aqua-50 border border-aqua-200 rounded-lg hover:bg-aqua-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {anthropic.status === 'testing' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Testing...
+                        </>
+                      ) : (
+                        'Test Connection'
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {/* Test Connection */}
-              <button
-                onClick={() => handleTestConnection('ollama')}
-                disabled={ollamaStatus === 'testing'}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-aqua-600 rounded-lg hover:bg-aqua-700 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {ollamaStatus === 'testing' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Testing...
-                  </>
-                ) : (
-                  'Test Connection'
-                )}
-              </button>
-            </div>
-          </div>
+              {/* OpenAI */}
+              <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                    <span className="text-sm font-bold text-green-700">O</span>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      OpenAI (GPT)
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      GPT models as an alternative AI provider
+                    </p>
+                  </div>
+                  <StatusBadge status={openai.status} />
+                </div>
+
+                <div className="space-y-4">
+                  {/* API Key */}
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Key className="w-3.5 h-3.5 text-muted-foreground" />
+                        API Key
+                        {openai.hasApiKey && openai.apiKeyPreview && (
+                          <span className="text-[10px] text-muted-foreground font-normal ml-1">
+                            (saved: {openai.apiKeyPreview})
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={openai.showKey ? 'text' : 'password'}
+                        value={openai.apiKey}
+                        onChange={(e) =>
+                          setOpenai((prev) => ({
+                            ...prev,
+                            apiKey: e.target.value,
+                            status: 'idle',
+                          }))
+                        }
+                        placeholder={openai.hasApiKey ? 'Enter new key to update...' : 'sk-...'}
+                        className="w-full px-3 py-2 pr-10 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
+                      />
+                      <button
+                        onClick={() =>
+                          setOpenai((prev) => ({
+                            ...prev,
+                            showKey: !prev.showKey,
+                          }))
+                        }
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                      >
+                        {openai.showKey ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Model */}
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-1.5">
+                      Model
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={openai.model}
+                        onChange={(e) =>
+                          setOpenai((prev) => ({
+                            ...prev,
+                            model: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
+                      >
+                        {openaiModels.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleSaveProvider('openai')}
+                      disabled={savingProvider === 'openai'}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-aqua-600 rounded-lg hover:bg-aqua-700 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {savingProvider === 'openai' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save'
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleTestConnection('openai')}
+                      disabled={openai.status === 'testing' || !openai.serverId}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-aqua-700 bg-aqua-50 border border-aqua-200 rounded-lg hover:bg-aqua-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {openai.status === 'testing' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Testing...
+                        </>
+                      ) : (
+                        'Test Connection'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ollama */}
+              <div className="bg-white rounded-xl border border-border p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-slate-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Ollama (Local)
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Run AI models locally with Ollama
+                    </p>
+                  </div>
+                  <StatusBadge status={ollamaStatus} />
+                </div>
+
+                <div className="space-y-4">
+                  {/* Base URL */}
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+                        Base URL
+                      </div>
+                    </label>
+                    <input
+                      type="url"
+                      value={ollamaUrl}
+                      onChange={(e) => {
+                        setOllamaUrl(e.target.value);
+                        setOllamaStatus('idle');
+                      }}
+                      placeholder="http://localhost:11434"
+                      className="w-full px-3 py-2 text-sm bg-white border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 font-mono"
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleSaveProvider('ollama')}
+                      disabled={savingProvider === 'ollama'}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-aqua-600 rounded-lg hover:bg-aqua-700 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {savingProvider === 'ollama' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save'
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleTestConnection('ollama')}
+                      disabled={ollamaStatus === 'testing' || !ollamaServerId}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-aqua-700 bg-aqua-50 border border-aqua-200 rounded-lg hover:bg-aqua-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {ollamaStatus === 'testing' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Testing...
+                        </>
+                      ) : (
+                        'Test Connection'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

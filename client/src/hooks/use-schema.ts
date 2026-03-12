@@ -51,8 +51,10 @@ export interface Relationship {
   id: string;
   name: string;
   sourceTable: string;
+  sourceTableName?: string;
   sourceColumn: string;
   targetTable: string;
+  targetTableName?: string;
   targetColumn: string;
   type: string;
   isInferred: boolean;

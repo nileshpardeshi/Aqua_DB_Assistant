@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Bot,
   User,
@@ -51,6 +52,7 @@ export function AIChatPanel({
   className,
   embedded = false,
 }: AIChatPanelProps) {
+  const { projectId } = useParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -59,6 +61,7 @@ export function AIChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -79,6 +82,13 @@ export function AIChatPanel({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Cleanup abort on unmount
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   const handleSend = async () => {
     const trimmed = inputValue.trim();
     if (!trimmed || isLoading) return;
@@ -95,38 +105,111 @@ export function AIChatPanel({
     setInputValue('');
     setIsLoading(true);
 
-    // Simulate AI response
-    await new Promise((resolve) => setTimeout(resolve, 1500 + Math.random() * 1000));
+    // Build the messages array for the API (include context prefix)
+    const contextPrefix =
+      context !== 'general'
+        ? `[Context: ${context}] `
+        : '';
+    const apiMessages = [
+      ...messages
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user' as const, content: contextPrefix + trimmed },
+    ];
 
-    const aiResponses: Record<ChatContext, string[]> = {
-      general: [
-        'That\'s a great question! Based on your project setup, I\'d recommend considering the following approach...\n\nFor your database architecture, you should:\n1. Normalize your tables to at least 3NF\n2. Use appropriate indexes on frequently queried columns\n3. Consider using views for complex join queries\n\nWould you like me to go into more detail on any of these points?',
-        'I can help with that! Here are my recommendations:\n\n- Use UUID primary keys for better distribution\n- Add created_at and updated_at timestamps to all tables\n- Consider implementing soft deletes with a deleted_at column\n\nShall I generate the SQL for this?',
-      ],
-      schema: [
-        'Based on your description, here\'s a suggested schema design:\n\n```sql\nCREATE TABLE users (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  name VARCHAR(255) NOT NULL,\n  email VARCHAR(255) UNIQUE NOT NULL,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\n```\n\nThis follows best practices for PostgreSQL. Would you like me to add more tables?',
-      ],
-      query: [
-        'Here\'s an optimized query for your requirement:\n\n```sql\nSELECT u.name, COUNT(o.id) as order_count\nFROM users u\nLEFT JOIN orders o ON u.id = o.user_id\nGROUP BY u.id, u.name\nORDER BY order_count DESC;\n```\n\nThis uses a LEFT JOIN to include users with no orders. The GROUP BY includes u.id for correctness.',
-      ],
-      performance: [
-        'I\'ve analyzed the query pattern. Here are my optimization suggestions:\n\n1. **Add Index**: CREATE INDEX idx_orders_user_id ON orders(user_id);\n2. **Use EXPLAIN ANALYZE** to verify the execution plan\n3. **Consider partitioning** the orders table by date range\n\nEstimated improvement: 60-80% faster execution.',
-      ],
-    };
+    // Create placeholder for streaming response
+    const assistantMsgId = `msg_${Date.now()}_assistant`;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: assistantMsgId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        context,
+      },
+    ]);
 
-    const responses = aiResponses[context];
-    const responseText = responses[Math.floor(Math.random() * responses.length)];
+    try {
+      abortRef.current = new AbortController();
+      const response = await fetch('/api/v1/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: apiMessages,
+          projectId: projectId || undefined,
+        }),
+        signal: abortRef.current.signal,
+      });
 
-    const assistantMessage: ChatMessage = {
-      id: `msg_${Date.now()}_assistant`,
-      role: 'assistant',
-      content: responseText,
-      timestamp: new Date(),
-      context,
-    };
+      if (!response.ok || !response.body) {
+        throw new Error(
+          response.status === 500
+            ? 'AI provider not configured. Please set up your API key in Settings.'
+            : `Request failed (${response.status})`
+        );
+      }
 
-    setMessages((prev) => [...prev, assistantMessage]);
-    setIsLoading(false);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') break;
+
+          try {
+            const event = JSON.parse(payload) as {
+              type: 'delta' | 'done' | 'error';
+              content: string;
+            };
+
+            if (event.type === 'delta') {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMsgId
+                    ? { ...m, content: m.content + event.content }
+                    : m
+                )
+              );
+            } else if (event.type === 'error') {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMsgId
+                    ? { ...m, content: `Error: ${event.content}` }
+                    : m
+                )
+              );
+            }
+          } catch {
+            // Skip malformed JSON lines
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to connect to AI. Please check your AI provider settings.';
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMsgId ? { ...m, content: errMsg } : m
+        )
+      );
+    } finally {
+      setIsLoading(false);
+      abortRef.current = null;
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

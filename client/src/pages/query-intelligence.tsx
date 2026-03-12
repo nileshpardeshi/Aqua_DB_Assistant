@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { getDialect } from '@/config/constants';
 import type { Project } from '@/hooks/use-projects';
 import { useEditorStore } from '@/stores/use-editor-store';
+import { useExecuteQuery, useSaveQuery } from '@/hooks/use-queries';
 import { QueryTabBar } from '@/components/query/query-tab-bar';
 import { SQLEditor } from '@/components/query/sql-editor';
 import { QueryResultsTable } from '@/components/query/query-results-table';
@@ -23,19 +24,6 @@ import { AIQueryAssistant } from '@/components/query/ai-query-assistant';
 
 type BottomTab = 'results' | 'history' | 'ai-assistant';
 
-// Mock query results for demonstration
-const mockColumns = ['id', 'name', 'email', 'role', 'status', 'created_at'];
-const mockRows = [
-  [1, 'Alice Johnson', 'alice@example.com', 'admin', 'active', '2025-01-15'],
-  [2, 'Bob Smith', 'bob@example.com', 'editor', 'active', '2025-02-20'],
-  [3, 'Carol Williams', 'carol@example.com', 'viewer', 'inactive', '2025-03-10'],
-  [4, 'David Brown', 'david@example.com', 'editor', 'active', '2025-04-05'],
-  [5, 'Eve Davis', 'eve@example.com', 'admin', 'active', '2025-05-12'],
-  [6, 'Frank Miller', 'frank@example.com', 'viewer', 'active', '2025-06-18'],
-  [7, 'Grace Wilson', 'grace@example.com', 'editor', 'inactive', '2025-07-22'],
-  [8, 'Henry Moore', 'henry@example.com', 'viewer', 'active', '2025-08-30'],
-];
-
 export function QueryIntelligence() {
   const { project } = useOutletContext<{ project: Project }>();
   const dialect = project ? getDialect(project.dialect) : undefined;
@@ -43,26 +31,109 @@ export function QueryIntelligence() {
   const { tabs, activeTabId, updateTabSQL } = useEditorStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
+  const executeQuery = useExecuteQuery();
+  const saveQuery = useSaveQuery();
+
   const [bottomTab, setBottomTab] = useState<BottomTab>('results');
   const [isRunning, setIsRunning] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [hasResults, setHasResults] = useState(false);
   const [resultColumns, setResultColumns] = useState<string[]>([]);
   const [resultRows, setResultRows] = useState<unknown[][]>([]);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleRunQuery = async () => {
-    if (!activeTab?.sql.trim()) return;
+    if (!activeTab?.sql.trim() || !project?.id) return;
     setIsRunning(true);
     setBottomTab('results');
+    setErrorMessage(null);
 
-    // Simulate query execution
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    const startTime = Date.now();
 
-    setResultColumns(mockColumns);
-    setResultRows(mockRows);
-    setHasResults(true);
-    setExecutionTime(245);
-    setIsRunning(false);
+    try {
+      const elapsed = Date.now() - startTime;
+
+      await executeQuery.mutateAsync({
+        projectId: project.id,
+        data: {
+          sql: activeTab.sql,
+          dialect: project.dialect,
+          savedQueryId: activeTab.savedQueryId,
+          status: 'success',
+          executionTime: elapsed,
+          resultPreview: JSON.stringify({ columns: [], rows: [] }),
+        },
+      });
+
+      // The server records the execution. Clear previous results and show
+      // a confirmation that the execution was recorded.
+      setResultColumns(['status', 'sql', 'execution_time_ms', 'recorded_at']);
+      setResultRows([
+        [
+          'Execution recorded',
+          activeTab.sql.length > 80
+            ? activeTab.sql.substring(0, 80) + '...'
+            : activeTab.sql,
+          elapsed,
+          new Date().toISOString(),
+        ],
+      ]);
+      setHasResults(true);
+      setExecutionTime(elapsed);
+    } catch (err: unknown) {
+      const elapsed = Date.now() - startTime;
+      const message =
+        err && typeof err === 'object' && 'message' in err
+          ? (err as { message: string }).message
+          : 'Query execution failed';
+
+      // Still attempt to record the failed execution
+      try {
+        await executeQuery.mutateAsync({
+          projectId: project.id,
+          data: {
+            sql: activeTab.sql,
+            dialect: project.dialect,
+            savedQueryId: activeTab.savedQueryId,
+            status: 'error',
+            executionTime: elapsed,
+            errorMessage: message,
+          },
+        });
+      } catch {
+        // Silently ignore if recording also fails
+      }
+
+      setErrorMessage(message);
+      setResultColumns(['error']);
+      setResultRows([[message]]);
+      setHasResults(true);
+      setExecutionTime(elapsed);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleSaveQuery = async () => {
+    if (!activeTab?.sql.trim() || !project?.id) return;
+    setIsSaving(true);
+
+    try {
+      await saveQuery.mutateAsync({
+        projectId: project.id,
+        data: {
+          title: activeTab.title || 'Untitled Query',
+          sql: activeTab.sql,
+          dialect: project.dialect,
+          description: '',
+        },
+      });
+    } catch {
+      // Error handled by mutation
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleFormatQuery = () => {
@@ -161,11 +232,21 @@ export function QueryIntelligence() {
 
               {/* Save Button */}
               <button
-                disabled={!activeTab?.sql.trim()}
+                onClick={handleSaveQuery}
+                disabled={!activeTab?.sql.trim() || isSaving}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-white border border-input rounded-md hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Save className="w-3.5 h-3.5" />
-                Save
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    Save
+                  </>
+                )}
               </button>
 
               {/* Run Button */}
@@ -234,9 +315,16 @@ export function QueryIntelligence() {
 
             {/* Execution time badge */}
             {hasResults && executionTime !== null && bottomTab === 'results' && (
-              <span className="text-[10px] text-muted-foreground px-2 py-1 bg-white rounded border border-border/50 mr-2">
-                Executed in {executionTime}ms
-              </span>
+              <div className="flex items-center gap-2 mr-2">
+                {errorMessage && (
+                  <span className="text-[10px] text-red-600 px-2 py-1 bg-red-50 rounded border border-red-200">
+                    Error
+                  </span>
+                )}
+                <span className="text-[10px] text-muted-foreground px-2 py-1 bg-white rounded border border-border/50">
+                  Executed in {executionTime}ms
+                </span>
+              </div>
             )}
           </div>
 

@@ -409,11 +409,11 @@ function RelationshipCard({
       </div>
       <div className="flex items-center gap-2 ml-5.5 text-xs text-slate-600">
         <span className="font-mono">
-          {direction === 'outgoing' ? rel.sourceColumn : rel.sourceTable}.{rel.sourceColumn}
+          {(rel.sourceTableName || rel.sourceTable)}.{rel.sourceColumn}
         </span>
         <ArrowRight className="w-3 h-3 text-slate-400" />
         <span className="font-mono">
-          {direction === 'incoming' ? rel.targetColumn : rel.targetTable}.{rel.targetColumn}
+          {(rel.targetTableName || rel.targetTable)}.{rel.targetColumn}
         </span>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '../lib/api-client';
+import apiClient from '@/lib/api-client';
 
 // Types
 export interface SavedQuery {
@@ -25,6 +25,35 @@ export interface UpdateQueryInput {
   sql?: string;
   dialect?: string;
   description?: string;
+}
+
+export interface ExecuteQueryInput {
+  sql: string;
+  dialect: string;
+  savedQueryId?: string;
+  status: string;
+  rowsAffected?: number;
+  rowsReturned?: number;
+  executionTime?: number;
+  resultPreview?: string;
+  explainPlan?: string;
+  errorMessage?: string;
+}
+
+export interface QueryExecution {
+  id: string;
+  projectId: string;
+  savedQueryId?: string | null;
+  sql: string;
+  dialect: string;
+  status: string;
+  rowsAffected?: number | null;
+  rowsReturned?: number | null;
+  executionTime?: number | null;
+  resultPreview?: string | null;
+  explainPlan?: string | null;
+  errorMessage?: string | null;
+  executedAt: string;
 }
 
 // Query keys
@@ -134,6 +163,35 @@ export function useDeleteQuery() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.list(variables.projectId),
+      });
+    },
+  });
+}
+
+/**
+ * Execute a query and record the execution on the server.
+ */
+export function useExecuteQuery() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      data,
+    }: {
+      projectId: string;
+      data: ExecuteQueryInput;
+    }) => {
+      const response = await apiClient.post(
+        `/projects/${projectId}/queries/execute`,
+        data
+      );
+      return response as unknown as QueryExecution;
+    },
+    onSuccess: (_data, variables) => {
+      // Invalidate query history so it refreshes
+      queryClient.invalidateQueries({
+        queryKey: ['query-history', variables.projectId],
       });
     },
   });

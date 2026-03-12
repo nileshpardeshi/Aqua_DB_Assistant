@@ -10,11 +10,11 @@ import {
   ArrowRight,
   Sparkles,
 } from 'lucide-react';
-import { cn, formatDate } from '../lib/utils';
-import { APP_NAME, APP_TAGLINE, getDialect } from '../config/constants';
-import { useProjects, type Project } from '../hooks/use-projects';
-import { useProjectStore } from '../stores/use-project-store';
-import { ProjectCreateDialog } from '../components/project/project-create-dialog';
+import { cn, formatDate } from '@/lib/utils';
+import { APP_NAME, APP_TAGLINE, getDialect } from '@/config/constants';
+import { useProjects, type Project } from '@/hooks/use-projects';
+import { useProjectStore } from '@/stores/use-project-store';
+import { ProjectCreateDialog } from '@/components/project/project-create-dialog';
 
 interface StatCard {
   label: string;

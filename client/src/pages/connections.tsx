@@ -22,6 +22,7 @@ import { DATABASE_DIALECTS } from '@/config/constants';
 import {
   useConnections,
   useCreateConnection,
+  useUpdateConnection,
   useDeleteConnection,
   useTestConnection,
 } from '@/hooks/use-connections';
@@ -65,65 +66,13 @@ const STATUS_CONFIG = {
   },
 };
 
-// Mock connections for demonstration
-const MOCK_CONNECTIONS: Connection[] = [
-  {
-    id: 'c1',
-    projectId: '',
-    name: 'Production DB',
-    host: 'db-prod.example.com',
-    port: 5432,
-    database: 'app_production',
-    username: 'admin',
-    dialect: 'postgresql',
-    ssl: true,
-    status: 'connected',
-    lastTestedAt: '2025-12-15T10:30:00Z',
-    createdAt: '2025-10-01T00:00:00Z',
-    updatedAt: '2025-12-15T10:30:00Z',
-  },
-  {
-    id: 'c2',
-    projectId: '',
-    name: 'Staging DB',
-    host: 'db-staging.example.com',
-    port: 5432,
-    database: 'app_staging',
-    username: 'staging_user',
-    dialect: 'postgresql',
-    ssl: true,
-    status: 'connected',
-    lastTestedAt: '2025-12-14T08:15:00Z',
-    createdAt: '2025-10-15T00:00:00Z',
-    updatedAt: '2025-12-14T08:15:00Z',
-  },
-  {
-    id: 'c3',
-    projectId: '',
-    name: 'Legacy MySQL',
-    host: 'mysql-legacy.internal',
-    port: 3306,
-    database: 'legacy_data',
-    username: 'reader',
-    dialect: 'mysql',
-    ssl: false,
-    status: 'disconnected',
-    createdAt: '2025-11-01T00:00:00Z',
-    updatedAt: '2025-11-01T00:00:00Z',
-  },
-];
-
 export function Connections() {
   const { projectId } = useParams();
-  const { data: apiConnections, isLoading } = useConnections(projectId);
+  const { data: connections = [], isLoading } = useConnections(projectId);
   const createConnection = useCreateConnection();
+  const updateConnection = useUpdateConnection();
   const deleteConnection = useDeleteConnection();
   const testConnection = useTestConnection();
-
-  const connections =
-    apiConnections && apiConnections.length > 0
-      ? apiConnections
-      : MOCK_CONNECTIONS;
 
   const [showForm, setShowForm] = useState(false);
   const [editingConnection, setEditingConnection] = useState<Connection | null>(null);
@@ -191,23 +140,42 @@ export function Connections() {
     if (!formName.trim() || !formHost.trim() || !formDatabase.trim() || !projectId) return;
 
     try {
-      await createConnection.mutateAsync({
-        projectId,
-        name: formName.trim(),
-        host: formHost.trim(),
-        port: formPort,
-        database: formDatabase.trim(),
-        username: formUsername.trim(),
-        password: formPassword,
-        dialect: formDialect,
-        ssl: formSsl,
-      });
+      if (editingConnection) {
+        // Update existing connection
+        await updateConnection.mutateAsync({
+          projectId,
+          connectionId: editingConnection.id,
+          data: {
+            name: formName.trim(),
+            host: formHost.trim(),
+            port: formPort,
+            database: formDatabase.trim(),
+            username: formUsername.trim(),
+            ...(formPassword ? { password: formPassword } : {}),
+            dialect: formDialect,
+            ssl: formSsl,
+          },
+        });
+      } else {
+        // Create new connection
+        await createConnection.mutateAsync({
+          projectId,
+          name: formName.trim(),
+          host: formHost.trim(),
+          port: formPort,
+          database: formDatabase.trim(),
+          username: formUsername.trim(),
+          password: formPassword,
+          dialect: formDialect,
+          ssl: formSsl,
+        });
+      }
       setShowForm(false);
       resetForm();
     } catch {
       // Error handled by mutation
     }
-  }, [formName, formHost, formPort, formDatabase, formUsername, formPassword, formDialect, formSsl, projectId, createConnection, resetForm]);
+  }, [formName, formHost, formPort, formDatabase, formUsername, formPassword, formDialect, formSsl, projectId, editingConnection, createConnection, updateConnection, resetForm]);
 
   const handleTestConnection = useCallback(
     async (connectionId: string) => {
@@ -220,17 +188,20 @@ export function Connections() {
           projectId,
           connectionId,
         });
-        setTestResult({ id: connectionId, ...result });
-      } catch {
-        // Simulate test result
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const success = Math.random() > 0.3;
         setTestResult({
           id: connectionId,
-          success,
-          message: success
-            ? 'Connection successful (latency: 12ms)'
-            : 'Connection refused: unable to reach host',
+          success: result.success,
+          message: result.message || (result.success ? 'Connection successful' : 'Connection failed'),
+        });
+      } catch (err: unknown) {
+        const message =
+          err && typeof err === 'object' && 'message' in err
+            ? (err as { message: string }).message
+            : 'Connection test failed';
+        setTestResult({
+          id: connectionId,
+          success: false,
+          message,
         });
       } finally {
         setTestingId(null);
@@ -256,6 +227,8 @@ export function Connections() {
 
   const getDialectInfo = (value: string) =>
     DATABASE_DIALECTS.find((d) => d.value === value);
+
+  const isMutating = createConnection.isPending || updateConnection.isPending;
 
   return (
     <div className="p-6 lg:p-8 max-w-6xl space-y-6">
@@ -299,7 +272,6 @@ export function Connections() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {connections.map((conn) => {
             const status = STATUS_CONFIG[conn.status];
-            const StatusIcon = status.icon;
             const dialectInfo = getDialectInfo(conn.dialect);
             const isTestingThis = testingId === conn.id;
             const isDeletingThis = deletingId === conn.id;
@@ -674,7 +646,7 @@ export function Connections() {
                     !formName.trim() ||
                     !formHost.trim() ||
                     !formDatabase.trim() ||
-                    createConnection.isPending
+                    isMutating
                   }
                   className={cn(
                     'inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-colors',
@@ -683,7 +655,7 @@ export function Connections() {
                       : 'text-slate-400 bg-slate-100 cursor-not-allowed'
                   )}
                 >
-                  {createConnection.isPending ? (
+                  {isMutating ? (
                     <>
                       <Loader2 className="w-3 h-3 animate-spin" />
                       Saving...

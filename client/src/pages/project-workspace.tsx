@@ -8,10 +8,10 @@ import {
   Shield,
   GitBranch,
 } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { getDialect } from '../config/constants';
-import { useProject } from '../hooks/use-projects';
-import { useProjectStore } from '../stores/use-project-store';
+import { cn } from '@/lib/utils';
+import { getDialect } from '@/config/constants';
+import { useProject } from '@/hooks/use-projects';
+import { useProjectStore } from '@/stores/use-project-store';
 
 const tabs = [
   { label: 'Overview', icon: FolderOpen, path: '' },

@@ -34,9 +34,9 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { cn, formatDate } from '../lib/utils';
-import { getDialect } from '../config/constants';
-import type { Project } from '../hooks/use-projects';
+import { cn, formatDate } from '@/lib/utils';
+import { getDialect } from '@/config/constants';
+import type { Project } from '@/hooks/use-projects';
 
 // ---- Mock Data ----
 

@@ -20,45 +20,6 @@ export interface TableFilter {
   tableType?: string;
 }
 
-export interface ERNode {
-  id: string;
-  type: string;
-  position: { x: number; y: number };
-  data: {
-    tableId: string;
-    schemaName: string;
-    tableName: string;
-    tableType: string;
-    columns: Array<{
-      name: string;
-      dataType: string;
-      isPrimaryKey: boolean;
-      isNullable: boolean;
-      isForeignKey: boolean;
-    }>;
-  };
-}
-
-export interface EREdge {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle: string;
-  targetHandle: string;
-  type: string;
-  animated: boolean;
-  label: string;
-  data: {
-    relationshipId: string;
-    sourceColumns: string[];
-    targetColumns: string[];
-    constraintName: string | null;
-    isInferred: boolean;
-    relationshipType: string;
-    onDelete: string | null;
-    onUpdate: string | null;
-  };
-}
 
 // ---------------------------------------------------------------------------
 // persistParseResult – Upsert tables, columns, indexes, constraints, rels
@@ -328,11 +289,13 @@ export async function getTables(
       columns: {
         orderBy: { ordinalPosition: 'asc' },
       },
+      indexes: true,
+      constraints: true,
     },
     orderBy: [{ schemaName: 'asc' }, { tableName: 'asc' }],
   });
 
-  return tables;
+  return tables.map((table) => mapTable(table));
 }
 
 // ---------------------------------------------------------------------------
@@ -367,7 +330,48 @@ export async function getTableById(tableId: string) {
 
   if (!table) throw new NotFoundError('Table');
 
-  return table;
+  // Build FK columns set from outgoing relationships
+  const fkCols = new Set<string>();
+  for (const rel of table.outgoingRelationships) {
+    const srcCols: string[] = safeParseJSON(rel.sourceColumns, []);
+    for (const col of srcCols) {
+      fkCols.add(col.toLowerCase());
+    }
+  }
+
+  return {
+    ...mapTable(table, fkCols),
+    outgoingRelationships: table.outgoingRelationships.map((rel) => {
+      const srcCols: string[] = safeParseJSON(rel.sourceColumns, []);
+      const tgtCols: string[] = safeParseJSON(rel.targetColumns, []);
+      return {
+        id: rel.id,
+        name: rel.constraintName || rel.relationshipType,
+        sourceTable: rel.sourceTableId,
+        sourceColumn: srcCols[0] || '',
+        targetTable: rel.targetTableId,
+        targetTableName: rel.targetTable.tableName,
+        targetColumn: tgtCols[0] || '',
+        type: rel.relationshipType,
+        isInferred: rel.isInferred,
+      };
+    }),
+    incomingRelationships: table.incomingRelationships.map((rel) => {
+      const srcCols: string[] = safeParseJSON(rel.sourceColumns, []);
+      const tgtCols: string[] = safeParseJSON(rel.targetColumns, []);
+      return {
+        id: rel.id,
+        name: rel.constraintName || rel.relationshipType,
+        sourceTable: rel.sourceTableId,
+        sourceTableName: rel.sourceTable.tableName,
+        sourceColumn: srcCols[0] || '',
+        targetTable: rel.targetTableId,
+        targetColumn: tgtCols[0] || '',
+        type: rel.relationshipType,
+        isInferred: rel.isInferred,
+      };
+    }),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -394,11 +398,26 @@ export async function getRelationships(projectId: string) {
     },
   });
 
-  return relationships;
+  return relationships.map((rel) => {
+    const srcCols: string[] = safeParseJSON(rel.sourceColumns, []);
+    const tgtCols: string[] = safeParseJSON(rel.targetColumns, []);
+    return {
+      id: rel.id,
+      name: rel.constraintName || rel.relationshipType,
+      sourceTable: rel.sourceTableId,
+      sourceTableName: rel.sourceTable.tableName,
+      sourceColumn: srcCols[0] || '',
+      targetTable: rel.targetTableId,
+      targetTableName: rel.targetTable.tableName,
+      targetColumn: tgtCols[0] || '',
+      type: rel.relationshipType,
+      isInferred: rel.isInferred,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------
-// getERDiagramData – Build ERNode[] and EREdge[] for React Flow
+// getERDiagramData – Return tables + relationships for client-side rendering
 // ---------------------------------------------------------------------------
 
 export async function getERDiagramData(
@@ -422,13 +441,15 @@ export async function getERDiagramData(
     tableWhere.tableType = filters.tableType;
   }
 
-  // Fetch tables with columns
+  // Fetch tables with columns, indexes, constraints
   const tables = await prisma.tableMetadata.findMany({
     where: tableWhere,
     include: {
       columns: {
         orderBy: { ordinalPosition: 'asc' },
       },
+      indexes: true,
+      constraints: true,
     },
     orderBy: [{ schemaName: 'asc' }, { tableName: 'asc' }],
   });
@@ -442,14 +463,6 @@ export async function getERDiagramData(
         { sourceTableId: { in: tableIds } },
         { targetTableId: { in: tableIds } },
       ],
-    },
-    include: {
-      sourceTable: {
-        select: { id: true, schemaName: true, tableName: true },
-      },
-      targetTable: {
-        select: { id: true, schemaName: true, tableName: true },
-      },
     },
   });
 
@@ -465,58 +478,66 @@ export async function getERDiagramData(
     }
   }
 
-  // ── Build nodes ─────────────────────────────────────────────────────
-  const nodes: ERNode[] = tables.map((table) => {
+  // ── Map to client-expected format ─────────────────────────────────────
+  const mappedTables = tables.map((table) => {
     const fkCols = fkColumnsPerTable.get(table.id) ?? new Set<string>();
 
     return {
       id: table.id,
-      type: 'erTable',
-      position: { x: 0, y: 0 }, // Client will apply layout
-      data: {
-        tableId: table.id,
-        schemaName: table.schemaName,
-        tableName: table.tableName,
-        tableType: table.tableType,
-        columns: table.columns.map((col) => ({
-          name: col.columnName,
-          dataType: col.dataType,
-          isPrimaryKey: col.isPrimaryKey,
-          isNullable: col.isNullable,
-          isForeignKey: fkCols.has(col.columnName.toLowerCase()),
-        })),
-      },
+      name: table.tableName,
+      schema: table.schemaName,
+      type: table.tableType,
+      description: null,
+      estimatedRows: null,
+      columns: table.columns.map((col) => ({
+        id: col.id,
+        name: col.columnName,
+        dataType: col.dataType,
+        nullable: col.isNullable,
+        isPrimaryKey: col.isPrimaryKey,
+        isForeignKey: fkCols.has(col.columnName.toLowerCase()),
+        isUnique: col.isUnique,
+        defaultValue: col.defaultValue,
+        comment: null,
+        ordinalPosition: col.ordinalPosition,
+        referencesTable: null,
+        referencesColumn: null,
+      })),
+      indexes: table.indexes.map((idx) => ({
+        id: idx.id,
+        name: idx.indexName,
+        type: idx.indexType,
+        columns: safeParseJSON<string[]>(idx.columns, []),
+        isUnique: idx.isUnique,
+      })),
+      constraints: table.constraints.map((con) => ({
+        id: con.id,
+        name: con.constraintName,
+        type: con.constraintType,
+        columns: safeParseJSON<string[]>(con.columns, []),
+        referencesTable: null,
+        referencesColumns: null,
+      })),
     };
   });
 
-  // ── Build edges ─────────────────────────────────────────────────────
-  const edges: EREdge[] = relationships.map((rel) => {
+  const mappedRelationships = relationships.map((rel) => {
     const srcCols: string[] = safeParseJSON(rel.sourceColumns, []);
     const tgtCols: string[] = safeParseJSON(rel.targetColumns, []);
 
     return {
       id: rel.id,
-      source: rel.sourceTableId,
-      target: rel.targetTableId,
-      sourceHandle: `${rel.sourceTableId}-${srcCols.join('-')}`,
-      targetHandle: `${rel.targetTableId}-${tgtCols.join('-')}`,
-      type: 'smoothstep',
-      animated: rel.isInferred,
-      label: rel.relationshipType,
-      data: {
-        relationshipId: rel.id,
-        sourceColumns: srcCols,
-        targetColumns: tgtCols,
-        constraintName: rel.constraintName,
-        isInferred: rel.isInferred,
-        relationshipType: rel.relationshipType,
-        onDelete: rel.onDelete,
-        onUpdate: rel.onUpdate,
-      },
+      name: rel.constraintName || rel.relationshipType,
+      sourceTable: rel.sourceTableId,
+      sourceColumn: srcCols[0] || '',
+      targetTable: rel.targetTableId,
+      targetColumn: tgtCols[0] || '',
+      type: rel.relationshipType,
+      isInferred: rel.isInferred,
     };
   });
 
-  return { nodes, edges };
+  return { tables: mappedTables, relationships: mappedRelationships };
 }
 
 // ---------------------------------------------------------------------------
@@ -651,6 +672,82 @@ export async function createSchemaSnapshot(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Map a Prisma table (with columns, indexes, constraints) to the client API format.
+ */
+function mapTable(
+  table: {
+    id: string;
+    schemaName: string;
+    tableName: string;
+    tableType: string;
+    description?: string | null;
+    estimatedRows?: bigint | number | null;
+    columns: Array<{
+      id: string;
+      columnName: string;
+      dataType: string;
+      isNullable: boolean;
+      isPrimaryKey: boolean;
+      isUnique: boolean;
+      defaultValue: string | null;
+      ordinalPosition: number;
+    }>;
+    indexes?: Array<{
+      id: string;
+      indexName: string;
+      indexType: string;
+      columns: string;
+      isUnique: boolean;
+    }>;
+    constraints?: Array<{
+      id: string;
+      constraintName: string;
+      constraintType: string;
+      columns: string;
+    }>;
+  },
+  fkCols?: Set<string>,
+) {
+  return {
+    id: table.id,
+    name: table.tableName,
+    schema: table.schemaName,
+    type: table.tableType,
+    description: table.description ?? null,
+    estimatedRows: table.estimatedRows != null ? Number(table.estimatedRows) : null,
+    columns: table.columns.map((col) => ({
+      id: col.id,
+      name: col.columnName,
+      dataType: col.dataType,
+      nullable: col.isNullable,
+      isPrimaryKey: col.isPrimaryKey,
+      isForeignKey: fkCols ? fkCols.has(col.columnName.toLowerCase()) : false,
+      isUnique: col.isUnique,
+      defaultValue: col.defaultValue,
+      comment: null,
+      ordinalPosition: col.ordinalPosition,
+      referencesTable: null,
+      referencesColumn: null,
+    })),
+    indexes: (table.indexes ?? []).map((idx) => ({
+      id: idx.id,
+      name: idx.indexName,
+      type: idx.indexType,
+      columns: safeParseJSON<string[]>(idx.columns, []),
+      isUnique: idx.isUnique,
+    })),
+    constraints: (table.constraints ?? []).map((con) => ({
+      id: con.id,
+      name: con.constraintName,
+      type: con.constraintType,
+      columns: safeParseJSON<string[]>(con.columns, []),
+      referencesTable: null,
+      referencesColumns: null,
+    })),
+  };
+}
 
 /**
  * Safely parse a JSON string, returning a fallback on failure.
