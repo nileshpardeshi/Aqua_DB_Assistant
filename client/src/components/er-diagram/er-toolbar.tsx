@@ -15,6 +15,14 @@ import {
   Search,
   X,
   ChevronDown,
+  Grid3X3,
+  Palette,
+  Undo2,
+  Redo2,
+  Maximize2,
+  Minimize2,
+  StickyNote,
+  Save,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useERDiagramStore } from '@/stores/use-er-diagram-store';
@@ -25,6 +33,7 @@ import {
   downloadTextFile,
 } from '@/lib/export-utils';
 import type { ERTableNodeData } from './er-table-node';
+import type { DiagramType } from '@/hooks/use-saved-diagrams';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -40,11 +49,24 @@ interface ERToolbarProps {
     }>;
   }>;
   nodes: Node<ERTableNodeData>[];
+  onSave?: () => void;
+  onApplyPositions?: (positions: Record<string, { x: number; y: number }>) => void;
+  diagramType: DiagramType;
+  activeDiagramId: string | null;
 }
+
+// ── Diagram Type Labels ───────────────────────────────────────────────────────
+
+const DIAGRAM_TYPE_LABELS: Record<DiagramType, string> = {
+  'er-full': 'Full ER Diagram',
+  'er-compact': 'Compact Relationship Map',
+  'dependency-graph': 'Table Dependency Graph',
+  'schema-group': 'Schema Group View',
+};
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function ERToolbar({ tables, nodes }: ERToolbarProps) {
+export function ERToolbar({ tables, nodes, onSave, onApplyPositions, diagramType, activeDiagramId }: ERToolbarProps) {
   const reactFlowInstance = useReactFlow();
   const { zoomIn, zoomOut, fitView } = reactFlowInstance;
 
@@ -55,13 +77,24 @@ export function ERToolbar({ tables, nodes }: ERToolbarProps) {
     toggleColumns,
     showRelationshipLabels,
     toggleLabels,
+    colorBySchema,
+    toggleColorBySchema,
+    snapToGrid,
+    toggleSnapToGrid,
+    isFullscreen,
+    toggleFullscreen,
+    isAnnotationMode,
+    toggleAnnotationMode,
+    undoPositions,
+    redoPositions,
+    positionHistory,
+    positionHistoryIndex,
   } = useERDiagramStore();
 
   // ── Export dropdown state ────────────────────────────────────────────
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (exportRef.current && !exportRef.current.contains(e.target as HTMLElement)) {
@@ -130,15 +163,52 @@ export function ERToolbar({ tables, nodes }: ERToolbarProps) {
     [matchingNodes, handleSearchSelect]
   );
 
-  // Focus input when search opens
   useEffect(() => {
     if (searchOpen && searchInputRef.current) {
       searchInputRef.current.focus();
     }
   }, [searchOpen]);
 
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        const positions = undoPositions();
+        if (positions && onApplyPositions) onApplyPositions(positions);
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+        e.preventDefault();
+        const positions = redoPositions();
+        if (positions && onApplyPositions) onApplyPositions(positions);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        onSave?.();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [undoPositions, redoPositions, onApplyPositions, onSave]);
+
+  const canUndo = positionHistoryIndex > 0;
+  const canRedo = positionHistoryIndex < positionHistory.length - 1;
+
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-1.5 px-4 py-2.5 bg-card/95 backdrop-blur border-b border-slate-200">
+    <div className="sticky top-0 z-10 flex items-center gap-1 px-3 py-2 bg-card/95 backdrop-blur border-b border-slate-200 flex-wrap">
+      {/* ── Diagram type badge ─────────────────────────────────────────── */}
+      <span className="px-2.5 py-1 text-[11px] font-semibold bg-gradient-to-r from-aqua-50 to-teal-50 text-aqua-700 border border-aqua-200 rounded-lg mr-1">
+        {DIAGRAM_TYPE_LABELS[diagramType]}
+      </span>
+
+      <Separator />
+
       {/* ── Layout Direction ──────────────────────────────────────────── */}
       <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
         <ToolbarButton
@@ -158,21 +228,9 @@ export function ERToolbar({ tables, nodes }: ERToolbarProps) {
       <Separator />
 
       {/* ── Zoom Controls ─────────────────────────────────────────────── */}
-      <ToolbarButton
-        icon={ZoomIn}
-        label="Zoom In"
-        onClick={() => zoomIn({ duration: 200 })}
-      />
-      <ToolbarButton
-        icon={ZoomOut}
-        label="Zoom Out"
-        onClick={() => zoomOut({ duration: 200 })}
-      />
-      <ToolbarButton
-        icon={Maximize}
-        label="Fit View"
-        onClick={() => fitView({ padding: 0.15, duration: 300 })}
-      />
+      <ToolbarButton icon={ZoomIn} label="Zoom In" onClick={() => zoomIn({ duration: 200 })} />
+      <ToolbarButton icon={ZoomOut} label="Zoom Out" onClick={() => zoomOut({ duration: 200 })} />
+      <ToolbarButton icon={Maximize} label="Fit View" onClick={() => fitView({ padding: 0.15, duration: 300 })} />
 
       <Separator />
 
@@ -188,6 +246,48 @@ export function ERToolbar({ tables, nodes }: ERToolbarProps) {
         label={showRelationshipLabels ? 'Hide Labels' : 'Show Labels'}
         active={showRelationshipLabels}
         onClick={toggleLabels}
+      />
+      <ToolbarButton
+        icon={Palette}
+        label={colorBySchema ? 'Disable Schema Colors' : 'Color by Schema'}
+        active={colorBySchema}
+        onClick={toggleColorBySchema}
+      />
+      <ToolbarButton
+        icon={Grid3X3}
+        label={snapToGrid ? 'Disable Snap to Grid' : 'Snap to Grid'}
+        active={snapToGrid}
+        onClick={toggleSnapToGrid}
+      />
+
+      <Separator />
+
+      {/* ── Annotations ───────────────────────────────────────────────── */}
+      <ToolbarButton
+        icon={StickyNote}
+        label={isAnnotationMode ? 'Exit Annotation Mode' : 'Add Annotation'}
+        active={isAnnotationMode}
+        onClick={toggleAnnotationMode}
+      />
+
+      {/* ── Undo/Redo ─────────────────────────────────────────────────── */}
+      <ToolbarButton
+        icon={Undo2}
+        label="Undo (Ctrl+Z)"
+        onClick={() => {
+          const p = undoPositions();
+          if (p && onApplyPositions) onApplyPositions(p);
+        }}
+        disabled={!canUndo}
+      />
+      <ToolbarButton
+        icon={Redo2}
+        label="Redo (Ctrl+Y)"
+        onClick={() => {
+          const p = redoPositions();
+          if (p && onApplyPositions) onApplyPositions(p);
+        }}
+        disabled={!canRedo}
       />
 
       <Separator />
@@ -208,17 +308,13 @@ export function ERToolbar({ tables, nodes }: ERToolbarProps) {
                 className="w-48 pl-7 pr-2 py-1.5 text-xs border border-slate-200 rounded-md bg-card focus:outline-none focus:border-aqua-400 focus:ring-1 focus:ring-aqua-400"
               />
               <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setSearchOpen(false);
-                }}
+                onClick={() => { setSearchQuery(''); setSearchOpen(false); }}
                 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3 h-3" />
               </button>
             </div>
 
-            {/* Search results dropdown */}
             {searchQuery.trim() && matchingNodes.length > 0 && (
               <div className="absolute top-full left-0 mt-1 w-56 bg-card border border-slate-200 rounded-lg shadow-lg py-1 z-50 max-h-48 overflow-y-auto">
                 {matchingNodes.slice(0, 10).map((node) => (
@@ -227,9 +323,7 @@ export function ERToolbar({ tables, nodes }: ERToolbarProps) {
                     onClick={() => handleSearchSelect(node.id)}
                     className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-aqua-50 hover:text-aqua-700 truncate"
                   >
-                    {node.data.schema
-                      ? `${node.data.schema}.${node.data.tableName}`
-                      : node.data.tableName}
+                    {node.data.schema ? `${node.data.schema}.${node.data.tableName}` : node.data.tableName}
                   </button>
                 ))}
               </div>
@@ -242,15 +336,19 @@ export function ERToolbar({ tables, nodes }: ERToolbarProps) {
             )}
           </div>
         ) : (
-          <ToolbarButton
-            icon={Search}
-            label="Search Tables"
-            onClick={() => setSearchOpen(true)}
-          />
+          <ToolbarButton icon={Search} label="Search Tables (Ctrl+F)" onClick={() => setSearchOpen(true)} />
         )}
       </div>
 
       <Separator />
+
+      {/* ── Save Button ────────────────────────────────────────────────── */}
+      {activeDiagramId && onSave && (
+        <>
+          <ToolbarButton icon={Save} label="Save Diagram (Ctrl+S)" onClick={onSave} />
+          <Separator />
+        </>
+      )}
 
       {/* ── Export Dropdown ─────────────────────────────────────────────── */}
       <div className="relative" ref={exportRef}>
@@ -270,25 +368,22 @@ export function ERToolbar({ tables, nodes }: ERToolbarProps) {
 
         {exportOpen && (
           <div className="absolute top-full right-0 mt-1 w-44 bg-card border border-slate-200 rounded-lg shadow-lg py-1 z-50">
-            <ExportMenuItem
-              icon={Image}
-              label="Export as PNG"
-              onClick={handleExportPNG}
-            />
-            <ExportMenuItem
-              icon={FileCode2}
-              label="Export as SVG"
-              onClick={handleExportSVG}
-            />
+            <ExportMenuItem icon={Image} label="Export as PNG" onClick={handleExportPNG} />
+            <ExportMenuItem icon={FileCode2} label="Export as SVG" onClick={handleExportSVG} />
             <div className="h-px bg-slate-100 my-1" />
-            <ExportMenuItem
-              icon={FileText}
-              label="Export as SQL DDL"
-              onClick={handleExportDDL}
-            />
+            <ExportMenuItem icon={FileText} label="Export as SQL DDL" onClick={handleExportDDL} />
           </div>
         )}
       </div>
+
+      <Separator />
+
+      {/* ── Fullscreen Toggle ──────────────────────────────────────────── */}
+      <ToolbarButton
+        icon={isFullscreen ? Minimize2 : Maximize2}
+        label={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+        onClick={toggleFullscreen}
+      />
 
       {/* ── Spacer + Table Count ───────────────────────────────────────── */}
       <div className="flex-1" />
@@ -306,21 +401,26 @@ function ToolbarButton({
   label,
   active,
   onClick,
+  disabled,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   active?: boolean;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       title={label}
+      disabled={disabled}
       className={cn(
         'inline-flex items-center justify-center w-8 h-8 rounded-md text-sm transition-colors',
-        active
-          ? 'bg-aqua-100 text-aqua-700'
-          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+        disabled
+          ? 'text-slate-300 cursor-not-allowed'
+          : active
+            ? 'bg-aqua-100 text-aqua-700'
+            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
       )}
     >
       <Icon className="w-4 h-4" />
@@ -349,5 +449,5 @@ function ExportMenuItem({
 }
 
 function Separator() {
-  return <div className="w-px h-5 bg-slate-200 mx-1" />;
+  return <div className="w-px h-5 bg-slate-200 mx-0.5" />;
 }

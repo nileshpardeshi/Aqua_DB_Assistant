@@ -49,7 +49,7 @@ function getProjectNavItems(projectId: string): NavItem[] {
   return [
     { label: 'Overview', icon: FolderOpen, path: `/project/${projectId}`, end: true },
     { label: 'Schema Intelligence', icon: Database, path: `/project/${projectId}/schema` },
-    { label: 'ER Diagram', icon: GitFork, path: `/project/${projectId}/schema/er-diagram` },
+    { label: 'Diagram Studio', icon: GitFork, path: `/project/${projectId}/schema/er-diagram` },
     { label: 'Query Intelligence', icon: Terminal, path: `/project/${projectId}/query` },
     { label: 'Performance Lab', icon: Gauge, path: `/project/${projectId}/performance` },
     { label: 'Data Generator', icon: Wand2, path: `/project/${projectId}/datagen` },

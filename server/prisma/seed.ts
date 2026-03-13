@@ -42,6 +42,7 @@ async function main() {
   await prisma.aIConversation.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.dataLifecycleRule.deleteMany();
+  await prisma.savedDiagram.deleteMany();
   await prisma.dataSheetMappingConfig.deleteMany();
   await prisma.columnMappingConfig.deleteMany();
   await prisma.migration.deleteMany();
@@ -184,6 +185,13 @@ async function main() {
 
   await seedDataSheetMappings(PROJECT_IDS.banking, PROJECT_IDS.ecommerce);
   console.log('  Created data sheet mapping configurations.');
+
+  // ========================================================================
+  // SAVED DIAGRAMS
+  // ========================================================================
+
+  await seedSavedDiagrams(PROJECT_IDS.banking, PROJECT_IDS.ecommerce);
+  console.log('  Created saved diagram configurations.');
 
   console.log('\nSeed complete!');
 }
@@ -1889,6 +1897,81 @@ function normalizeType(dataType: string): string {
   if (dt.includes('inet')) return 'string';
   if (dt.includes('enum')) return 'enum';
   return 'string';
+}
+
+// ── Saved Diagrams ──────────────────────────────────────────────────────────
+
+async function seedSavedDiagrams(bankingId: string, ecommerceId: string) {
+  await prisma.savedDiagram.createMany({
+    data: [
+      {
+        projectId: bankingId,
+        name: 'Full Banking ER',
+        description: 'Complete entity-relationship diagram for the banking schema',
+        diagramType: 'er-full',
+        layoutDirection: 'TB',
+        showColumns: true,
+        showLabels: true,
+        colorBySchema: false,
+        isDefault: true,
+      },
+      {
+        projectId: bankingId,
+        name: 'Compact Relationship Overview',
+        description: 'Simplified view showing only table relationships and cardinality',
+        diagramType: 'er-compact',
+        layoutDirection: 'LR',
+        showColumns: false,
+        showLabels: true,
+        colorBySchema: false,
+        isDefault: false,
+      },
+      {
+        projectId: bankingId,
+        name: 'FK Dependency Chain',
+        description: 'Shows foreign key dependency graph between banking tables',
+        diagramType: 'dependency-graph',
+        layoutDirection: 'TB',
+        showColumns: false,
+        showLabels: false,
+        colorBySchema: false,
+        isDefault: false,
+      },
+      {
+        projectId: bankingId,
+        name: 'Schema Namespace View',
+        description: 'Tables color-coded and grouped by schema namespace',
+        diagramType: 'schema-group',
+        layoutDirection: 'TB',
+        showColumns: true,
+        showLabels: true,
+        colorBySchema: true,
+        isDefault: false,
+      },
+      {
+        projectId: ecommerceId,
+        name: 'E-Commerce Full ER',
+        description: 'Complete entity-relationship diagram for the e-commerce schema',
+        diagramType: 'er-full',
+        layoutDirection: 'TB',
+        showColumns: true,
+        showLabels: true,
+        colorBySchema: false,
+        isDefault: true,
+      },
+      {
+        projectId: ecommerceId,
+        name: 'Order Flow Dependencies',
+        description: 'Dependency graph showing order processing table relationships',
+        diagramType: 'dependency-graph',
+        layoutDirection: 'LR',
+        showColumns: false,
+        showLabels: true,
+        colorBySchema: false,
+        isDefault: false,
+      },
+    ],
+  });
 }
 
 // ── Run ─────────────────────────────────────────────────────────────────────

@@ -34,6 +34,7 @@ model Project {
   auditLogs          AuditLog[]
   columnMappings     ColumnMappingConfig[]
   dataSheetMappings  DataSheetMappingConfig[]
+  savedDiagrams      SavedDiagram[]
 
   @@index([status])
   @@index([createdAt])
@@ -319,6 +320,32 @@ model DataSheetMappingConfig {
   mappings        String   // JSON: DataSheetMapping[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+// ============================================================
+// DIAGRAM STUDIO
+// ============================================================
+
+model SavedDiagram {
+  id            String   @id @default(uuid())
+  projectId     String
+  name          String
+  description   String?
+  diagramType   String   // er-full | er-compact | dependency-graph | schema-group
+  includedTables String? // JSON: string[] of table IDs (null = all tables)
+  nodePositions  String? // JSON: Record<string, {x:number,y:number}>
+  layoutDirection String @default("TB") // TB | LR
+  showColumns    Boolean @default(true)
+  showLabels     Boolean @default(true)
+  colorBySchema  Boolean @default(false)
+  annotations    String? // JSON: Array<{id,x,y,text,color}>
+  isDefault      Boolean @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
