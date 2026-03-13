@@ -13,9 +13,13 @@ import {
   Trash2,
   Upload,
   Search,
+  Zap,
+  Play,
+  Import,
+  X,
 } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
-import { useAuditLogs, type AuditLog, type AuditLogFilters } from '@/hooks/use-audit-logs';
+import { useAuditLogs, type AuditLogFilters } from '@/hooks/use-audit-logs';
 
 const ACTION_CONFIG: Record<
   string,
@@ -27,17 +31,44 @@ const ACTION_CONFIG: Record<
   VIEW: { label: 'View', color: 'text-foreground', bg: 'bg-muted/50 border-border', icon: Eye },
   EXPORT: { label: 'Export', color: 'text-violet-700 dark:text-violet-300', bg: 'bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-800', icon: Download },
   UPLOAD: { label: 'Upload', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800', icon: Upload },
+  ANALYZE: { label: 'Analyze', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-50 border-purple-200 dark:bg-purple-950/30 dark:border-purple-800', icon: Zap },
+  EXECUTE: { label: 'Execute', color: 'text-teal-700 dark:text-teal-300', bg: 'bg-teal-50 border-teal-200 dark:bg-teal-950/30 dark:border-teal-800', icon: Play },
+  IMPORT: { label: 'Import', color: 'text-indigo-700 dark:text-indigo-300', bg: 'bg-indigo-50 border-indigo-200 dark:bg-indigo-950/30 dark:border-indigo-800', icon: Import },
 };
+
+// Normalize action from backend formats like "project.create" or "schema.parse" → "CREATE"/"ANALYZE"
+function normalizeAction(raw: string): string {
+  const upper = raw.toUpperCase();
+  // Direct match
+  if (ACTION_CONFIG[upper]) return upper;
+  // Dot format: "project.create" → extract verb after dot
+  const parts = raw.split('.');
+  if (parts.length >= 2) {
+    const verb = parts[parts.length - 1].toUpperCase();
+    if (verb === 'PARSE') return 'ANALYZE';
+    if (ACTION_CONFIG[verb]) return verb;
+  }
+  return upper;
+}
 
 const ENTITY_TYPES = [
   { value: '', label: 'All Entity Types' },
   { value: 'project', label: 'Project' },
   { value: 'schema', label: 'Schema' },
   { value: 'query', label: 'Query' },
+  { value: 'file', label: 'File' },
   { value: 'migration', label: 'Migration' },
   { value: 'connection', label: 'Connection' },
   { value: 'settings', label: 'Settings' },
-  { value: 'file', label: 'File' },
+  { value: 'diagram', label: 'Diagram' },
+  { value: 'awr-analysis', label: 'AWR Analysis' },
+  { value: 'incident-analysis', label: 'Incident Analysis' },
+  { value: 'dr-assessment', label: 'DR Assessment' },
+  { value: 'cost-assessment', label: 'Cost Assessment' },
+  { value: 'data-lifecycle', label: 'Data Lifecycle' },
+  { value: 'data-migration', label: 'Data Migration' },
+  { value: 'dialect-conversion', label: 'Dialect Conversion' },
+  { value: 'ai-analysis', label: 'AI Analysis' },
 ];
 
 const ACTION_TYPES = [
@@ -45,10 +76,22 @@ const ACTION_TYPES = [
   { value: 'CREATE', label: 'Create' },
   { value: 'UPDATE', label: 'Update' },
   { value: 'DELETE', label: 'Delete' },
-  { value: 'VIEW', label: 'View' },
+  { value: 'ANALYZE', label: 'Analyze' },
+  { value: 'EXECUTE', label: 'Execute' },
   { value: 'EXPORT', label: 'Export' },
   { value: 'UPLOAD', label: 'Upload' },
+  { value: 'IMPORT', label: 'Import' },
+  { value: 'VIEW', label: 'View' },
 ];
+
+// Friendly entity label
+function entityLabel(raw?: string): string {
+  if (!raw) return '—';
+  // Convert kebab-case / dot-case to Title Case
+  return raw
+    .replace(/[-_.]/g, ' ')
+    .replace(/\b[a-z]/g, (c) => c.toUpperCase());
+}
 
 interface AuditLogViewerProps {
   projectId?: string;
@@ -62,24 +105,35 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
     startDate: '',
     endDate: '',
     page: 1,
-    limit: compact ? 5 : 10,
+    limit: compact ? 5 : 15,
     projectId,
   });
+  const [searchText, setSearchText] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(!compact);
 
   const { data: response, isLoading } = useAuditLogs(filters);
-  const logs = response?.data ?? [];
-  const meta = response?.meta ?? { total: 0, page: 1, limit: 10, totalPages: 1 };
+  const allLogs = response?.data ?? [];
+  const meta = response?.meta ?? { total: 0, page: 1, limit: 15, totalPages: 1 };
+
+  // Client-side text search over details + entity
+  const logs = searchText.trim()
+    ? allLogs.filter((log) => {
+        const term = searchText.toLowerCase();
+        return (
+          (log.details || '').toLowerCase().includes(term) ||
+          (log.entityType || '').toLowerCase().includes(term) ||
+          (log.action || '').toLowerCase().includes(term) ||
+          (log.entityId || '').toLowerCase().includes(term)
+        );
+      })
+    : allLogs;
 
   function toggleExpanded(id: string) {
     setExpandedRows((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -92,17 +146,24 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
     setFilters((prev) => ({ ...prev, page }));
   }
 
-  function exportToCsv() {
-    const allLogs = logs;
-    if (!allLogs.length) return;
+  function clearFilters() {
+    setFilters({ action: '', entityType: '', startDate: '', endDate: '', page: 1, limit: compact ? 5 : 15, projectId });
+    setSearchText('');
+  }
 
-    const headers = ['Timestamp', 'Action', 'Entity Type', 'Entity Name', 'Details', 'IP Address'];
-    const rows = allLogs.map((log) => [
+  const hasActiveFilters = !!(filters.action || filters.entityType || filters.startDate || filters.endDate || searchText.trim());
+
+  function exportToCsv() {
+    if (!logs.length) return;
+
+    const headers = ['Timestamp', 'Action', 'Entity Type', 'Details', 'Entity ID', 'Project ID', 'IP Address'];
+    const rows = logs.map((log) => [
       new Date(log.createdAt).toISOString(),
       log.action,
-      log.entityType,
-      log.entityName || log.entityId,
-      `"${log.details.replace(/"/g, '""')}"`,
+      log.entityType || '',
+      `"${(log.details || '').replace(/"/g, '""')}"`,
+      log.entityId || '',
+      log.projectId || '',
       log.ipAddress || '',
     ]);
 
@@ -127,7 +188,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
               className={cn(
                 'inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors',
                 showFilters
-                  ? 'bg-aqua-50 border-aqua-200 text-aqua-700'
+                  ? 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/30 dark:border-violet-800 dark:text-violet-300'
                   : 'bg-card border-border text-foreground hover:bg-muted/50'
               )}
             >
@@ -135,17 +196,45 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
               Filters
             </button>
           )}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 rounded-lg border border-border transition-colors"
+            >
+              <X className="w-3 h-3" /> Clear
+            </button>
+          )}
           <span className="text-xs text-muted-foreground">
             {meta.total} total entries
           </span>
         </div>
-        <button
-          onClick={exportToCsv}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Export CSV
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search logs..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="w-48 pl-8 pr-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent placeholder:text-muted-foreground"
+            />
+            {searchText && (
+              <button onClick={() => setSearchText('')} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={exportToCsv}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -161,7 +250,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                 <select
                   value={filters.action || ''}
                   onChange={(e) => handleFilterChange('action', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
+                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent appearance-none cursor-pointer"
                 >
                   {ACTION_TYPES.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -182,7 +271,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                 <select
                   value={filters.entityType || ''}
                   onChange={(e) => handleFilterChange('entityType', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent appearance-none cursor-pointer"
+                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent appearance-none cursor-pointer"
                 >
                   {ENTITY_TYPES.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -204,7 +293,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                   type="date"
                   value={filters.startDate || ''}
                   onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
                 />
               </div>
             </div>
@@ -219,7 +308,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                   type="date"
                   value={filters.endDate || ''}
                   onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
                 />
               </div>
             </div>
@@ -231,7 +320,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="w-8 h-8 border-2 border-aqua-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">Loading audit logs...</p>
           </div>
         ) : logs.length === 0 ? (
@@ -240,13 +329,16 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
               <Search className="w-6 h-6 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">No audit log entries found</p>
-            <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {hasActiveFilters ? 'Try adjusting your filters or search term' : 'Actions will appear here as you use the platform'}
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-border/50">
             {logs.map((log) => {
               const isExpanded = expandedRows.has(log.id);
-              const actionCfg = ACTION_CONFIG[log.action] || ACTION_CONFIG.VIEW;
+              const normalizedAction = normalizeAction(log.action);
+              const actionCfg = ACTION_CONFIG[normalizedAction] || ACTION_CONFIG.VIEW;
               const ActionIcon = actionCfg.icon;
 
               return (
@@ -265,7 +357,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                     </div>
 
                     {/* Timestamp */}
-                    <div className="flex-shrink-0 w-32">
+                    <div className="flex-shrink-0 w-36">
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {formatDate(log.createdAt)}
@@ -287,16 +379,16 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                     </div>
 
                     {/* Entity Type */}
-                    <div className="flex-shrink-0 w-24">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground capitalize">
-                        {log.entityType}
+                    <div className="flex-shrink-0 w-28">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+                        {entityLabel(log.entityType)}
                       </span>
                     </div>
 
-                    {/* Entity Name / Details */}
+                    {/* Details summary */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground truncate">
-                        {log.entityName || log.entityId}
+                        {log.details || log.entityType || '—'}
                       </p>
                     </div>
                   </button>
@@ -305,19 +397,23 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                   {isExpanded && (
                     <div className="px-5 pb-4 pl-14">
                       <div className="bg-muted/50 rounded-lg p-4 space-y-2.5">
-                        <div>
-                          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                            Details
-                          </p>
-                          <p className="text-sm text-foreground">{log.details}</p>
-                        </div>
-                        <div className="flex flex-wrap gap-4 pt-1">
+                        {log.details && (
                           <div>
-                            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
-                              Entity ID
+                            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                              Details
                             </p>
-                            <p className="text-xs text-foreground font-mono">{log.entityId}</p>
+                            <p className="text-sm text-foreground">{log.details}</p>
                           </div>
+                        )}
+                        <div className="flex flex-wrap gap-4 pt-1">
+                          {log.entityId && (
+                            <div>
+                              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                                Entity ID
+                              </p>
+                              <p className="text-xs text-foreground font-mono">{log.entityId}</p>
+                            </div>
+                          )}
                           {log.projectId && (
                             <div>
                               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
@@ -332,6 +428,14 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                                 IP Address
                               </p>
                               <p className="text-xs text-foreground font-mono">{log.ipAddress}</p>
+                            </div>
+                          )}
+                          {log.userAgent && (
+                            <div>
+                              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                                User Agent
+                              </p>
+                              <p className="text-xs text-foreground font-mono truncate max-w-xs">{log.userAgent}</p>
                             </div>
                           )}
                           <div>
@@ -366,14 +470,14 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {Array.from({ length: meta.totalPages }, (_, i) => i + 1).map((page) => (
+              {Array.from({ length: Math.min(meta.totalPages, 7) }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   onClick={() => handlePageChange(page)}
                   className={cn(
                     'inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                     page === meta.page
-                      ? 'bg-aqua-600 text-white shadow-sm'
+                      ? 'bg-violet-600 text-white shadow-sm'
                       : 'text-muted-foreground hover:bg-card hover:text-foreground border border-transparent hover:border-border'
                   )}
                 >

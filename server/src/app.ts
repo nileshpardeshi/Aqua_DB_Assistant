@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { errorHandler } from './middleware/error-handler.js';
+import { auditLogger } from './middleware/audit-logger.js';
 import routes from './routes/index.js';
 
 export function createApp(): express.Application {
@@ -50,6 +51,10 @@ export function createApp(): express.Application {
     logger.http(`${req.method} ${req.url}`);
     next();
   });
+
+  // --------------- Audit logging ---------------
+
+  app.use(auditLogger);
 
   // --------------- Routes ---------------
 
