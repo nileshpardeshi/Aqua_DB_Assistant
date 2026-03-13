@@ -9,174 +9,84 @@ import {
   Download,
   Shield,
   FileCode,
+  AlertTriangle,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useDataLifecycleRules, useGeneratePurgeScript } from '@/hooks/use-data-lifecycle';
-import type { DataLifecycleRule } from '@/hooks/use-data-lifecycle';
+import {
+  useDataLifecycleRules,
+  useGeneratePurgeScript,
+  parseRuleConfig,
+} from '@/hooks/use-data-lifecycle';
 
 const BATCH_SIZE_OPTIONS = [
+  { label: '500', value: 500 },
   { label: '1,000', value: 1000 },
   { label: '5,000', value: 5000 },
   { label: '10,000', value: 10000 },
+  { label: '50,000', value: 50000 },
 ];
 
-// Mock rules for demonstration
-const MOCK_RULES: DataLifecycleRule[] = [
-  {
-    id: 'r1',
-    projectId: '',
-    tableName: 'audit_logs',
-    retentionPeriod: 90,
-    retentionUnit: 'days',
-    retentionColumn: 'created_at',
-    priority: 'high',
-    active: true,
-    createdAt: '2025-11-01T00:00:00Z',
-    updatedAt: '2025-11-01T00:00:00Z',
-  },
-  {
-    id: 'r2',
-    projectId: '',
-    tableName: 'user_sessions',
-    retentionPeriod: 30,
-    retentionUnit: 'days',
-    retentionColumn: 'last_login_at',
-    condition: "status = 'expired'",
-    priority: 'medium',
-    active: true,
-    createdAt: '2025-11-05T00:00:00Z',
-    updatedAt: '2025-11-05T00:00:00Z',
-  },
-  {
-    id: 'r3',
-    projectId: '',
-    tableName: 'temp_uploads',
-    retentionPeriod: 7,
-    retentionUnit: 'days',
-    retentionColumn: 'created_at',
-    priority: 'low',
-    active: true,
-    createdAt: '2025-11-10T00:00:00Z',
-    updatedAt: '2025-11-10T00:00:00Z',
-  },
+const DIALECT_OPTIONS = [
+  { value: 'postgresql', label: 'PostgreSQL' },
+  { value: 'mysql', label: 'MySQL' },
+  { value: 'sqlserver', label: 'SQL Server' },
+  { value: 'oracle', label: 'Oracle' },
+  { value: 'sqlite', label: 'SQLite' },
+  { value: 'mariadb', label: 'MariaDB' },
 ];
-
-function generateMockScript(rule: DataLifecycleRule, batchSize: number, dryRun: boolean): string {
-  const dateExpr = rule.retentionUnit === 'days'
-    ? `NOW() - INTERVAL '${rule.retentionPeriod} days'`
-    : rule.retentionUnit === 'months'
-    ? `NOW() - INTERVAL '${rule.retentionPeriod} months'`
-    : `NOW() - INTERVAL '${rule.retentionPeriod} years'`;
-
-  const whereClause = rule.condition
-    ? `${rule.retentionColumn} < ${dateExpr}\n    AND ${rule.condition}`
-    : `${rule.retentionColumn} < ${dateExpr}`;
-
-  if (dryRun) {
-    return `-- DRY RUN: Purge script for ${rule.tableName}
--- Generated at: ${new Date().toISOString()}
--- Retention: ${rule.retentionPeriod} ${rule.retentionUnit} on column ${rule.retentionColumn}
--- Batch size: ${batchSize.toLocaleString()}
-
--- Step 1: Count affected rows
-SELECT COUNT(*) AS rows_to_purge
-FROM ${rule.tableName}
-WHERE ${whereClause};
-
--- Step 2: Preview affected data (sample)
-SELECT *
-FROM ${rule.tableName}
-WHERE ${whereClause}
-ORDER BY ${rule.retentionColumn} ASC
-LIMIT 10;
-
--- NOTE: This is a DRY RUN. No data will be deleted.
--- Remove the DRY RUN flag to generate the actual DELETE statements.`;
-  }
-
-  return `-- Purge script for ${rule.tableName}
--- Generated at: ${new Date().toISOString()}
--- Retention: ${rule.retentionPeriod} ${rule.retentionUnit} on column ${rule.retentionColumn}
--- Batch size: ${batchSize.toLocaleString()}
--- WARNING: This will permanently delete data!
-
--- Step 1: Safety check - count affected rows
-DO $$
-DECLARE
-  total_rows BIGINT;
-  deleted_rows BIGINT := 0;
-  batch_deleted BIGINT;
-BEGIN
-  SELECT COUNT(*) INTO total_rows
-  FROM ${rule.tableName}
-  WHERE ${whereClause};
-
-  RAISE NOTICE 'Total rows to purge: %', total_rows;
-
-  -- Step 2: Batch delete loop
-  LOOP
-    DELETE FROM ${rule.tableName}
-    WHERE ctid IN (
-      SELECT ctid
-      FROM ${rule.tableName}
-      WHERE ${whereClause}
-      LIMIT ${batchSize}
-    );
-
-    GET DIAGNOSTICS batch_deleted = ROW_COUNT;
-    deleted_rows := deleted_rows + batch_deleted;
-
-    RAISE NOTICE 'Deleted % rows (total: %/%)', batch_deleted, deleted_rows, total_rows;
-
-    EXIT WHEN batch_deleted = 0;
-
-    -- Brief pause to reduce lock contention
-    PERFORM pg_sleep(0.1);
-  END LOOP;
-
-  RAISE NOTICE 'Purge complete. Total deleted: % rows', deleted_rows;
-END $$;
-
--- Step 3: Reclaim space (optional)
--- VACUUM ANALYZE ${rule.tableName};`;
-}
 
 export function PurgeScriptGenerator() {
   const { projectId } = useParams();
-  const { data: apiRules } = useDataLifecycleRules(projectId);
+  const { data: rules, isLoading } = useDataLifecycleRules(projectId);
   const generatePurgeScript = useGeneratePurgeScript();
 
-  const rules = apiRules && apiRules.length > 0 ? apiRules : MOCK_RULES;
+  const activeRules = rules?.filter((r) => r.isActive) ?? [];
+
   const [selectedRuleId, setSelectedRuleId] = useState<string>('');
   const [batchSize, setBatchSize] = useState(5000);
   const [dryRun, setDryRun] = useState(true);
+  const [dialect, setDialect] = useState('');
   const [generatedScript, setGeneratedScript] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [scriptMeta, setScriptMeta] = useState<{ ruleName: string; targetTable: string; dryRun: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const selectedRule = rules.find((r) => r.id === selectedRuleId);
+  const selectedRule = rules?.find((r) => r.id === selectedRuleId);
+  const selectedConfig = selectedRule ? parseRuleConfig(selectedRule) : null;
+
+  // Auto-set dialect from rule config when selecting a rule
+  const handleRuleSelect = (ruleId: string) => {
+    setSelectedRuleId(ruleId);
+    setGeneratedScript('');
+    setScriptMeta(null);
+    const rule = rules?.find((r) => r.id === ruleId);
+    if (rule) {
+      const config = parseRuleConfig(rule);
+      setDialect(config.sqlDialect || 'postgresql');
+    }
+  };
 
   const handleGenerate = useCallback(async () => {
     if (!selectedRule || !projectId) return;
-    setIsGenerating(true);
-    setGeneratedScript('');
 
     try {
-      await generatePurgeScript.mutateAsync({
+      const result = await generatePurgeScript.mutateAsync({
         projectId,
         ruleId: selectedRule.id,
         batchSize,
         dryRun,
+        dialect: dialect || undefined,
+      });
+      setGeneratedScript(result.script);
+      setScriptMeta({
+        ruleName: result.ruleName,
+        targetTable: result.targetTable,
+        dryRun: result.dryRun,
       });
     } catch {
-      // Continue with mock generation
+      // Error handled by mutation
     }
-
-    // Generate mock script
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setGeneratedScript(generateMockScript(selectedRule, batchSize, dryRun));
-    setIsGenerating(false);
-  }, [selectedRule, batchSize, dryRun, projectId, generatePurgeScript]);
+  }, [selectedRule, batchSize, dryRun, dialect, projectId, generatePurgeScript]);
 
   const handleCopy = useCallback(() => {
     if (!generatedScript) return;
@@ -186,17 +96,18 @@ export function PurgeScriptGenerator() {
   }, [generatedScript]);
 
   const handleDownload = useCallback(() => {
-    if (!generatedScript || !selectedRule) return;
+    if (!generatedScript || !scriptMeta) return;
+    const prefix = dryRun ? 'dryrun' : 'purge';
     const blob = new Blob([generatedScript], { type: 'text/sql' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `purge_${selectedRule.tableName}_${new Date().toISOString().slice(0, 10)}.sql`;
+    a.download = `${prefix}_${scriptMeta.targetTable}_${new Date().toISOString().slice(0, 10)}.sql`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [generatedScript, selectedRule]);
+  }, [generatedScript, scriptMeta, dryRun]);
 
   return (
     <div className="space-y-6">
@@ -206,74 +117,102 @@ export function PurgeScriptGenerator() {
           <FileCode className="w-3.5 h-3.5" />
           Select Retention Rule
         </label>
-        <select
-          value={selectedRuleId}
-          onChange={(e) => setSelectedRuleId(e.target.value)}
-          className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
-        >
-          <option value="">-- Select a rule --</option>
-          {rules.map((rule) => (
-            <option key={rule.id} value={rule.id}>
-              {rule.tableName} - {rule.retentionPeriod} {rule.retentionUnit} ({rule.retentionColumn})
-            </option>
-          ))}
-        </select>
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Loading rules...
+          </div>
+        ) : activeRules.length === 0 ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <div>
+              <p className="font-medium">No active retention rules found</p>
+              <p className="text-xs mt-0.5">Create a retention rule in the "Retention Policies" tab first, then come back here to generate purge scripts.</p>
+            </div>
+          </div>
+        ) : (
+          <select
+            value={selectedRuleId}
+            onChange={(e) => handleRuleSelect(e.target.value)}
+            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+          >
+            <option value="">-- Select a rule ({activeRules.length} active) --</option>
+            {activeRules.map((rule) => {
+              const config = parseRuleConfig(rule);
+              return (
+                <option key={rule.id} value={rule.id}>
+                  {rule.ruleName} — {rule.targetTable} ({config.retentionPeriod} {config.retentionUnit})
+                </option>
+              );
+            })}
+          </select>
+        )}
       </div>
 
       {/* Selected Rule Details */}
-      {selectedRule && (
+      {selectedRule && selectedConfig && (
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div>
-              <span className="text-slate-500 font-medium">Table:</span>
+              <span className="text-slate-500 font-medium">Table</span>
               <p className="font-mono font-semibold text-slate-800 mt-0.5">
-                {selectedRule.tableName}
+                {selectedRule.targetTable}
               </p>
             </div>
             <div>
-              <span className="text-slate-500 font-medium">Retention:</span>
+              <span className="text-slate-500 font-medium">Retention</span>
               <p className="font-semibold text-slate-800 mt-0.5">
-                {selectedRule.retentionPeriod} {selectedRule.retentionUnit}
+                {selectedConfig.retentionPeriod} {selectedConfig.retentionUnit}
               </p>
             </div>
             <div>
-              <span className="text-slate-500 font-medium">Column:</span>
+              <span className="text-slate-500 font-medium">Date Column</span>
               <p className="font-mono font-semibold text-slate-800 mt-0.5">
-                {selectedRule.retentionColumn}
+                {selectedConfig.retentionColumn}
               </p>
             </div>
             <div>
-              <span className="text-slate-500 font-medium">Priority:</span>
+              <span className="text-slate-500 font-medium">Priority</span>
               <p className="font-semibold text-slate-800 mt-0.5 capitalize">
-                {selectedRule.priority}
+                {selectedConfig.priority}
               </p>
             </div>
           </div>
-          {selectedRule.condition && (
+          {selectedConfig.conditions.length > 0 && (
             <div className="mt-2 text-xs">
-              <span className="text-slate-500 font-medium">Condition:</span>
-              <p className="font-mono text-slate-700 mt-0.5 bg-card px-2 py-1 rounded border border-slate-200">
-                {selectedRule.condition}
-              </p>
+              <span className="text-slate-500 font-medium">Conditions:</span>
+              <div className="mt-1 space-y-0.5">
+                {selectedConfig.conditions.map((c, i) => (
+                  <code key={i} className="block font-mono text-slate-700 bg-card px-2 py-0.5 rounded border border-slate-200">
+                    {i > 0 ? `${c.conjunction} ` : ''}{c.column} {c.operator}
+                    {c.operator !== 'IS NULL' && c.operator !== 'IS NOT NULL' && ` '${c.value}'`}
+                  </code>
+                ))}
+              </div>
             </div>
+          )}
+          {selectedConfig.backupBeforePurge && (
+            <p className="text-[10px] text-green-600 mt-2 flex items-center gap-1">
+              <Shield className="w-2.5 h-2.5" /> Backup table will be created before deletion
+            </p>
           )}
         </div>
       )}
 
       {/* Options */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Batch Size */}
         <div>
           <label className="block text-xs font-medium text-slate-700 mb-1.5">
             Batch Size
           </label>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 flex-wrap">
             {BATCH_SIZE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setBatchSize(opt.value)}
                 className={cn(
-                  'flex-1 px-3 py-2.5 text-sm font-medium rounded-lg border transition-all',
+                  'px-2.5 py-2 text-xs font-medium rounded-lg border transition-all',
                   batchSize === opt.value
                     ? 'bg-aqua-50 border-aqua-300 text-aqua-700 shadow-sm'
                     : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -285,7 +224,23 @@ export function PurgeScriptGenerator() {
           </div>
         </div>
 
-        {/* Dry Run Toggle */}
+        {/* SQL Dialect Override */}
+        <div>
+          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+            SQL Dialect
+          </label>
+          <select
+            value={dialect}
+            onChange={(e) => setDialect(e.target.value)}
+            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+          >
+            {DIALECT_OPTIONS.map((d) => (
+              <option key={d.value} value={d.value}>{d.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Mode Toggle */}
         <div>
           <label className="block text-xs font-medium text-slate-700 mb-1.5">
             Mode
@@ -323,15 +278,17 @@ export function PurgeScriptGenerator() {
       <div className="flex items-center gap-3">
         <button
           onClick={handleGenerate}
-          disabled={!selectedRule || isGenerating}
+          disabled={!selectedRule || generatePurgeScript.isPending}
           className={cn(
             'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
-            !selectedRule || isGenerating
+            !selectedRule || generatePurgeScript.isPending
               ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              : 'bg-aqua-600 text-white hover:bg-aqua-700'
+              : dryRun
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-red-600 text-white hover:bg-red-700'
           )}
         >
-          {isGenerating ? (
+          {generatePurgeScript.isPending ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
               Generating...
@@ -339,26 +296,48 @@ export function PurgeScriptGenerator() {
           ) : (
             <>
               <Play className="w-4 h-4" />
-              Generate Script
+              {dryRun ? 'Generate Dry Run Script' : 'Generate Purge Script'}
             </>
           )}
         </button>
 
         {!dryRun && (
           <span className="text-xs text-red-500 flex items-center gap-1">
-            <Trash2 className="w-3 h-3" />
-            Warning: Live delete mode. Script will permanently remove data.
+            <AlertTriangle className="w-3 h-3" />
+            Live delete mode. Script will permanently remove data.
           </span>
         )}
       </div>
 
+      {/* Error Display */}
+      {generatePurgeScript.isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          Failed to generate script. Please check the rule configuration and try again.
+        </div>
+      )}
+
       {/* Generated Script */}
-      {generatedScript && (
+      {generatedScript && scriptMeta && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-slate-700">
-              Generated Purge Script
-            </h4>
+            <div className="flex items-center gap-2">
+              <h4 className="text-xs font-semibold text-slate-700">
+                Generated {scriptMeta.dryRun ? 'Dry Run' : 'Purge'} Script
+              </h4>
+              <span className={cn(
+                'px-2 py-0.5 text-[10px] font-bold rounded',
+                scriptMeta.dryRun
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-red-100 text-red-700'
+              )}>
+                {scriptMeta.dryRun ? 'DRY RUN' : 'LIVE DELETE'}
+              </span>
+              <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                <Clock className="w-2.5 h-2.5" />
+                {new Date().toLocaleTimeString()}
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleCopy}
@@ -386,9 +365,17 @@ export function PurgeScriptGenerator() {
             </div>
           </div>
 
-          <pre className="text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap max-h-[500px] overflow-y-auto">
+          <pre className="text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap max-h-[500px] overflow-y-auto leading-relaxed">
             {generatedScript}
           </pre>
+
+          {/* Script Info */}
+          <div className="flex items-center gap-4 text-[10px] text-slate-400">
+            <span>Table: <span className="font-mono">{scriptMeta.targetTable}</span></span>
+            <span>Dialect: {dialect}</span>
+            <span>Batch: {batchSize.toLocaleString()}</span>
+            <span>{generatedScript.split('\n').length} lines</span>
+          </div>
         </div>
       )}
     </div>

@@ -8,14 +8,17 @@ import {
   Activity,
   CheckCircle2,
   Table2,
+  History,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useDataLifecycleRules } from '@/hooks/use-data-lifecycle';
+import { useDataLifecycleRules, parseRuleConfig } from '@/hooks/use-data-lifecycle';
 import { RetentionPolicyEditor } from '@/components/data-lifecycle/retention-policy-editor';
 import { PurgeScriptGenerator } from '@/components/data-lifecycle/purge-script-generator';
 import { DataClassification } from '@/components/data-lifecycle/data-classification';
+import { ExecutionHistory } from '@/components/data-lifecycle/execution-history';
 
-type LifecycleTab = 'retention-policies' | 'purge-scripts' | 'data-classification';
+type LifecycleTab = 'retention-policies' | 'purge-scripts' | 'data-classification' | 'execution-history';
 
 const TABS: {
   id: LifecycleTab;
@@ -24,6 +27,7 @@ const TABS: {
 }[] = [
   { id: 'retention-policies', label: 'Retention Policies', icon: Clock },
   { id: 'purge-scripts', label: 'Purge Scripts', icon: Trash2 },
+  { id: 'execution-history', label: 'Execution History', icon: History },
   { id: 'data-classification', label: 'Data Classification', icon: Tags },
 ];
 
@@ -33,8 +37,12 @@ export function DataLifecycle() {
   const [activeTab, setActiveTab] = useState<LifecycleTab>('retention-policies');
 
   const totalRules = rules?.length ?? 0;
-  const activeRules = rules?.filter((r) => r.active).length ?? 0;
-  const tablesWithRules = new Set(rules?.map((r) => r.tableName)).size ?? 0;
+  const activeRules = rules?.filter((r) => r.isActive).length ?? 0;
+  const tablesWithRules = new Set(rules?.map((r) => r.targetTable)).size ?? 0;
+  const criticalRules = rules?.filter((r) => {
+    const config = parseRuleConfig(r);
+    return config.priority === 'critical';
+  }).length ?? 0;
 
   return (
     <div className="p-6 lg:p-8 max-w-6xl space-y-6">
@@ -46,10 +54,10 @@ export function DataLifecycle() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-foreground">
-              Data Lifecycle
+              Data Lifecycle Manager
             </h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Manage retention policies, generate purge scripts, and classify data
+              Enterprise data retention, purge script generation, dry-run analysis, and compliance
             </p>
           </div>
         </div>
@@ -80,11 +88,11 @@ export function DataLifecycle() {
             bg: 'bg-aqua-50',
           },
           {
-            label: 'Est. Purgeable',
-            value: totalRules > 0 ? '~12.4K' : '--',
-            icon: Trash2,
-            color: 'text-red-600',
-            bg: 'bg-red-50',
+            label: 'Critical Rules',
+            value: criticalRules,
+            icon: criticalRules > 0 ? AlertTriangle : Trash2,
+            color: criticalRules > 0 ? 'text-red-600' : 'text-slate-400',
+            bg: criticalRules > 0 ? 'bg-red-50' : 'bg-slate-50',
           },
         ].map((stat) => {
           const Icon = stat.icon;
@@ -113,7 +121,7 @@ export function DataLifecycle() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-1 border-b border-slate-200">
+      <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -122,7 +130,7 @@ export function DataLifecycle() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
+                'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap',
                 isActive
                   ? 'border-blue-500 text-blue-700'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
@@ -139,6 +147,7 @@ export function DataLifecycle() {
       <div className="min-h-[400px]">
         {activeTab === 'retention-policies' && <RetentionPolicyEditor />}
         {activeTab === 'purge-scripts' && <PurgeScriptGenerator />}
+        {activeTab === 'execution-history' && <ExecutionHistory />}
         {activeTab === 'data-classification' && <DataClassification />}
       </div>
     </div>

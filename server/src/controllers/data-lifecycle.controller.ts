@@ -88,7 +88,13 @@ export const remove = asyncHandler(async (req: Request, res: Response) => {
 export const generatePurgeScript = asyncHandler(
   async (req: Request, res: Response) => {
     const ruleId = req.params.ruleId as string;
-    const result = await dataLifecycleService.generatePurgeScript(ruleId);
+    const { batchSize, dryRun, dialect } = req.body;
+
+    const result = await dataLifecycleService.generatePurgeScript(ruleId, {
+      batchSize,
+      dryRun,
+      dialect,
+    });
 
     res.json({
       success: true,

@@ -1,51 +1,75 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../lib/api-client';
 
-// Types
-export interface DataLifecycleRule {
-  id: string;
-  projectId: string;
-  tableName: string;
+// ── Types matching backend Prisma model ─────────────────────────────────────
+
+export interface RuleCondition {
+  column: string;
+  operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'IS NULL' | 'IS NOT NULL' | 'LIKE' | 'IN';
+  value: string;
+  conjunction: 'AND' | 'OR';
+}
+
+export interface RuleConfiguration {
   retentionPeriod: number;
   retentionUnit: 'days' | 'months' | 'years';
   retentionColumn: string;
-  condition?: string;
+  conditions: RuleCondition[];
   priority: 'critical' | 'high' | 'medium' | 'low';
-  active: boolean;
+  cascadeDelete: boolean;
+  backupBeforePurge: boolean;
+  notifyOnExecution: boolean;
+  sqlDialect: string;
+}
+
+export interface DataLifecycleRule {
+  id: string;
+  projectId: string;
+  ruleName: string;
+  ruleType: string;
+  targetTable: string;
+  targetColumns: string | null;
+  configuration: string; // JSON string of RuleConfiguration
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface CreateRuleInput {
-  projectId: string;
-  tableName: string;
-  retentionPeriod: number;
-  retentionUnit: 'days' | 'months' | 'years';
-  retentionColumn: string;
-  condition?: string;
-  priority: 'critical' | 'high' | 'medium' | 'low';
-  active: boolean;
-}
-
-export interface UpdateRuleInput {
-  tableName?: string;
-  retentionPeriod?: number;
-  retentionUnit?: 'days' | 'months' | 'years';
-  retentionColumn?: string;
-  condition?: string;
-  priority?: 'critical' | 'high' | 'medium' | 'low';
-  active?: boolean;
-}
-
-export interface PurgeScript {
-  sql: string;
-  estimatedRows: number;
-  tableName: string;
-  batchSize: number;
+export interface PurgeScriptResult {
+  ruleId: string;
+  ruleName: string;
+  targetTable: string;
+  script: string;
   dryRun: boolean;
+  batchSize: number;
+  dialect: string;
 }
 
-// Query keys
+// ── Helper to parse configuration ───────────────────────────────────────────
+
+const DEFAULT_CONFIG: RuleConfiguration = {
+  retentionPeriod: 90,
+  retentionUnit: 'days',
+  retentionColumn: 'created_at',
+  conditions: [],
+  priority: 'medium',
+  cascadeDelete: false,
+  backupBeforePurge: false,
+  notifyOnExecution: false,
+  sqlDialect: 'postgresql',
+};
+
+export function parseRuleConfig(rule: DataLifecycleRule): RuleConfiguration {
+  try {
+    const parsed = JSON.parse(rule.configuration);
+    return { ...DEFAULT_CONFIG, ...parsed };
+  } catch {
+    return DEFAULT_CONFIG;
+  }
+}
+
+// ── Query keys ──────────────────────────────────────────────────────────────
+
 const lifecycleKeys = {
   all: ['data-lifecycle'] as const,
   lists: () => [...lifecycleKeys.all, 'list'] as const,
@@ -55,11 +79,8 @@ const lifecycleKeys = {
     [...lifecycleKeys.details(), projectId, ruleId] as const,
 };
 
-// Hooks
+// ── Hooks ───────────────────────────────────────────────────────────────────
 
-/**
- * Fetch all data lifecycle rules for a project.
- */
 export function useDataLifecycleRules(projectId: string | undefined) {
   return useQuery({
     queryKey: lifecycleKeys.list(projectId!),
@@ -73,17 +94,27 @@ export function useDataLifecycleRules(projectId: string | undefined) {
   });
 }
 
-/**
- * Create a new data lifecycle rule.
- */
 export function useCreateRule() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: CreateRuleInput) => {
+    mutationFn: async (input: {
+      projectId: string;
+      ruleName: string;
+      targetTable: string;
+      configuration: RuleConfiguration;
+      isActive?: boolean;
+    }) => {
       const response = await apiClient.post(
         `/projects/${input.projectId}/data-lifecycle`,
-        input
+        {
+          ruleName: input.ruleName,
+          ruleType: 'retention',
+          targetTable: input.targetTable,
+          targetColumns: input.configuration.retentionColumn,
+          configuration: JSON.stringify(input.configuration),
+          isActive: input.isActive ?? true,
+        }
       );
       return response as unknown as DataLifecycleRule;
     },
@@ -95,9 +126,6 @@ export function useCreateRule() {
   });
 }
 
-/**
- * Update a data lifecycle rule.
- */
 export function useUpdateRule() {
   const queryClient = useQueryClient();
 
@@ -109,11 +137,25 @@ export function useUpdateRule() {
     }: {
       projectId: string;
       ruleId: string;
-      data: UpdateRuleInput;
+      data: {
+        ruleName?: string;
+        targetTable?: string;
+        configuration?: RuleConfiguration;
+        isActive?: boolean;
+      };
     }) => {
+      const payload: Record<string, unknown> = {};
+      if (data.ruleName !== undefined) payload.ruleName = data.ruleName;
+      if (data.targetTable !== undefined) payload.targetTable = data.targetTable;
+      if (data.isActive !== undefined) payload.isActive = data.isActive;
+      if (data.configuration !== undefined) {
+        payload.configuration = JSON.stringify(data.configuration);
+        payload.targetColumns = data.configuration.retentionColumn;
+      }
+
       const response = await apiClient.patch(
         `/projects/${projectId}/data-lifecycle/${ruleId}`,
-        data
+        payload
       );
       return response as unknown as DataLifecycleRule;
     },
@@ -128,9 +170,6 @@ export function useUpdateRule() {
   });
 }
 
-/**
- * Delete a data lifecycle rule.
- */
 export function useDeleteRule() {
   const queryClient = useQueryClient();
 
@@ -154,9 +193,6 @@ export function useDeleteRule() {
   });
 }
 
-/**
- * Generate a purge script for a given rule.
- */
 export function useGeneratePurgeScript() {
   return useMutation({
     mutationFn: async ({
@@ -164,17 +200,19 @@ export function useGeneratePurgeScript() {
       ruleId,
       batchSize,
       dryRun,
+      dialect,
     }: {
       projectId: string;
       ruleId: string;
       batchSize: number;
       dryRun: boolean;
+      dialect?: string;
     }) => {
       const response = await apiClient.post(
-        `/projects/${projectId}/data-lifecycle/${ruleId}/purge-script`,
-        { batchSize, dryRun }
+        `/projects/${projectId}/data-lifecycle/${ruleId}/generate-purge-script`,
+        { batchSize, dryRun, dialect }
       );
-      return response as unknown as PurgeScript;
+      return response as unknown as PurgeScriptResult;
     },
   });
 }
