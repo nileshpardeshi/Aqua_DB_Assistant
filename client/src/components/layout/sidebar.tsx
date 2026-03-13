@@ -10,7 +10,7 @@ import {
   Shield,
   GitBranch,
   Plug,
-  Settings,
+  Heart,
   Bot,
   ChevronDown,
   ChevronsLeft,
@@ -60,7 +60,7 @@ function getProjectNavItems(projectId: string): NavItem[] {
 }
 
 const bottomNavItems: NavItem[] = [
-  { label: 'Settings', icon: Settings, path: '/settings' },
+  { label: 'Contact Us', icon: Heart, path: '/settings' },
 ];
 
 export function Sidebar() {

@@ -42,5 +42,5 @@ export function trackAIUsage(
     timestamp: Date.now(),
   });
 
-  toast(`AI: ${totalTokens.toLocaleString()} tokens (~$${cost.toFixed(4)})`, { duration: 3000 });
+  toast(`AI: ${totalTokens.toLocaleString()} tokens (~$${cost.toFixed(4)})`, { duration: 6000 });
 }

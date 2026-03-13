@@ -15,6 +15,37 @@ async function bootstrap() {
     process.exit(1);
   }
 
+  // Backfill: create PostgreSQL schemas for existing projects that don't have one
+  try {
+    const projects = await prisma.project.findMany({
+      where: { dbSchema: null, status: { not: 'archived' } },
+      select: { id: true, name: true },
+    });
+
+    for (const p of projects) {
+      const shortId = p.id.replace(/-/g, '').substring(0, 8);
+      const dbSchema = `proj_${shortId}`;
+      try {
+        await prisma.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS "${dbSchema}"`);
+        await prisma.project.update({ where: { id: p.id }, data: { dbSchema } });
+        logger.info('Backfilled project schema', { projectId: p.id, name: p.name, dbSchema });
+      } catch (err) {
+        logger.warn('Failed to backfill project schema', {
+          projectId: p.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    if (projects.length > 0) {
+      logger.info(`Backfilled ${projects.length} project schema(s)`);
+    }
+  } catch (err) {
+    logger.warn('Project schema backfill skipped', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   const app = createApp();
 
   const server = app.listen(env.PORT, () => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Coins, RefreshCw } from 'lucide-react';
+import { Coins, RefreshCw, Settings2, BarChart3 } from 'lucide-react';
 import {
   useAIUsageSummary,
   useAIUsageByModule,
@@ -16,8 +16,10 @@ import { UsageByModuleChart } from '@/components/ai-usage/usage-by-module-chart'
 import { UsageTrendChart } from '@/components/ai-usage/usage-trend-chart';
 import { BudgetStatusCard } from '@/components/ai-usage/budget-status-card';
 import { TopCallsTable } from '@/components/ai-usage/top-calls-table';
+import { LLMConfiguration } from '@/components/ai-usage/llm-configuration';
 import { useQueryClient } from '@tanstack/react-query';
 
+type Tab = 'usage' | 'llm-config';
 type TimeRange = '7d' | '30d' | 'all';
 
 function getDateRange(range: TimeRange): Partial<UsageFilters> {
@@ -29,6 +31,7 @@ function getDateRange(range: TimeRange): Partial<UsageFilters> {
 }
 
 export function AIUsageDashboard() {
+  const [activeTab, setActiveTab] = useState<Tab>('usage');
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const queryClient = useQueryClient();
 
@@ -47,6 +50,7 @@ export function AIUsageDashboard() {
 
   function handleRefresh() {
     queryClient.invalidateQueries({ queryKey: ['ai-usage'] });
+    queryClient.invalidateQueries({ queryKey: ['settings'] });
   }
 
   return (
@@ -60,28 +64,30 @@ export function AIUsageDashboard() {
           <div>
             <h1 className="text-xl font-bold text-foreground">AI Usage & Token Governance</h1>
             <p className="text-xs text-muted-foreground">
-              Monitor AI token consumption, costs, and budget limits across all modules
+              Monitor AI token consumption, costs, and configure LLM providers
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Time Range Selector */}
-          <div className="flex bg-secondary rounded-lg p-0.5">
-            {(['7d', '30d', 'all'] as TimeRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  timeRange === range
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'All Time'}
-              </button>
-            ))}
-          </div>
+          {/* Time Range Selector (only visible on usage tab) */}
+          {activeTab === 'usage' && (
+            <div className="flex bg-secondary rounded-lg p-0.5">
+              {(['7d', '30d', 'all'] as TimeRange[]).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    timeRange === range
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'All Time'}
+                </button>
+              ))}
+            </div>
+          )}
 
           <button
             onClick={handleRefresh}
@@ -94,6 +100,75 @@ export function AIUsageDashboard() {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex border-b border-border">
+        <button
+          onClick={() => setActiveTab('usage')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            activeTab === 'usage'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          Usage Analytics
+        </button>
+        <button
+          onClick={() => setActiveTab('llm-config')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            activeTab === 'llm-config'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+          }`}
+        >
+          <Settings2 className="w-4 h-4" />
+          LLM Configuration
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'usage' ? (
+        <UsageTabContent
+          summary={summary}
+          byModule={byModule}
+          byProvider={byProvider}
+          byProject={byProject}
+          topCalls={topCalls}
+          trend={trend}
+          budgets={budgets}
+          currentMonth={currentMonth}
+        />
+      ) : (
+        <LLMConfiguration />
+      )}
+    </div>
+  );
+}
+
+// ── Usage Tab Content (extracted from original) ─────────────────────────────
+
+function UsageTabContent({
+  summary,
+  byModule,
+  byProvider,
+  byProject,
+  topCalls,
+  trend,
+  budgets,
+  currentMonth,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  summary: any;
+  byModule: any;
+  byProvider: any;
+  byProject: any;
+  topCalls: any;
+  trend: any;
+  budgets: any;
+  currentMonth: any;
+}) {
+  return (
+    <div className="space-y-6">
       {/* Summary Cards */}
       <UsageSummaryCards data={summary.data} isLoading={summary.isLoading} />
 
@@ -126,7 +201,7 @@ export function AIUsageDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {byProvider.data.map((p, i) => (
+                {byProvider.data.map((p: { provider: string; model: string; totalCalls: number; totalTokens?: number; totalCost?: number }, i: number) => (
                   <tr key={i} className="border-b border-border/50">
                     <td className="py-2 px-2 font-medium text-foreground capitalize">{p.provider}</td>
                     <td className="py-2 px-2 text-muted-foreground">{p.model}</td>
@@ -156,7 +231,7 @@ export function AIUsageDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {byProject.data.map((p, i) => (
+                {byProject.data.map((p: { projectId?: string; projectName?: string; totalCalls: number; totalTokens?: number; totalCost?: number }, i: number) => (
                   <tr key={i} className="border-b border-border/50">
                     <td className="py-2 px-2 font-medium text-foreground">
                       {p.projectName ?? (p.projectId ? p.projectId.slice(0, 8) : 'No Project')}

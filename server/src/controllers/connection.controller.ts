@@ -120,3 +120,41 @@ export const test = asyncHandler(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+// ---------- Run Query ----------
+
+export const runQuery = asyncHandler(async (req: Request, res: Response) => {
+  const connectionId = req.params.connectionId as string;
+  const { sql, maxRows } = req.body;
+
+  if (!sql || typeof sql !== 'string' || !sql.trim()) {
+    res.status(400).json({
+      success: false,
+      error: 'SQL query is required',
+    });
+    return;
+  }
+
+  const result = await connectionService.runQuery(
+    connectionId,
+    sql.trim(),
+    maxRows ?? 500,
+  );
+
+  res.json({
+    success: true,
+    data: result,
+  });
+});
+
+// ---------- Introspect Schemas ----------
+
+export const introspect = asyncHandler(async (req: Request, res: Response) => {
+  const connectionId = req.params.connectionId as string;
+  const result = await connectionService.introspectSchemas(connectionId);
+
+  res.json({
+    success: true,
+    data: result,
+  });
+});

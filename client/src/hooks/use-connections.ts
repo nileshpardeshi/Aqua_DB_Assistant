@@ -45,6 +45,27 @@ export interface TestConnectionResult {
   success: boolean;
   message: string;
   latencyMs?: number;
+  serverVersion?: string;
+}
+
+export interface RunQueryResult {
+  success: boolean;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  durationMs: number;
+  error?: string;
+}
+
+export interface IntrospectResult {
+  schemas: string[];
+  tables: Array<{
+    schema: string;
+    name: string;
+    type: string;
+    estimated_rows: number | null;
+  }>;
+  totalTables: number;
 }
 
 // Query keys
@@ -160,6 +181,8 @@ export function useDeleteConnection() {
  * Test a connection.
  */
 export function useTestConnection() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({
       projectId,
@@ -172,6 +195,56 @@ export function useTestConnection() {
         `/projects/${projectId}/connections/${connectionId}/test`
       );
       return response as unknown as TestConnectionResult;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: connectionKeys.list(variables.projectId),
+      });
+    },
+  });
+}
+
+/**
+ * Run a SQL query via a stored connection.
+ */
+export function useRunQuery() {
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      connectionId,
+      sql,
+      maxRows,
+    }: {
+      projectId: string;
+      connectionId: string;
+      sql: string;
+      maxRows?: number;
+    }) => {
+      const response = await apiClient.post(
+        `/projects/${projectId}/connections/${connectionId}/query`,
+        { sql, maxRows }
+      );
+      return response as unknown as RunQueryResult;
+    },
+  });
+}
+
+/**
+ * Introspect schemas and tables from a live connection.
+ */
+export function useIntrospect() {
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      connectionId,
+    }: {
+      projectId: string;
+      connectionId: string;
+    }) => {
+      const response = await apiClient.get(
+        `/projects/${projectId}/connections/${connectionId}/introspect`
+      );
+      return response as unknown as IntrospectResult;
     },
   });
 }

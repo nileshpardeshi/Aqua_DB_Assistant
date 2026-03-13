@@ -9,6 +9,7 @@ export interface AIProviderConfig {
   model: string;
   baseUrl: string | null;
   isDefault: boolean;
+  isEnabled: boolean;
   maxTokens: number;
   temperature: number;
   hasApiKey: boolean;
@@ -24,6 +25,7 @@ export interface UpsertAIProviderInput {
   baseUrl?: string;
   model: string;
   isDefault?: boolean;
+  isEnabled?: boolean;
   maxTokens?: number;
   temperature?: number;
 }
@@ -75,6 +77,28 @@ export function useUpsertAIProvider() {
 }
 
 /**
+ * Toggle an AI provider enable/disable.
+ */
+export function useToggleAIProvider() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, isEnabled }: { id: string; isEnabled: boolean }) => {
+      const response = await apiClient.patch(
+        `/settings/ai-providers/${id}/toggle`,
+        { isEnabled },
+      );
+      return response as unknown as { id: string; isEnabled: boolean };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: settingsKeys.aiProviders(),
+      });
+    },
+  });
+}
+
+/**
  * Delete an AI provider configuration.
  */
 export function useDeleteAIProvider() {
@@ -88,6 +112,27 @@ export function useDeleteAIProvider() {
       queryClient.invalidateQueries({
         queryKey: settingsKeys.aiProviders(),
       });
+    },
+  });
+}
+
+/**
+ * Seed default AI provider configurations (only if none exist).
+ */
+export function useSeedDefaultProviders() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const response = await apiClient.post('/settings/ai-providers/seed');
+      return response as unknown as { message: string; seeded: number };
+    },
+    onSuccess: (data) => {
+      if (data.seeded > 0) {
+        queryClient.invalidateQueries({
+          queryKey: settingsKeys.aiProviders(),
+        });
+      }
     },
   });
 }

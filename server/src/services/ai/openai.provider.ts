@@ -11,8 +11,8 @@ export class OpenAIProvider implements AIProvider {
   private readonly client: OpenAI;
   private readonly model: string;
 
-  constructor(apiKey: string, model: string = 'gpt-4o') {
-    this.client = new OpenAI({ apiKey });
+  constructor(apiKey: string, model: string = 'gpt-4o', baseUrl?: string) {
+    this.client = new OpenAI({ apiKey, ...(baseUrl ? { baseURL: baseUrl } : {}) });
     this.model = model;
   }
 

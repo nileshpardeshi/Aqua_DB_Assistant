@@ -16,6 +16,14 @@ import {
   Server,
   Database,
   Lock,
+  Play,
+  Search,
+  Table2,
+  Clock,
+  Activity,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DATABASE_DIALECTS } from '@/config/constants';
@@ -25,8 +33,10 @@ import {
   useUpdateConnection,
   useDeleteConnection,
   useTestConnection,
+  useRunQuery,
+  useIntrospect,
 } from '@/hooks/use-connections';
-import type { Connection } from '@/hooks/use-connections';
+import type { Connection, IntrospectResult } from '@/hooks/use-connections';
 
 const DIALECTS = DATABASE_DIALECTS.filter((d) =>
   ['postgresql', 'mysql', 'oracle', 'sqlserver', 'mariadb', 'snowflake', 'bigquery'].includes(d.value)
@@ -46,22 +56,22 @@ const STATUS_CONFIG = {
   connected: {
     icon: CheckCircle2,
     label: 'Connected',
-    color: 'text-green-600',
-    bg: 'bg-green-50',
+    color: 'text-green-600 dark:text-green-400',
+    bg: 'bg-green-50 dark:bg-green-950/30',
     dot: 'bg-green-500',
   },
   disconnected: {
     icon: WifiOff,
-    label: 'Disconnected',
-    color: 'text-slate-500',
-    bg: 'bg-slate-50',
+    label: 'Not Tested',
+    color: 'text-slate-500 dark:text-slate-400',
+    bg: 'bg-slate-50 dark:bg-slate-800',
     dot: 'bg-slate-400',
   },
   error: {
     icon: XCircle,
     label: 'Error',
-    color: 'text-red-600',
-    bg: 'bg-red-50',
+    color: 'text-red-600 dark:text-red-400',
+    bg: 'bg-red-50 dark:bg-red-950/30',
     dot: 'bg-red-500',
   },
 };
@@ -73,6 +83,8 @@ export function Connections() {
   const updateConnection = useUpdateConnection();
   const deleteConnection = useDeleteConnection();
   const testConnection = useTestConnection();
+  const runQueryMutation = useRunQuery();
+  const introspectMutation = useIntrospect();
 
   const [showForm, setShowForm] = useState(false);
   const [editingConnection, setEditingConnection] = useState<Connection | null>(null);
@@ -82,8 +94,27 @@ export function Connections() {
     id: string;
     success: boolean;
     message: string;
+    latencyMs?: number;
+    serverVersion?: string;
   } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Query panel state
+  const [queryPanelId, setQueryPanelId] = useState<string | null>(null);
+  const [querySql, setQuerySql] = useState('SELECT 1');
+  const [queryResult, setQueryResult] = useState<{
+    success: boolean;
+    columns: string[];
+    rows: Record<string, unknown>[];
+    rowCount: number;
+    durationMs: number;
+    error?: string;
+  } | null>(null);
+
+  // Introspect state
+  const [introspectPanelId, setIntrospectPanelId] = useState<string | null>(null);
+  const [introspectData, setIntrospectData] = useState<IntrospectResult | null>(null);
+  const [expandedSchemas, setExpandedSchemas] = useState<Set<string>>(new Set());
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -141,7 +172,6 @@ export function Connections() {
 
     try {
       if (editingConnection) {
-        // Update existing connection
         await updateConnection.mutateAsync({
           projectId,
           connectionId: editingConnection.id,
@@ -157,7 +187,6 @@ export function Connections() {
           },
         });
       } else {
-        // Create new connection
         await createConnection.mutateAsync({
           projectId,
           name: formName.trim(),
@@ -192,6 +221,8 @@ export function Connections() {
           id: connectionId,
           success: result.success,
           message: result.message || (result.success ? 'Connection successful' : 'Connection failed'),
+          latencyMs: result.latencyMs,
+          serverVersion: result.serverVersion,
         });
       } catch (err: unknown) {
         const message =
@@ -216,14 +247,79 @@ export function Connections() {
       setDeletingId(connectionId);
       try {
         await deleteConnection.mutateAsync({ projectId, connectionId });
+        // Clear panels if this connection was open
+        if (queryPanelId === connectionId) setQueryPanelId(null);
+        if (introspectPanelId === connectionId) setIntrospectPanelId(null);
       } catch {
         // Error handled by mutation
       } finally {
         setDeletingId(null);
       }
     },
-    [projectId, deleteConnection]
+    [projectId, deleteConnection, queryPanelId, introspectPanelId]
   );
+
+  const handleRunQuery = useCallback(async () => {
+    if (!projectId || !queryPanelId || !querySql.trim()) return;
+    setQueryResult(null);
+
+    try {
+      const result = await runQueryMutation.mutateAsync({
+        projectId,
+        connectionId: queryPanelId,
+        sql: querySql.trim(),
+      });
+      setQueryResult(result);
+    } catch (err: unknown) {
+      setQueryResult({
+        success: false,
+        columns: [],
+        rows: [],
+        rowCount: 0,
+        durationMs: 0,
+        error: err instanceof Error ? err.message : 'Query execution failed',
+      });
+    }
+  }, [projectId, queryPanelId, querySql, runQueryMutation]);
+
+  const handleIntrospect = useCallback(
+    async (connectionId: string) => {
+      if (!projectId) return;
+
+      if (introspectPanelId === connectionId) {
+        setIntrospectPanelId(null);
+        setIntrospectData(null);
+        return;
+      }
+
+      setIntrospectPanelId(connectionId);
+      setIntrospectData(null);
+
+      try {
+        const result = await introspectMutation.mutateAsync({
+          projectId,
+          connectionId,
+        });
+        setIntrospectData(result);
+        // Auto-expand first schema
+        if (result.schemas.length > 0) {
+          setExpandedSchemas(new Set([result.schemas[0]]));
+        }
+      } catch {
+        setIntrospectData(null);
+      }
+    },
+    [projectId, introspectPanelId, introspectMutation]
+  );
+
+  const toggleSchema = (schema: string) => {
+    setExpandedSchemas((prev) => {
+      const next = new Set(prev);
+      if (next.has(schema)) next.delete(schema);
+      else next.add(schema);
+      return next;
+    });
+  };
 
   const getDialectInfo = (value: string) =>
     DATABASE_DIALECTS.find((d) => d.value === value);
@@ -231,19 +327,19 @@ export function Connections() {
   const isMutating = createConnection.isPending || updateConnection.isPending;
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl space-y-6">
+    <div className="p-6 lg:p-8 max-w-7xl space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
-            <Plug className="w-5 h-5 text-orange-600" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 flex items-center justify-center">
+            <Plug className="w-5 h-5 text-orange-600 dark:text-orange-400" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-foreground">
-              Connections
+              Database Connections
             </h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Manage database connections for this project
+              Connect to live databases — test, query, and introspect schemas
             </p>
           </div>
         </div>
@@ -271,7 +367,7 @@ export function Connections() {
       {!isLoading && connections.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {connections.map((conn) => {
-            const status = STATUS_CONFIG[conn.status];
+            const status = STATUS_CONFIG[conn.status] || STATUS_CONFIG.disconnected;
             const dialectInfo = getDialectInfo(conn.dialect);
             const isTestingThis = testingId === conn.id;
             const isDeletingThis = deletingId === conn.id;
@@ -281,7 +377,7 @@ export function Connections() {
             return (
               <div
                 key={conn.id}
-                className="bg-card border border-slate-200 rounded-xl p-5 hover:border-slate-300 hover:shadow-md transition-all group"
+                className="bg-card border border-slate-200 dark:border-slate-700 rounded-xl p-5 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md transition-all group"
               >
                 {/* Card Header */}
                 <div className="flex items-start justify-between mb-3">
@@ -298,13 +394,14 @@ export function Connections() {
                       />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-sm font-semibold text-slate-800 truncate">
+                      <h4 className="text-sm font-semibold text-foreground truncate">
                         {conn.name}
                       </h4>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span
                           className={cn(
-                            'w-1.5 h-1.5 rounded-full animate-pulse',
+                            'w-1.5 h-1.5 rounded-full',
+                            conn.status === 'connected' && 'animate-pulse',
                             status.dot
                           )}
                         />
@@ -332,26 +429,26 @@ export function Connections() {
                 {/* Connection Details */}
                 <div className="space-y-1.5 mb-4">
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-500 w-14 flex-shrink-0">Host:</span>
-                    <span className="font-mono text-slate-700 truncate">
+                    <span className="text-muted-foreground w-14 flex-shrink-0">Host:</span>
+                    <span className="font-mono text-foreground truncate">
                       {conn.host}:{conn.port}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-500 w-14 flex-shrink-0">Database:</span>
-                    <span className="font-mono text-slate-700 truncate">
+                    <span className="text-muted-foreground w-14 flex-shrink-0">Database:</span>
+                    <span className="font-mono text-foreground truncate">
                       {conn.database}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-500 w-14 flex-shrink-0">User:</span>
-                    <span className="font-mono text-slate-700">
+                    <span className="text-muted-foreground w-14 flex-shrink-0">User:</span>
+                    <span className="font-mono text-foreground">
                       {conn.username}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-500 w-14 flex-shrink-0">SSL:</span>
-                    <span className={cn('font-medium', conn.ssl ? 'text-green-600' : 'text-slate-400')}>
+                    <span className="text-muted-foreground w-14 flex-shrink-0">SSL:</span>
+                    <span className={cn('font-medium', conn.ssl ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground')}>
                       {conn.ssl ? (
                         <span className="flex items-center gap-1">
                           <Lock className="w-3 h-3" />
@@ -362,37 +459,64 @@ export function Connections() {
                       )}
                     </span>
                   </div>
+                  {conn.lastTestedAt && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground w-14 flex-shrink-0">Tested:</span>
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(conn.lastTestedAt).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Test Result */}
                 {testResultForThis && (
                   <div
                     className={cn(
-                      'text-xs px-3 py-2 rounded-lg mb-3',
+                      'text-xs px-3 py-2.5 rounded-lg mb-3 space-y-1',
                       testResultForThis.success
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-red-50 text-red-700 border border-red-200'
+                        ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
+                        : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
                     )}
                   >
-                    {testResultForThis.success ? (
-                      <CheckCircle2 className="w-3 h-3 inline mr-1" />
-                    ) : (
-                      <XCircle className="w-3 h-3 inline mr-1" />
+                    <div className="flex items-center gap-1">
+                      {testResultForThis.success ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      )}
+                      <span className="font-medium">{testResultForThis.message}</span>
+                    </div>
+                    {testResultForThis.success && (
+                      <div className="flex items-center gap-3 pl-4.5 text-[10px] opacity-80">
+                        {testResultForThis.latencyMs !== undefined && (
+                          <span className="flex items-center gap-1">
+                            <Activity className="w-3 h-3" />
+                            {testResultForThis.latencyMs}ms
+                          </span>
+                        )}
+                        {testResultForThis.serverVersion && (
+                          <span className="flex items-center gap-1">
+                            <Server className="w-3 h-3" />
+                            {testResultForThis.serverVersion}
+                          </span>
+                        )}
+                      </div>
                     )}
-                    {testResultForThis.message}
                   </div>
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-1.5 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <button
                     onClick={() => handleTestConnection(conn.id)}
                     disabled={isTestingThis}
                     className={cn(
                       'flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
                       isTestingThis
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200'
-                        : 'text-aqua-700 bg-aqua-50 border-aqua-200 hover:bg-aqua-100'
+                        ? 'bg-slate-100 dark:bg-slate-800 text-muted-foreground cursor-not-allowed border-slate-200 dark:border-slate-700'
+                        : 'text-aqua-700 dark:text-aqua-400 bg-aqua-50 dark:bg-aqua-950/30 border-aqua-200 dark:border-aqua-800 hover:bg-aqua-100 dark:hover:bg-aqua-900/30'
                     )}
                   >
                     {isTestingThis ? (
@@ -409,8 +533,45 @@ export function Connections() {
                   </button>
 
                   <button
+                    onClick={() => {
+                      setQueryPanelId(queryPanelId === conn.id ? null : conn.id);
+                      setQueryResult(null);
+                      setQuerySql('SELECT 1');
+                    }}
+                    className={cn(
+                      'inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors',
+                      queryPanelId === conn.id
+                        ? 'text-violet-700 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/30 border-slate-200 dark:border-slate-700'
+                    )}
+                    title="Run Query"
+                  >
+                    <Play className="w-3 h-3" />
+                    Query
+                  </button>
+
+                  <button
+                    onClick={() => handleIntrospect(conn.id)}
+                    disabled={introspectMutation.isPending && introspectPanelId === conn.id}
+                    className={cn(
+                      'inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors',
+                      introspectPanelId === conn.id
+                        ? 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 border-slate-200 dark:border-slate-700'
+                    )}
+                    title="Introspect Schema"
+                  >
+                    {introspectMutation.isPending && introspectPanelId === conn.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Search className="w-3 h-3" />
+                    )}
+                    Schema
+                  </button>
+
+                  <button
                     onClick={() => handleEditConnection(conn)}
-                    className="inline-flex items-center justify-center p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                    className="inline-flex items-center justify-center p-1.5 text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                     title="Edit"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -419,7 +580,7 @@ export function Connections() {
                   <button
                     onClick={() => handleDeleteConnection(conn.id)}
                     disabled={isDeletingThis}
-                    className="inline-flex items-center justify-center p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="inline-flex items-center justify-center p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
                     title="Delete"
                   >
                     {isDeletingThis ? (
@@ -435,18 +596,242 @@ export function Connections() {
         </div>
       )}
 
+      {/* Query Panel */}
+      {queryPanelId && (
+        <div className="bg-card border border-violet-200 dark:border-violet-800 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-violet-50 dark:bg-violet-950/30 border-b border-violet-200 dark:border-violet-800">
+            <div className="flex items-center gap-2">
+              <Play className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+              <span className="text-sm font-semibold text-violet-700 dark:text-violet-300">
+                Run Query — {connections.find((c) => c.id === queryPanelId)?.name}
+              </span>
+            </div>
+            <button
+              onClick={() => { setQueryPanelId(null); setQueryResult(null); }}
+              className="p-1 rounded text-violet-400 hover:text-violet-600 dark:hover:text-violet-300 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="p-4 space-y-3">
+            <div className="flex gap-2">
+              <textarea
+                value={querySql}
+                onChange={(e) => setQuerySql(e.target.value)}
+                placeholder="Enter SQL query..."
+                rows={3}
+                className="flex-1 px-3 py-2 text-sm font-mono border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 resize-none"
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    handleRunQuery();
+                  }
+                }}
+              />
+              <button
+                onClick={handleRunQuery}
+                disabled={runQueryMutation.isPending || !querySql.trim()}
+                className={cn(
+                  'px-4 py-2 text-sm font-semibold rounded-lg transition-colors self-end',
+                  runQueryMutation.isPending || !querySql.trim()
+                    ? 'bg-slate-100 dark:bg-slate-800 text-muted-foreground cursor-not-allowed'
+                    : 'bg-violet-600 text-white hover:bg-violet-700'
+                )}
+              >
+                {runQueryMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+
+            <p className="text-[10px] text-muted-foreground">
+              Press Ctrl+Enter to execute. Results limited to 500 rows.
+            </p>
+
+            {/* Query Result */}
+            {queryResult && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 text-xs">
+                  {queryResult.success ? (
+                    <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {queryResult.rowCount} row{queryResult.rowCount !== 1 ? 's' : ''} returned
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      Error
+                    </span>
+                  )}
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {queryResult.durationMs}ms
+                  </span>
+                </div>
+
+                {queryResult.error && (
+                  <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2 text-xs text-red-700 dark:text-red-300 font-mono">
+                    {queryResult.error}
+                  </div>
+                )}
+
+                {queryResult.success && queryResult.columns.length > 0 && (
+                  <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-auto max-h-80">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                          {queryResult.columns.map((col) => (
+                            <th
+                              key={col}
+                              className="px-3 py-2 text-left font-semibold text-foreground whitespace-nowrap"
+                            >
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {queryResult.rows.map((row, i) => (
+                          <tr
+                            key={i}
+                            className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30"
+                          >
+                            {queryResult.columns.map((col) => (
+                              <td
+                                key={col}
+                                className="px-3 py-1.5 font-mono text-foreground whitespace-nowrap max-w-[300px] truncate"
+                              >
+                                {row[col] === null ? (
+                                  <span className="text-muted-foreground italic">NULL</span>
+                                ) : (
+                                  String(row[col])
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Introspect Panel */}
+      {introspectPanelId && (
+        <div className="bg-card border border-amber-200 dark:border-amber-800 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800">
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                Schema Introspection — {connections.find((c) => c.id === introspectPanelId)?.name}
+              </span>
+              {introspectData && (
+                <span className="text-xs text-amber-500 dark:text-amber-400">
+                  ({introspectData.totalTables} table{introspectData.totalTables !== 1 ? 's' : ''} across {introspectData.schemas.length} schema{introspectData.schemas.length !== 1 ? 's' : ''})
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => { setIntrospectPanelId(null); setIntrospectData(null); }}
+              className="p-1 rounded text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="p-4">
+            {introspectMutation.isPending && !introspectData && (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
+                <span className="ml-2 text-sm text-muted-foreground">Introspecting database...</span>
+              </div>
+            )}
+
+            {introspectData && (
+              <div className="space-y-2">
+                {introspectData.schemas.map((schema) => {
+                  const tables = introspectData.tables.filter((t) => t.schema === schema);
+                  const isExpanded = expandedSchemas.has(schema);
+
+                  return (
+                    <div key={schema} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => toggleSchema(schema)}
+                        className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Database className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                          <span className="text-xs font-semibold text-foreground">{schema}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({tables.length} table{tables.length !== 1 ? 's' : ''})
+                          </span>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+                      </button>
+
+                      {isExpanded && tables.length > 0 && (
+                        <div className="border-t border-slate-200 dark:border-slate-700">
+                          {tables.map((table) => (
+                            <div
+                              key={`${table.schema}.${table.name}`}
+                              className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 last:border-b-0"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Table2 className="w-3 h-3 text-slate-400" />
+                                <span className="font-mono text-foreground">{table.name}</span>
+                                {table.type !== 'BASE TABLE' && (
+                                  <span className="text-[9px] font-medium text-muted-foreground uppercase px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">
+                                    {table.type === 'VIEW' ? 'view' : table.type}
+                                  </span>
+                                )}
+                              </div>
+                              {table.estimated_rows !== null && table.estimated_rows !== undefined && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  ~{Number(table.estimated_rows).toLocaleString()} rows
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {isExpanded && tables.length === 0 && (
+                        <div className="px-3 py-3 text-xs text-muted-foreground italic border-t border-slate-200 dark:border-slate-700">
+                          No tables in this schema
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Empty State */}
       {!isLoading && connections.length === 0 && !showForm && (
         <div className="flex flex-col items-center justify-center py-20 px-4">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center mb-6">
-            <Database className="w-10 h-10 text-orange-600" />
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 flex items-center justify-center mb-6">
+            <Database className="w-10 h-10 text-orange-600 dark:text-orange-400" />
           </div>
           <h3 className="text-lg font-semibold text-foreground mb-2">
             No connections yet
           </h3>
           <p className="text-sm text-muted-foreground text-center max-w-md mb-6">
-            Add a database connection to enable live schema introspection, query
-            execution, and performance monitoring.
+            Add a database connection to test connectivity, run live queries,
+            and introspect schemas directly from your databases.
           </p>
           <button
             onClick={handleOpenForm}
@@ -479,7 +864,7 @@ export function Connections() {
                   setShowForm(false);
                   resetForm();
                 }}
-                className="p-1 rounded text-slate-400 hover:text-slate-600 transition-colors"
+                className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -489,7 +874,7 @@ export function Connections() {
             <div className="space-y-4">
               {/* Name */}
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label className="block text-xs font-medium text-foreground mb-1">
                   Connection Name
                 </label>
                 <input
@@ -497,20 +882,20 @@ export function Connections() {
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="e.g., Production DB"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   autoFocus
                 />
               </div>
 
               {/* Dialect */}
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label className="block text-xs font-medium text-foreground mb-1">
                   Database Dialect
                 </label>
                 <select
                   value={formDialect}
                   onChange={(e) => handleDialectChange(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                 >
                   {DIALECTS.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -523,7 +908,7 @@ export function Connections() {
               {/* Host & Port */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                  <label className="block text-xs font-medium text-foreground mb-1">
                     Host
                   </label>
                   <input
@@ -531,25 +916,25 @@ export function Connections() {
                     value={formHost}
                     onChange={(e) => setFormHost(e.target.value)}
                     placeholder="localhost or db.example.com"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                  <label className="block text-xs font-medium text-foreground mb-1">
                     Port
                   </label>
                   <input
                     type="number"
                     value={formPort}
                     onChange={(e) => setFormPort(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   />
                 </div>
               </div>
 
               {/* Database */}
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label className="block text-xs font-medium text-foreground mb-1">
                   Database Name
                 </label>
                 <input
@@ -557,14 +942,14 @@ export function Connections() {
                   value={formDatabase}
                   onChange={(e) => setFormDatabase(e.target.value)}
                   placeholder="my_database"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                 />
               </div>
 
               {/* Username & Password */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                  <label className="block text-xs font-medium text-foreground mb-1">
                     Username
                   </label>
                   <input
@@ -572,11 +957,11 @@ export function Connections() {
                     value={formUsername}
                     onChange={(e) => setFormUsername(e.target.value)}
                     placeholder="db_user"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                  <label className="block text-xs font-medium text-foreground mb-1">
                     Password
                   </label>
                   <div className="relative">
@@ -585,12 +970,12 @@ export function Connections() {
                       value={formPassword}
                       onChange={(e) => setFormPassword(e.target.value)}
                       placeholder={editingConnection ? '(unchanged)' : 'password'}
-                      className="w-full px-3 py-2 pr-9 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                      className="w-full px-3 py-2 pr-9 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       {showPassword ? (
                         <EyeOff className="w-3.5 h-3.5" />
@@ -603,12 +988,12 @@ export function Connections() {
               </div>
 
               {/* SSL Toggle */}
-              <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
                 <div className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-slate-500" />
+                  <Lock className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium text-slate-700">SSL / TLS</p>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-sm font-medium text-foreground">SSL / TLS</p>
+                    <p className="text-[10px] text-muted-foreground">
                       Encrypt connection to database server
                     </p>
                   </div>
@@ -617,12 +1002,12 @@ export function Connections() {
                   onClick={() => setFormSsl(!formSsl)}
                   className={cn(
                     'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                    formSsl ? 'bg-aqua-500' : 'bg-slate-300'
+                    formSsl ? 'bg-aqua-500' : 'bg-slate-300 dark:bg-slate-600'
                   )}
                 >
                   <span
                     className={cn(
-                      'inline-block h-3.5 w-3.5 transform rounded-full bg-card transition-transform shadow-sm',
+                      'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm',
                       formSsl ? 'translate-x-4.5' : 'translate-x-0.5'
                     )}
                   />
@@ -636,7 +1021,7 @@ export function Connections() {
                     setShowForm(false);
                     resetForm();
                   }}
-                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -652,7 +1037,7 @@ export function Connections() {
                     'inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-colors',
                     formName.trim() && formHost.trim() && formDatabase.trim()
                       ? 'text-white bg-aqua-600 hover:bg-aqua-700'
-                      : 'text-slate-400 bg-slate-100 cursor-not-allowed'
+                      : 'text-muted-foreground bg-slate-100 dark:bg-slate-800 cursor-not-allowed'
                   )}
                 >
                   {isMutating ? (

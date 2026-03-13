@@ -3,11 +3,21 @@ import { prisma } from '../config/prisma.js';
 import { NotFoundError } from '../middleware/error-handler.js';
 import { buildPaginatedResponse } from '../utils/pagination.js';
 import * as auditService from './audit.service.js';
+import { logger } from '../config/logger.js';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
   ProjectListQuery,
 } from '../validators/project.validator.js';
+
+/**
+ * Derive a PostgreSQL schema name from a project UUID.
+ * Format: proj_<first 8 hex chars> — e.g. proj_a1b2c3d4
+ */
+function deriveDbSchema(projectId: string): string {
+  const shortId = projectId.replace(/-/g, '').substring(0, 8);
+  return `proj_${shortId}`;
+}
 
 // ---------- List ----------
 
@@ -63,6 +73,7 @@ export async function listProjects(query: ProjectListQuery) {
     description: p.description,
     dialect: p.dialect,
     status: p.status,
+    dbSchema: p.dbSchema,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
     tableCount: p._count.tables,
@@ -109,15 +120,32 @@ export async function createProject(data: CreateProjectInput) {
     },
   });
 
+  // Create a dedicated PostgreSQL schema for this project
+  const dbSchema = deriveDbSchema(project.id);
+  try {
+    await prisma.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS "${dbSchema}"`);
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { dbSchema },
+    });
+    logger.info('Created project PostgreSQL schema', { projectId: project.id, dbSchema });
+  } catch (err) {
+    logger.error('Failed to create project schema', {
+      projectId: project.id,
+      dbSchema,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   auditService.logAction({
     projectId: project.id,
     action: 'project.create',
     entity: 'Project',
     entityId: project.id,
-    details: `Created project "${project.name}" (${project.dialect})`,
+    details: `Created project "${project.name}" (${project.dialect}) with schema "${dbSchema}"`,
   }).catch(() => {});
 
-  return project;
+  return { ...project, dbSchema };
 }
 
 // ---------- Update ----------
@@ -154,9 +182,23 @@ export async function removeProject(projectId: string) {
     throw new NotFoundError('Project');
   }
 
+  // Drop the project's PostgreSQL schema if it exists
+  if (existing.dbSchema) {
+    try {
+      await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${existing.dbSchema}" CASCADE`);
+      logger.info('Dropped project PostgreSQL schema', { projectId, dbSchema: existing.dbSchema });
+    } catch (err) {
+      logger.error('Failed to drop project schema', {
+        projectId,
+        dbSchema: existing.dbSchema,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   const project = await prisma.project.update({
     where: { id: projectId },
-    data: { status: 'archived' },
+    data: { status: 'archived', dbSchema: null },
   });
 
   auditService.logAction({
@@ -164,7 +206,7 @@ export async function removeProject(projectId: string) {
     action: 'project.archive',
     entity: 'Project',
     entityId: project.id,
-    details: `Archived project "${project.name}"`,
+    details: `Archived project "${project.name}" and dropped schema "${existing.dbSchema ?? 'none'}"`,
   }).catch(() => {});
 
   return project;

@@ -226,11 +226,12 @@ export const optimizeQuery = asyncHandler(
       explainPlan,
     );
 
+    const smartMax = calculateSmartMaxTokens(sql, 4096, 1500);
     const provider = await AIProviderFactory.getTracked({ module: 'query', endpoint: '/ai/query/optimize', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
-      maxTokens: 8192,
+      maxTokens: smartMax,
       jsonMode: true,
     });
 
@@ -273,7 +274,9 @@ export const generateSQL = asyncHandler(
       return;
     }
 
-    const schemaContext = await AIContextBuilder.buildSchemaContext(projectId);
+    const schemaContext = await AIContextBuilder.buildSchemaContext(projectId, {
+      maxTokens: 2000,
+    });
 
     const messages = buildNLToSQLPrompt(
       naturalLanguage,
@@ -281,11 +284,12 @@ export const generateSQL = asyncHandler(
       schemaContext,
     );
 
+    const smartMax = calculateSmartMaxTokens(naturalLanguage, 2048, 1200);
     const provider = await AIProviderFactory.getTracked({ module: 'query', endpoint: '/ai/query/generate', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
-      maxTokens: 4096,
+      maxTokens: smartMax,
       jsonMode: true,
     });
 
@@ -335,11 +339,12 @@ export const explainQuery = asyncHandler(
 
     const messages = buildQueryExplanationPrompt(sql, dialect, schemaContext);
 
+    const smartMax = calculateSmartMaxTokens(sql, 2048, 1200);
     const provider = await AIProviderFactory.getTracked({ module: 'query', endpoint: '/ai/query/explain', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
-      maxTokens: 4096,
+      maxTokens: smartMax,
       jsonMode: true,
     });
 

@@ -10,9 +10,10 @@ import { env } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
 
 export interface AIProviderCreateConfig {
-  provider: 'anthropic' | 'openai' | 'gemini' | 'openrouter';
+  provider: 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'copilot';
   apiKey: string;
   model?: string;
+  baseUrl?: string;
 }
 
 export class AIProviderFactory {
@@ -29,9 +30,16 @@ export class AIProviderFactory {
         return new GeminiProvider(config.apiKey, config.model);
       case 'openrouter':
         return new OpenRouterProvider(config.apiKey, config.model);
+      case 'copilot':
+        // Copilot uses OpenAI-compatible API with a custom base URL
+        return new OpenAIProvider(
+          config.apiKey,
+          config.model ?? 'gpt-4o',
+          config.baseUrl ?? 'https://api.githubcopilot.com',
+        );
       default:
         throw new Error(
-          `Unsupported AI provider: ${config.provider}. Supported: anthropic, openai, gemini, openrouter`,
+          `Unsupported AI provider: ${config.provider}. Supported: anthropic, openai, gemini, openrouter, copilot`,
         );
     }
   }
@@ -42,10 +50,10 @@ export class AIProviderFactory {
    * Throws a descriptive error if no provider can be configured.
    */
   static async getDefault(): Promise<AIProvider> {
-    // 1. Try loading from the database (isDefault = true)
+    // 1. Try loading from the database (isDefault = true AND isEnabled = true)
     try {
       const dbConfig = await prisma.aIProviderConfig.findFirst({
-        where: { isDefault: true },
+        where: { isDefault: true, isEnabled: true },
       });
 
       if (dbConfig) {
@@ -68,6 +76,7 @@ export class AIProviderFactory {
           provider: dbConfig.provider as AIProviderCreateConfig['provider'],
           apiKey,
           model: dbConfig.model,
+          baseUrl: dbConfig.baseUrl ?? undefined,
         });
       }
     } catch (error) {

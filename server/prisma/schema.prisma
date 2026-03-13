@@ -10,6 +10,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["aqua_db"]
 }
 
 // ============================================================
@@ -23,6 +24,7 @@ model Project {
   dialect     String   @db.VarChar(30) // postgresql | mysql | oracle | sqlserver | snowflake | bigquery | mongodb | mariadb
   status      String   @default("active") @db.VarChar(20)
   schemas     String?  @db.Text // JSON array of schema names, e.g. ["public", "auth", "billing"]
+  dbSchema    String?  @db.VarChar(63) // PostgreSQL schema name for this project (e.g. proj_a1b2c3d4)
   createdAt   DateTime @default(now()) @db.Timestamptz
   updatedAt   DateTime @updatedAt @db.Timestamptz
 
@@ -43,6 +45,7 @@ model Project {
   aiUsageLogs        AIUsageLog[]
   aiBudget           AIBudgetConfig?
 
+  @@schema("aqua_db")
   @@index([status])
   @@index([createdAt])
 }
@@ -61,6 +64,7 @@ model ProjectFile {
   project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   parseResult FileParseResult?
 
+  @@schema("aqua_db")
   @@index([projectId])
   @@index([fileType])
 }
@@ -77,6 +81,8 @@ model FileParseResult {
   duration       Int?      // milliseconds
 
   file ProjectFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@schema("aqua_db")
 }
 
 // ============================================================
@@ -93,6 +99,7 @@ model SchemaSnapshot {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@unique([projectId, version])
   @@index([projectId, createdAt])
 }
@@ -118,6 +125,7 @@ model TableMetadata {
   outgoingRelationships RelationshipMetadata[] @relation("SourceTable")
   incomingRelationships RelationshipMetadata[] @relation("TargetTable")
 
+  @@schema("aqua_db")
   @@unique([projectId, schemaName, tableName])
   @@index([projectId])
 }
@@ -141,6 +149,7 @@ model ColumnMetadata {
 
   table TableMetadata @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@unique([tableId, columnName])
   @@index([tableId, ordinalPosition])
 }
@@ -157,6 +166,7 @@ model IndexMetadata {
 
   table TableMetadata @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@unique([tableId, indexName])
 }
 
@@ -170,6 +180,7 @@ model ConstraintMetadata {
 
   table TableMetadata @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@unique([tableId, constraintName])
 }
 
@@ -188,6 +199,7 @@ model RelationshipMetadata {
   sourceTable TableMetadata @relation("SourceTable", fields: [sourceTableId], references: [id], onDelete: Cascade)
   targetTable TableMetadata @relation("TargetTable", fields: [targetTableId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@index([sourceTableId])
   @@index([targetTableId])
 }
@@ -206,6 +218,7 @@ model TriggerMetadata {
 
   table TableMetadata @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@unique([tableId, triggerName])
   @@index([tableId])
 }
@@ -230,6 +243,7 @@ model SavedQuery {
   project    Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   executions QueryExecution[]
 
+  @@schema("aqua_db")
   @@index([projectId])
   @@index([projectId, isFavorite])
 }
@@ -252,6 +266,7 @@ model QueryExecution {
   project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   savedQuery SavedQuery? @relation(fields: [savedQueryId], references: [id], onDelete: SetNull)
 
+  @@schema("aqua_db")
   @@index([projectId, executedAt])
 }
 
@@ -272,6 +287,7 @@ model PerformanceRun {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@index([projectId, startedAt])
 }
 
@@ -298,6 +314,7 @@ model Migration {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@unique([projectId, version])
   @@index([projectId, status])
 }
@@ -316,6 +333,7 @@ model ColumnMappingConfig {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@index([projectId])
 }
 
@@ -331,6 +349,7 @@ model DataSheetMappingConfig {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@index([projectId])
 }
 
@@ -357,6 +376,7 @@ model SavedDiagram {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@index([projectId])
 }
 
@@ -378,6 +398,7 @@ model DataLifecycleRule {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@index([projectId, ruleType])
   @@index([isActive])
 }
@@ -397,6 +418,7 @@ model AIConversation {
   project  Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   messages AIMessage[]
 
+  @@schema("aqua_db")
   @@index([projectId, context])
 }
 
@@ -410,6 +432,7 @@ model AIMessage {
 
   conversation AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@index([conversationId, createdAt])
 }
 
@@ -435,6 +458,7 @@ model DatabaseConnection {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@index([projectId])
 }
 
@@ -446,21 +470,26 @@ model AppSettings {
   id    String @id @default("singleton") @db.VarChar(50)
   key   String @unique @db.VarChar(200)
   value String @db.Text
+
+  @@schema("aqua_db")
 }
 
 model AIProviderConfig {
   id              String   @id @default(uuid()) @db.Uuid
-  provider        String   @db.VarChar(30) // anthropic | openai | ollama
+  provider        String   @db.VarChar(30) // anthropic | openai | gemini | openrouter | ollama
   apiKeyEncrypted String?  @db.Text
   baseUrl         String?  @db.VarChar(500)
   model           String   @db.VarChar(100)
   isDefault       Boolean  @default(false)
+  isEnabled       Boolean  @default(true)
   maxTokens       Int      @default(4096)
   temperature     Float    @default(0.3)
   createdAt       DateTime @default(now()) @db.Timestamptz
   updatedAt       DateTime @updatedAt @db.Timestamptz
 
+  @@schema("aqua_db")
   @@unique([provider, model])
+  @@index([isEnabled, isDefault])
 }
 
 model AuditLog {
@@ -476,6 +505,7 @@ model AuditLog {
 
   project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
+  @@schema("aqua_db")
   @@index([projectId, createdAt])
   @@index([action, createdAt])
   @@index([entityId])
@@ -503,6 +533,7 @@ model AIUsageLog {
 
   project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
+  @@schema("aqua_db")
   @@index([projectId, createdAt])
   @@index([module, createdAt])
   @@index([provider, model, createdAt])
@@ -521,5 +552,6 @@ model AIBudgetConfig {
 
   project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@schema("aqua_db")
   @@index([isActive])
 }

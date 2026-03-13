@@ -103,6 +103,69 @@ export interface SchemaReview {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyResponse = Record<string, any>;
 
+// ── Response Normalizers ─────────────────────────────────────────────────────
+// AI providers sometimes return keys in different casing (camelCase vs snake_case)
+// or slightly different structures. These normalizers ensure the UI always gets
+// a consistent shape regardless of what the AI model returns.
+
+function normalizeGeneratedSQL(raw: AnyResponse): GeneratedSQL {
+  // Server wraps: { result: {...}, usage, model } → apiClient unwraps { success, data }
+  const data = raw.result ?? raw;
+  return {
+    sql: data.sql ?? data.query ?? data.generated_sql ?? '',
+    explanation: data.explanation ?? data.description ?? '',
+    assumptions: data.assumptions ?? [],
+    alternativeApproaches: data.alternativeApproaches ?? data.alternative_approaches ?? data.alternatives ?? [],
+    warnings: data.warnings ?? [],
+  };
+}
+
+function normalizeOptimization(raw: AnyResponse): QueryOptimization {
+  // Server wraps: { optimization: {...}, usage, model }
+  const data = raw.optimization ?? raw;
+  return {
+    optimizedSQL: data.optimizedSQL ?? data.optimized_sql ?? data.optimizedQuery ?? data.sql ?? '',
+    changes: (data.changes ?? data.optimizations ?? []).map((c: AnyResponse) => ({
+      description: c.description ?? c.change ?? '',
+      impact: (c.impact ?? 'MEDIUM').toUpperCase(),
+      category: c.category ?? c.type ?? 'QUERY_REWRITE',
+    })),
+    indexRecommendations: (data.indexRecommendations ?? data.index_recommendations ?? data.indexes ?? []).map((idx: AnyResponse) => ({
+      createStatement: idx.createStatement ?? idx.create_statement ?? idx.sql ?? '',
+      reason: idx.reason ?? idx.description ?? '',
+      estimatedImpact: idx.estimatedImpact ?? idx.estimated_impact ?? idx.impact ?? '',
+    })),
+    warnings: data.warnings ?? [],
+    estimatedImprovement: data.estimatedImprovement ?? data.estimated_improvement ?? data.improvement ?? '',
+  };
+}
+
+function normalizeExplanation(raw: AnyResponse): QueryExplanation {
+  // Server wraps: { explanation: {...}, usage, model }
+  const data = raw.explanation ?? raw;
+  return {
+    summary: data.summary ?? data.description ?? '',
+    stepByStep: (data.stepByStep ?? data.step_by_step ?? data.steps ?? []).map((s: AnyResponse) => ({
+      clause: s.clause ?? s.step ?? '',
+      sql: s.sql ?? s.code ?? '',
+      explanation: s.explanation ?? s.description ?? '',
+    })),
+    tablesUsed: (data.tablesUsed ?? data.tables_used ?? data.tables ?? []).map((t: AnyResponse) => ({
+      name: t.name ?? t.table_name ?? '',
+      alias: t.alias ?? t.name ?? '',
+      role: t.role ?? t.purpose ?? '',
+    })),
+    outputColumns: (data.outputColumns ?? data.output_columns ?? data.columns ?? []).map((c: AnyResponse) => ({
+      expression: c.expression ?? c.column ?? '',
+      alias: c.alias ?? '',
+      description: c.description ?? '',
+    })),
+    filters: data.filters ?? data.conditions ?? [],
+    performanceNotes: data.performanceNotes ?? data.performance_notes ?? data.notes ?? [],
+    complexity: (data.complexity ?? 'MODERATE').toUpperCase() as QueryExplanation['complexity'],
+  };
+}
+
 // ── Hooks ────────────────────────────────────────────────────────────────────
 
 /**
@@ -136,7 +199,7 @@ export function useOptimizeQuery() {
       const response = await apiClient.post('/ai/query/optimize', input);
       const raw = response as unknown as AnyResponse;
       trackAIUsage({ usage: raw.usage, model: raw.model }, 'query');
-      return raw.optimization as QueryOptimization;
+      return normalizeOptimization(raw);
     },
   });
 }
@@ -154,7 +217,7 @@ export function useGenerateSQL() {
       const response = await apiClient.post('/ai/query/generate', input);
       const raw = response as unknown as AnyResponse;
       trackAIUsage({ usage: raw.usage, model: raw.model }, 'query');
-      return raw.result as GeneratedSQL;
+      return normalizeGeneratedSQL(raw);
     },
   });
 }
@@ -172,7 +235,7 @@ export function useExplainQuery() {
       const response = await apiClient.post('/ai/query/explain', input);
       const raw = response as unknown as AnyResponse;
       trackAIUsage({ usage: raw.usage, model: raw.model }, 'query');
-      return raw.explanation as QueryExplanation;
+      return normalizeExplanation(raw);
     },
   });
 }
