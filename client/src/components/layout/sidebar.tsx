@@ -20,6 +20,9 @@ import {
   ScrollText,
   FileText,
   Coins,
+  FileSearch,
+  ShieldAlert,
+  DollarSign,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { APP_NAME, APP_TAGLINE, getDialect } from '../../config/constants';
@@ -41,6 +44,7 @@ const mainNavItems: NavItem[] = [
 const toolNavItems: NavItem[] = [
   { label: 'SQL Converter', icon: ArrowRightLeft, path: '/tools/sql-converter' },
   { label: 'JPA Query Lab', icon: FlaskConical, path: '/tools/jpa-lab' },
+  { label: 'Report Analyzer', icon: FileSearch, path: '/tools/awr-analyzer' },
   { label: 'Audit Logs', icon: ScrollText, path: '/audit-logs' },
   { label: 'AI Usage', icon: Coins, path: '/ai-usage' },
 ];
@@ -66,6 +70,8 @@ function getProjectNavItems(projectId: string): NavItem[] {
     { label: 'DB Docs', icon: FileText, path: `/project/${projectId}/docs` },
     { label: 'Data Lifecycle', icon: Shield, path: `/project/${projectId}/data-lifecycle` },
     { label: 'Migration Studio', icon: GitBranch, path: `/project/${projectId}/migrations` },
+    { label: 'DR Strategy', icon: ShieldAlert, path: `/project/${projectId}/disaster-recovery` },
+    { label: 'Cost Advisor', icon: DollarSign, path: `/project/${projectId}/cost-optimizer` },
   ];
 }
 

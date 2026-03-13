@@ -18,6 +18,7 @@ import { buildMigrationAssessmentPrompt } from '../services/ai/prompt-templates/
 import { buildMigrationScriptGeneratorPrompt } from '../services/ai/prompt-templates/migration-script-generator.prompt.js';
 import { buildColumnMappingPrompt } from '../services/ai/prompt-templates/column-mapping.prompt.js';
 import { buildDialectValidationPrompt } from '../services/ai/prompt-templates/dialect-validation.prompt.js';
+import { buildSchemaEvolutionImpactPrompt } from '../services/ai/prompt-templates/schema-evolution-impact.prompt.js';
 import { calculateSmartMaxTokens } from '../services/ai/ai-response-cache.js';
 import { optimizeSqlForTokens } from '../services/ai/sql-token-optimizer.js';
 import { prisma } from '../config/prisma.js';
@@ -1315,6 +1316,83 @@ export const validateDialectConversion = asyncHandler(
           optimizedTokens: Math.ceil(optimized.optimizedChars / 4),
           saved: optimized.estimatedTokensSaved,
         },
+      },
+    });
+  },
+);
+
+// ---------- Schema Evolution Impact Analysis ----------
+
+export const analyzeSchemaEvolution = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { projectId, changeScript, dialect, focusAreas } = req.body as {
+      projectId: string;
+      changeScript: string;
+      dialect: string;
+      focusAreas?: string[];
+    };
+
+    if (!projectId || !changeScript || !dialect) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'BAD_REQUEST',
+          message: 'projectId, changeScript, and dialect are required',
+        },
+      });
+      return;
+    }
+
+    const schemaContext = await AIContextBuilder.buildSchemaContext(projectId);
+
+    if (schemaContext.startsWith('-- No tables found')) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'NO_SCHEMA',
+          message:
+            'No tables found in this project. Import a schema first before analyzing schema evolution impact.',
+        },
+      });
+      return;
+    }
+
+    const messages = buildSchemaEvolutionImpactPrompt(
+      changeScript,
+      schemaContext,
+      dialect,
+      focusAreas,
+    );
+
+    const promptText = messages.map((m) => m.content).join('\n');
+    const smartMax = calculateSmartMaxTokens(promptText, 16384, 4096);
+
+    const provider = await AIProviderFactory.getTracked({
+      module: 'schema',
+      endpoint: '/ai/schema/evolution-impact',
+      projectId,
+    });
+
+    const response = await provider.chat({
+      messages,
+      temperature: 0.2,
+      maxTokens: smartMax,
+      jsonMode: true,
+    });
+
+    let impact: unknown;
+    try {
+      impact = parseAIJson(response.content);
+    } catch {
+      impact = { rawResponse: response.content };
+    }
+
+    res.json({
+      success: true,
+      data: {
+        impact,
+        usage: response.usage,
+        model: response.model,
       },
     });
   },

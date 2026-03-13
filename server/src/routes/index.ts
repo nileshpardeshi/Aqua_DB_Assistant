@@ -18,6 +18,9 @@ import auditRoutes from './audit.routes.js';
 import aiUsageRoutes from './ai-usage.routes.js';
 import toolsRoutes from './tools.routes.js';
 import sandboxRoutes from './sandbox.routes.js';
+import awrRoutes from './awr.routes.js';
+import drRoutes from './disaster-recovery.routes.js';
+import costOptimizerRoutes from './cost-optimizer.routes.js';
 
 const router = Router();
 
@@ -43,5 +46,8 @@ router.use('/api/v1/audit-logs', auditRoutes);
 router.use('/api/v1/ai-usage', aiUsageRoutes);
 router.use('/api/v1/tools', toolsRoutes);
 router.use('/api/v1/projects/:projectId/sandbox', sandboxRoutes);
+router.use('/api/v1/tools/awr', awrRoutes);
+router.use('/api/v1/projects/:projectId/dr', drRoutes);
+router.use('/api/v1/projects/:projectId/cost-optimizer', costOptimizerRoutes);
 
 export default router;

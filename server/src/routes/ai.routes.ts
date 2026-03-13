@@ -54,4 +54,7 @@ router.post('/migration/suggest-column-mapping', aiController.suggestColumnMappi
 // POST /ai/migration/validate-conversion - AI validation of converted SQL
 router.post('/migration/validate-conversion', aiController.validateDialectConversion);
 
+// POST /ai/schema/evolution-impact - AI schema evolution impact analysis
+router.post('/schema/evolution-impact', aiController.analyzeSchemaEvolution);
+
 export default router;

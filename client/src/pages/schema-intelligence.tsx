@@ -30,6 +30,13 @@ import {
   Zap,
   Star,
   BarChart3,
+  GitBranch,
+  ArrowRight,
+  Clock,
+  Shield,
+  Activity,
+  RotateCcw,
+  Copy,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
@@ -42,8 +49,8 @@ import {
 } from '@/hooks/use-schema';
 import type { Table, Column, Index, Constraint, CreateTableInput } from '@/hooks/use-schema';
 import { useProject } from '@/hooks/use-projects';
-import { useSuggestSchema, useReviewSchema } from '@/hooks/use-ai';
-import type { SchemaSuggestion, SchemaReview } from '@/hooks/use-ai';
+import { useSuggestSchema, useReviewSchema, useAnalyzeSchemaEvolution } from '@/hooks/use-ai';
+import type { SchemaSuggestion, SchemaReview, SchemaEvolutionImpact } from '@/hooks/use-ai';
 import { SchemaExplorer } from '@/components/schema/schema-explorer';
 import { TableDetailPanel } from '@/components/schema/table-detail-panel';
 import { FileUploadZone } from '@/components/shared/file-upload-zone';
@@ -387,6 +394,67 @@ const DEMO_REVIEW: SchemaReview = {
     'Schema has a solid foundation but needs improvements in normalization, indexing strategy, and data type choices. Key issues: denormalized customer data in orders, missing indexes on frequently queried columns, and FLOAT usage for monetary values.',
 };
 
+const DEMO_IMPACT: SchemaEvolutionImpact = {
+  overallRiskScore: 72,
+  overallVerdict: 'high',
+  summary: 'The proposed changes include dropping a column used in multiple foreign key relationships and changing a data type that may cause data loss. Careful migration planning is required.',
+  parsedChanges: [
+    { changeType: 'DROP_COLUMN', targetTable: 'users', targetColumn: 'email_verified', description: 'Dropping email_verified boolean column from users table', sql: 'ALTER TABLE users DROP COLUMN email_verified;' },
+    { changeType: 'RENAME_COLUMN', targetTable: 'orders', targetColumn: 'customer_id', description: 'Renaming customer_id to user_id in orders table', sql: 'ALTER TABLE orders RENAME COLUMN customer_id TO user_id;' },
+    { changeType: 'ALTER_COLUMN', targetTable: 'products', targetColumn: 'price', description: 'Changing price column type from DECIMAL to INTEGER', sql: 'ALTER TABLE products ALTER COLUMN price TYPE INTEGER;' },
+    { changeType: 'ALTER_TABLE', targetTable: 'orders', targetColumn: 'shipping_address', description: 'Adding NOT NULL constraint to shipping_address', sql: 'ALTER TABLE orders ALTER COLUMN shipping_address SET NOT NULL;' },
+    { changeType: 'DROP_INDEX', targetTable: 'users', targetColumn: null, description: 'Dropping index on users.email', sql: 'DROP INDEX idx_users_email;' },
+  ],
+  impactedObjects: [
+    { objectType: 'column', objectName: 'users.email_verified', impactType: 'broken', riskLevel: 'high', description: 'Column will be permanently removed along with all data', recommendation: 'Back up data before dropping; verify no application code references this column' },
+    { objectType: 'foreign_key', objectName: 'fk_orders_customer', impactType: 'broken', riskLevel: 'critical', description: 'Foreign key referencing customer_id will break after rename', recommendation: 'Drop and recreate the foreign key constraint with the new column name' },
+    { objectType: 'index', objectName: 'idx_orders_customer_id', impactType: 'broken', riskLevel: 'high', description: 'Index on customer_id will become invalid after column rename', recommendation: 'Drop and recreate the index on the renamed column user_id' },
+    { objectType: 'index', objectName: 'idx_users_email', impactType: 'broken', riskLevel: 'medium', description: 'Index will be dropped, email lookups will become slower', recommendation: 'Ensure no queries depend on fast email lookups or create a replacement index' },
+    { objectType: 'column', objectName: 'products.price', impactType: 'degraded', riskLevel: 'critical', description: 'Changing DECIMAL to INTEGER will truncate decimal values causing data loss', recommendation: 'Review all price data; consider rounding strategy before migration' },
+    { objectType: 'column', objectName: 'orders.shipping_address', impactType: 'modified', riskLevel: 'high', description: 'Existing NULL values will cause the ALTER to fail', recommendation: 'First UPDATE NULL values to a default, then add NOT NULL constraint' },
+  ],
+  breakingChanges: [
+    { severity: 'critical', change: 'ALTER TABLE products ALTER COLUMN price TYPE INTEGER', affectedArea: 'data_integrity', description: 'Converting DECIMAL to INTEGER will truncate all fractional price values. A product priced at $19.99 becomes $19.', exampleQuery: "SELECT * FROM products WHERE price = 19.99 -- Will return 0 rows after change", fix: 'Use DECIMAL(10,2) instead, or add a rounding step: ALTER TABLE products ALTER COLUMN price TYPE INTEGER USING ROUND(price);' },
+    { severity: 'high', change: 'ALTER TABLE orders RENAME COLUMN customer_id TO user_id', affectedArea: 'queries', description: 'All queries, views, and application code referencing orders.customer_id will break', exampleQuery: 'SELECT o.* FROM orders o JOIN customers c ON o.customer_id = c.id', fix: 'Update all queries to use user_id; consider adding a view or alias during transition' },
+    { severity: 'high', change: 'ALTER TABLE orders ALTER COLUMN shipping_address SET NOT NULL', affectedArea: 'data_integrity', description: 'Fails if any existing rows have NULL shipping_address', fix: "Run UPDATE orders SET shipping_address = 'N/A' WHERE shipping_address IS NULL; before the ALTER" },
+  ],
+  dataMigration: {
+    required: true,
+    complexity: 'moderate',
+    estimatedDowntime: 'minutes',
+    steps: [
+      { order: 1, description: 'Back up affected tables (users, orders, products)', sql: 'CREATE TABLE users_backup AS SELECT * FROM users;', reversible: true },
+      { order: 2, description: 'Update NULL shipping addresses before adding NOT NULL', sql: "UPDATE orders SET shipping_address = 'Unknown' WHERE shipping_address IS NULL;", reversible: true },
+      { order: 3, description: 'Round price values before type change', sql: 'UPDATE products SET price = ROUND(price) WHERE price != ROUND(price);', reversible: false },
+      { order: 4, description: 'Drop dependent foreign keys and indexes', sql: 'ALTER TABLE orders DROP CONSTRAINT fk_orders_customer;\nDROP INDEX idx_orders_customer_id;', reversible: true },
+      { order: 5, description: 'Apply schema changes in order', sql: 'ALTER TABLE users DROP COLUMN email_verified;\nALTER TABLE orders RENAME COLUMN customer_id TO user_id;\nALTER TABLE products ALTER COLUMN price TYPE INTEGER;\nALTER TABLE orders ALTER COLUMN shipping_address SET NOT NULL;\nDROP INDEX idx_users_email;', reversible: false },
+      { order: 6, description: 'Recreate foreign keys and indexes with new names', sql: 'ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);\nCREATE INDEX idx_orders_user_id ON orders(user_id);', reversible: true },
+    ],
+  },
+  rollbackPlan: {
+    feasibility: 'difficult',
+    steps: [
+      { order: 1, description: 'Restore users table from backup', sql: 'ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false;\nUPDATE users u SET email_verified = b.email_verified FROM users_backup b WHERE u.id = b.id;' },
+      { order: 2, description: 'Rename column back', sql: 'ALTER TABLE orders RENAME COLUMN user_id TO customer_id;' },
+      { order: 3, description: 'Restore price column type (data loss for fractional values)', sql: 'ALTER TABLE products ALTER COLUMN price TYPE DECIMAL(10,2);' },
+    ],
+    dataLossOnRollback: true,
+    warnings: ['Price fractional values cannot be recovered after INTEGER conversion', 'email_verified data must be restored from backup'],
+  },
+  performanceImpact: [
+    { area: 'query_performance', impact: 'negative', description: 'Dropping idx_users_email will slow down email-based lookups', recommendation: 'Create a new index if email lookups are common' },
+    { area: 'storage', impact: 'positive', description: 'INTEGER uses less storage than DECIMAL for price column', recommendation: 'Minor improvement, not a justification for the data type change' },
+    { area: 'index_usage', impact: 'negative', description: 'Renamed column invalidates existing index; new index needs rebuilding', recommendation: 'Schedule index rebuild during maintenance window' },
+  ],
+  recommendations: [
+    { priority: 'immediate', category: 'safety', title: 'Back up all affected tables', description: 'Create backups of users, orders, and products tables before applying any changes', sql: 'CREATE TABLE users_backup AS SELECT * FROM users;\nCREATE TABLE orders_backup AS SELECT * FROM orders;\nCREATE TABLE products_backup AS SELECT * FROM products;' },
+    { priority: 'immediate', category: 'data_integrity', title: 'Reconsider DECIMAL to INTEGER conversion', description: 'Changing price from DECIMAL to INTEGER will cause data loss. Consider keeping DECIMAL or using a cents-based integer approach.', sql: 'ALTER TABLE products ALTER COLUMN price TYPE BIGINT USING (price * 100)::BIGINT;' },
+    { priority: 'before_deploy', category: 'testing', title: 'Run integration tests with renamed column', description: 'Update all queries referencing customer_id to user_id and run full integration test suite' },
+    { priority: 'before_deploy', category: 'data_integrity', title: 'Fix NULL shipping addresses', description: 'Update existing NULL values before adding NOT NULL constraint', sql: "UPDATE orders SET shipping_address = 'Not provided' WHERE shipping_address IS NULL;" },
+    { priority: 'after_deploy', category: 'performance', title: 'Monitor query performance', description: 'Watch for slow queries after index changes, especially email lookups and order joins' },
+  ],
+};
+
 // ── Template Presets ────────────────────────────────────────────────────────
 
 const TEMPLATES: Record<
@@ -564,6 +632,7 @@ export function SchemaIntelligence() {
   const deleteTable = useDeleteTable();
   const suggestSchema = useSuggestSchema();
   const reviewSchema = useReviewSchema();
+  const analyzeEvolution = useAnalyzeSchemaEvolution();
   const { data: schemasList } = useSchemas(projectId);
 
   // ── Demo mode ──
@@ -582,6 +651,10 @@ export function SchemaIntelligence() {
   const [schemaReview, setSchemaReview] = useState<SchemaReview | null>(null);
   const [tableToDelete, setTableToDelete] = useState<Table | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showImpactModal, setShowImpactModal] = useState(false);
+  const [impactChangeScript, setImpactChangeScript] = useState('');
+  const [showImpactPanel, setShowImpactPanel] = useState(false);
+  const [impactResult, setImpactResult] = useState<SchemaEvolutionImpact | null>(null);
 
   // ── Create Table form state ──
   const [ctName, setCtName] = useState('');
@@ -1051,6 +1124,28 @@ export function SchemaIntelligence() {
             AI Review
           </button>
 
+          {/* Impact Analyzer */}
+          <button
+            onClick={() => {
+              setImpactChangeScript('');
+              setShowImpactModal(true);
+            }}
+            disabled={!hasTables || analyzeEvolution.isPending}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border',
+              hasTables
+                ? 'text-violet-700 bg-violet-50 hover:bg-violet-100 border-violet-200'
+                : 'text-muted-foreground bg-muted/50 border-border/50 cursor-not-allowed'
+            )}
+          >
+            {analyzeEvolution.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <GitBranch className="w-3.5 h-3.5" />
+            )}
+            Impact Analyzer
+          </button>
+
           {/* Export DDL */}
           <button
             onClick={handleExportSchema}
@@ -1149,13 +1244,13 @@ export function SchemaIntelligence() {
             />
           )}
 
-          {/* Overview Grid + Review Panel */}
+          {/* Overview Grid + Review/Impact Panel */}
           {((!isLoading && !selectedTable && hasTables) ||
             (useDemoData && !selectedTable && hasTables)) && (
             <div
               className={cn(
                 'flex gap-6',
-                showReviewPanel && schemaReview
+                (showReviewPanel && schemaReview) || (showImpactPanel && impactResult)
                   ? 'flex-col xl:flex-row'
                   : ''
               )}
@@ -1164,7 +1259,7 @@ export function SchemaIntelligence() {
               <div
                 className={cn(
                   'flex-1 min-w-0',
-                  showReviewPanel && schemaReview ? 'xl:w-2/3' : 'w-full'
+                  (showReviewPanel && schemaReview) || (showImpactPanel && impactResult) ? 'xl:w-2/3' : 'w-full'
                 )}
               >
                 <div className="mb-5 flex items-center gap-3">
@@ -1309,8 +1404,21 @@ export function SchemaIntelligence() {
                 )}
               </div>
 
+              {/* Impact Analysis Panel */}
+              {showImpactPanel && impactResult && (
+                <div className="xl:w-1/3 flex-shrink-0">
+                  <ImpactAnalysisPanel
+                    impact={impactResult}
+                    onClose={() => setShowImpactPanel(false)}
+                    onReanalyze={() => {
+                      setShowImpactModal(true);
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Review Panel */}
-              {showReviewPanel && schemaReview && (
+              {showReviewPanel && schemaReview && !showImpactPanel && (
                 <div className="xl:w-1/3 flex-shrink-0">
                   <ReviewPanel
                     review={schemaReview}
@@ -1871,6 +1979,140 @@ export function SchemaIntelligence() {
       )}
 
       {/* ── Delete Confirmation Dialog ── */}
+      {/* ── Impact Analyzer Modal ── */}
+      {showImpactModal && (
+        <ModalBackdrop onClose={() => setShowImpactModal(false)}>
+          <div className="relative bg-card rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <GitBranch className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">
+                    Schema Evolution Impact Analyzer
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Paste your ALTER/DROP/ADD SQL to analyze impact on existing schema
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowImpactModal(false)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  Schema Change Script (DDL)
+                </label>
+                <textarea
+                  value={impactChangeScript}
+                  onChange={(e) => setImpactChangeScript(e.target.value)}
+                  placeholder={`-- Paste your schema changes here, e.g.:\nALTER TABLE users DROP COLUMN legacy_email;\nALTER TABLE orders ADD COLUMN discount_pct DECIMAL(5,2) DEFAULT 0;\nDROP INDEX idx_users_legacy_email;\nALTER TABLE products RENAME COLUMN sku TO product_sku;`}
+                  rows={12}
+                  className="w-full px-3 py-2 text-sm font-mono border border-border rounded-lg bg-muted/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all resize-y"
+                  autoFocus
+                />
+              </div>
+
+              {/* Example Templates */}
+              <div>
+                <span className="text-xs font-medium text-muted-foreground mr-2">Quick Examples:</span>
+                <button
+                  onClick={() => setImpactChangeScript(`-- Drop a column used in multiple queries
+ALTER TABLE users DROP COLUMN email_verified;
+
+-- Rename a column referenced by foreign keys
+ALTER TABLE orders RENAME COLUMN customer_id TO user_id;
+
+-- Change data type with potential data loss
+ALTER TABLE products ALTER COLUMN price TYPE INTEGER;
+
+-- Add NOT NULL constraint on existing nullable column
+ALTER TABLE orders ALTER COLUMN shipping_address SET NOT NULL;
+
+-- Drop an index
+DROP INDEX idx_users_email;`)}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-violet-700 bg-violet-50 rounded-md hover:bg-violet-100 transition-colors mr-2 border border-violet-200"
+                >
+                  <Wand2 className="w-3 h-3" />
+                  Multi-Change
+                </button>
+                <button
+                  onClick={() => setImpactChangeScript(`-- Dropping a critical column
+ALTER TABLE orders DROP COLUMN total_amount;`)}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 transition-colors border border-red-200"
+                >
+                  <AlertTriangle className="w-3 h-3" />
+                  Risky Drop
+                </button>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-border bg-muted/30">
+              <button
+                onClick={() => setShowImpactModal(false)}
+                className="px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!projectId || !impactChangeScript.trim()) return;
+                  const dialect = project?.dialect || 'postgresql';
+                  analyzeEvolution.mutate(
+                    { projectId, changeScript: impactChangeScript.trim(), dialect },
+                    {
+                      onSuccess: (data) => {
+                        setImpactResult(data);
+                        setShowImpactPanel(true);
+                        setShowImpactModal(false);
+                        setShowReviewPanel(false);
+                        toast.success('Impact analysis complete');
+                      },
+                      onError: () => {
+                        toast.error('Impact analysis failed. Loading demo results.');
+                        setImpactResult(DEMO_IMPACT);
+                        setShowImpactPanel(true);
+                        setShowImpactModal(false);
+                        setShowReviewPanel(false);
+                      },
+                    }
+                  );
+                }}
+                disabled={!impactChangeScript.trim() || analyzeEvolution.isPending}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-colors shadow-sm',
+                  impactChangeScript.trim()
+                    ? 'text-white bg-violet-600 hover:bg-violet-700'
+                    : 'text-muted-foreground bg-muted cursor-not-allowed'
+                )}
+              >
+                {analyzeEvolution.isPending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <GitBranch className="w-3.5 h-3.5" />
+                    Analyze Impact
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </ModalBackdrop>
+      )}
+
       {tableToDelete && (
         <ModalBackdrop onClose={() => setTableToDelete(null)}>
           <div className="relative bg-card rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
@@ -2152,6 +2394,392 @@ function ReviewPanel({
             <ShieldCheck className="w-3.5 h-3.5" />
           )}
           Re-analyze
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Impact Analysis Panel ────────────────────────────────────────────────────
+
+function ImpactAnalysisPanel({
+  impact,
+  onClose,
+  onReanalyze,
+}: {
+  impact: SchemaEvolutionImpact;
+  onClose: () => void;
+  onReanalyze: () => void;
+}) {
+  const [activeTab, setActiveTab] = useState<'overview' | 'breaking' | 'migration' | 'rollback' | 'recommendations'>('overview');
+
+  const verdictColors: Record<string, { bg: string; text: string; ring: string }> = {
+    critical: { bg: 'bg-red-100', text: 'text-red-700', ring: 'ring-red-500' },
+    high: { bg: 'bg-orange-100', text: 'text-orange-700', ring: 'ring-orange-500' },
+    medium: { bg: 'bg-amber-100', text: 'text-amber-700', ring: 'ring-amber-500' },
+    low: { bg: 'bg-green-100', text: 'text-green-700', ring: 'ring-green-500' },
+  };
+
+  const vc = verdictColors[impact.overallVerdict] ?? verdictColors.medium;
+
+  const tabs = [
+    { key: 'overview', label: 'Overview', icon: <Activity className="w-3 h-3" /> },
+    { key: 'breaking', label: `Breaking (${impact.breakingChanges.length})`, icon: <AlertTriangle className="w-3 h-3" /> },
+    { key: 'migration', label: 'Migration', icon: <ArrowRight className="w-3 h-3" /> },
+    { key: 'rollback', label: 'Rollback', icon: <RotateCcw className="w-3 h-3" /> },
+    { key: 'recommendations', label: `Actions (${impact.recommendations.length})`, icon: <Shield className="w-3 h-3" /> },
+  ] as const;
+
+  const copySQL = (sql: string) => {
+    navigator.clipboard.writeText(sql);
+    toast.success('SQL copied to clipboard');
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div className="flex items-center gap-2">
+          <GitBranch className="w-4 h-4 text-violet-600" />
+          <h3 className="text-sm font-semibold text-foreground">
+            Impact Analysis
+          </h3>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Risk Score */}
+      <div className="flex flex-col items-center py-4 border-b border-border/50">
+        <div className={cn('w-16 h-16 rounded-full flex items-center justify-center ring-4', vc.bg, vc.ring)}>
+          <span className={cn('text-xl font-bold', vc.text)}>{impact.overallRiskScore}</span>
+        </div>
+        <span className={cn('text-xs font-semibold mt-2 px-2 py-0.5 rounded-full uppercase', vc.bg, vc.text)}>
+          {impact.overallVerdict} risk
+        </span>
+        <p className="text-xs text-muted-foreground mt-2 px-4 text-center leading-relaxed">
+          {impact.summary}
+        </p>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="flex items-center justify-center gap-3 px-4 py-2 border-b border-border/50 flex-wrap">
+        <span className="text-[10px] text-muted-foreground">
+          <strong className="text-foreground">{impact.parsedChanges.length}</strong> changes
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          <strong className="text-foreground">{impact.impactedObjects.length}</strong> objects affected
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          <strong className="text-red-600">{impact.breakingChanges.length}</strong> breaking
+        </span>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-border overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={cn(
+              'flex items-center gap-1 px-3 py-2 text-[11px] font-medium whitespace-nowrap border-b-2 transition-colors',
+              activeTab === tab.key
+                ? 'border-violet-500 text-violet-700'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="max-h-[500px] overflow-y-auto">
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="p-4 space-y-3">
+            {/* Parsed Changes */}
+            <h4 className="text-xs font-semibold text-foreground">Parsed Changes</h4>
+            {impact.parsedChanges.map((change, i) => (
+              <div key={i} className="rounded-lg border border-border p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">
+                    {change.changeType}
+                  </span>
+                  <span className="text-xs font-mono text-foreground">
+                    {change.targetTable}{change.targetColumn ? `.${change.targetColumn}` : ''}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">{change.description}</p>
+                <pre className="text-[10px] font-mono text-muted-foreground bg-muted/50 rounded px-2 py-1 mt-1.5 overflow-x-auto">{change.sql}</pre>
+              </div>
+            ))}
+
+            {/* Impacted Objects */}
+            <h4 className="text-xs font-semibold text-foreground mt-4">Impacted Objects</h4>
+            {impact.impactedObjects.map((obj, i) => {
+              const riskColor = obj.riskLevel === 'critical' ? 'text-red-600 bg-red-50 border-red-200'
+                : obj.riskLevel === 'high' ? 'text-orange-600 bg-orange-50 border-orange-200'
+                : obj.riskLevel === 'medium' ? 'text-amber-600 bg-amber-50 border-amber-200'
+                : 'text-green-600 bg-green-50 border-green-200';
+              return (
+                <div key={i} className="rounded-lg border border-border p-3">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+                      {obj.objectType}
+                    </span>
+                    <span className="text-xs font-mono text-foreground">{obj.objectName}</span>
+                    <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded border ml-auto', riskColor)}>
+                      {obj.riskLevel}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{obj.description}</p>
+                  <p className="text-[11px] text-aqua-700 mt-1 italic">{obj.recommendation}</p>
+                </div>
+              );
+            })}
+
+            {/* Performance Impact */}
+            {impact.performanceImpact.length > 0 && (
+              <>
+                <h4 className="text-xs font-semibold text-foreground mt-4">Performance Impact</h4>
+                {impact.performanceImpact.map((perf, i) => (
+                  <div key={i} className="rounded-lg border border-border p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={cn(
+                        'text-[10px] font-medium px-1.5 py-0.5 rounded',
+                        perf.impact === 'positive' ? 'bg-green-50 text-green-700' :
+                        perf.impact === 'negative' ? 'bg-red-50 text-red-700' :
+                        'bg-gray-50 text-gray-700'
+                      )}>
+                        {perf.impact === 'positive' ? '+ Positive' : perf.impact === 'negative' ? '- Negative' : '~ Neutral'}
+                      </span>
+                      <span className="text-xs text-foreground font-medium">{perf.area.replace(/_/g, ' ')}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{perf.description}</p>
+                    {perf.recommendation && (
+                      <p className="text-[11px] text-aqua-700 mt-1 italic">{perf.recommendation}</p>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Breaking Changes Tab */}
+        {activeTab === 'breaking' && (
+          <div className="p-4 space-y-3">
+            {impact.breakingChanges.length === 0 ? (
+              <div className="flex flex-col items-center py-8">
+                <CheckCircle2 className="w-8 h-8 text-green-500 mb-2" />
+                <p className="text-sm text-muted-foreground">No breaking changes detected</p>
+              </div>
+            ) : (
+              impact.breakingChanges.map((bc, i) => {
+                const sevColor = bc.severity === 'critical' ? 'border-red-300 bg-red-50/50'
+                  : bc.severity === 'high' ? 'border-orange-300 bg-orange-50/50'
+                  : 'border-amber-300 bg-amber-50/50';
+                return (
+                  <div key={i} className={cn('rounded-lg border-2 p-3 space-y-2', sevColor)}>
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        'text-[10px] font-bold px-1.5 py-0.5 rounded uppercase',
+                        bc.severity === 'critical' ? 'bg-red-600 text-white' :
+                        bc.severity === 'high' ? 'bg-orange-600 text-white' :
+                        'bg-amber-600 text-white'
+                      )}>
+                        {bc.severity}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded">
+                        {bc.affectedArea.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <pre className="text-[10px] font-mono bg-muted/70 rounded px-2 py-1 overflow-x-auto">{bc.change}</pre>
+                    <p className="text-xs text-foreground">{bc.description}</p>
+                    {bc.exampleQuery && (
+                      <div className="relative">
+                        <pre className="text-[10px] font-mono bg-red-100/50 border border-red-200 rounded px-2 py-1.5 overflow-x-auto">{bc.exampleQuery}</pre>
+                        <button
+                          onClick={() => copySQL(bc.exampleQuery!)}
+                          className="absolute top-1 right-1 p-0.5 rounded hover:bg-red-200 transition-colors"
+                        >
+                          <Copy className="w-3 h-3 text-red-600" />
+                        </button>
+                      </div>
+                    )}
+                    <div className="bg-green-50 border border-green-200 rounded px-2 py-1.5">
+                      <span className="text-[10px] font-semibold text-green-700">Fix: </span>
+                      <span className="text-[11px] text-green-800">{bc.fix}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* Migration Tab */}
+        {activeTab === 'migration' && (
+          <div className="p-4 space-y-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className={cn(
+                'text-[10px] font-medium px-2 py-0.5 rounded-full',
+                impact.dataMigration.complexity === 'complex' ? 'bg-red-100 text-red-700' :
+                impact.dataMigration.complexity === 'moderate' ? 'bg-amber-100 text-amber-700' :
+                impact.dataMigration.complexity === 'simple' ? 'bg-green-100 text-green-700' :
+                'bg-gray-100 text-gray-700'
+              )}>
+                Complexity: {impact.dataMigration.complexity}
+              </span>
+              <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                Downtime: {impact.dataMigration.estimatedDowntime}
+              </span>
+            </div>
+
+            {impact.dataMigration.steps.map((step) => (
+              <div key={step.order} className="rounded-lg border border-border p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold flex items-center justify-center">
+                    {step.order}
+                  </span>
+                  <span className="text-xs text-foreground font-medium flex-1">{step.description}</span>
+                  {step.reversible && (
+                    <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-200">
+                      reversible
+                    </span>
+                  )}
+                </div>
+                {step.sql && (
+                  <div className="relative mt-2">
+                    <pre className="text-[10px] font-mono bg-muted/50 rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap">{step.sql}</pre>
+                    <button
+                      onClick={() => copySQL(step.sql!)}
+                      className="absolute top-1 right-1 p-0.5 rounded hover:bg-muted transition-colors"
+                    >
+                      <Copy className="w-3 h-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Rollback Tab */}
+        {activeTab === 'rollback' && (
+          <div className="p-4 space-y-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className={cn(
+                'text-[10px] font-medium px-2 py-0.5 rounded-full',
+                impact.rollbackPlan.feasibility === 'impossible' ? 'bg-red-100 text-red-700' :
+                impact.rollbackPlan.feasibility === 'difficult' ? 'bg-orange-100 text-orange-700' :
+                impact.rollbackPlan.feasibility === 'moderate' ? 'bg-amber-100 text-amber-700' :
+                'bg-green-100 text-green-700'
+              )}>
+                Feasibility: {impact.rollbackPlan.feasibility}
+              </span>
+              {impact.rollbackPlan.dataLossOnRollback && (
+                <span className="text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200 font-medium">
+                  Data loss on rollback
+                </span>
+              )}
+            </div>
+
+            {impact.rollbackPlan.warnings.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <h5 className="text-[10px] font-semibold text-amber-700 mb-1">Warnings</h5>
+                <ul className="space-y-1">
+                  {impact.rollbackPlan.warnings.map((w, i) => (
+                    <li key={i} className="text-[11px] text-amber-800 flex items-start gap-1.5">
+                      <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                      {w}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {impact.rollbackPlan.steps.map((step) => (
+              <div key={step.order} className="rounded-lg border border-border p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-[10px] font-bold flex items-center justify-center">
+                    {step.order}
+                  </span>
+                  <span className="text-xs text-foreground font-medium">{step.description}</span>
+                </div>
+                {step.sql && (
+                  <div className="relative mt-2">
+                    <pre className="text-[10px] font-mono bg-muted/50 rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap">{step.sql}</pre>
+                    <button
+                      onClick={() => copySQL(step.sql!)}
+                      className="absolute top-1 right-1 p-0.5 rounded hover:bg-muted transition-colors"
+                    >
+                      <Copy className="w-3 h-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Recommendations Tab */}
+        {activeTab === 'recommendations' && (
+          <div className="p-4 space-y-3">
+            {(['immediate', 'before_deploy', 'after_deploy'] as const).map((priority) => {
+              const recs = impact.recommendations.filter((r) => r.priority === priority);
+              if (recs.length === 0) return null;
+              const priorityLabel = priority === 'immediate' ? 'Immediate' : priority === 'before_deploy' ? 'Before Deploy' : 'After Deploy';
+              const priorityColor = priority === 'immediate' ? 'bg-red-100 text-red-700' : priority === 'before_deploy' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700';
+              return (
+                <div key={priority}>
+                  <h4 className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mb-2 uppercase', priorityColor)}>
+                    {priorityLabel}
+                  </h4>
+                  {recs.map((rec, i) => (
+                    <div key={i} className="rounded-lg border border-border p-3 mb-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded">
+                          {rec.category}
+                        </span>
+                        <span className="text-xs font-semibold text-foreground">{rec.title}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{rec.description}</p>
+                      {rec.sql && (
+                        <div className="relative mt-2">
+                          <pre className="text-[10px] font-mono bg-violet-50 border border-violet-200 rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap">{rec.sql}</pre>
+                          <button
+                            onClick={() => copySQL(rec.sql!)}
+                            className="absolute top-1 right-1 p-0.5 rounded hover:bg-violet-100 transition-colors"
+                          >
+                            <Copy className="w-3 h-3 text-violet-600" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-center px-4 py-3 border-t border-border">
+        <button
+          onClick={onReanalyze}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors border border-violet-200"
+        >
+          <GitBranch className="w-3.5 h-3.5" />
+          Analyze New Changes
         </button>
       </div>
     </div>

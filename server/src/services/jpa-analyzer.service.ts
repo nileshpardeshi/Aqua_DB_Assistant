@@ -49,7 +49,11 @@ export async function analyzeJPAQuery(params: {
   });
 
   try {
-    return JSON.parse(response.content) as JPAAnalysisResult;
+    // Strip markdown fences (```json ... ```) that AI models often wrap around JSON
+    let cleaned = response.content.trim();
+    const fenceMatch = cleaned.match(/^```(?:json)?\s*\n?([\s\S]*?)```\s*$/);
+    if (fenceMatch) cleaned = fenceMatch[1].trim();
+    return JSON.parse(cleaned) as JPAAnalysisResult;
   } catch {
     // If AI didn't return valid JSON, wrap the text response
     return {

@@ -100,6 +100,69 @@ export interface SchemaReview {
   summary: string;
 }
 
+export interface SchemaEvolutionImpact {
+  overallRiskScore: number;
+  overallVerdict: 'critical' | 'high' | 'medium' | 'low';
+  summary: string;
+  parsedChanges: Array<{
+    changeType: string;
+    targetTable: string;
+    targetColumn: string | null;
+    description: string;
+    sql: string;
+  }>;
+  impactedObjects: Array<{
+    objectType: string;
+    objectName: string;
+    impactType: 'broken' | 'degraded' | 'modified' | 'requires_update';
+    riskLevel: 'critical' | 'high' | 'medium' | 'low';
+    description: string;
+    recommendation: string;
+  }>;
+  breakingChanges: Array<{
+    severity: 'critical' | 'high' | 'medium';
+    change: string;
+    affectedArea: string;
+    description: string;
+    exampleQuery?: string;
+    fix: string;
+  }>;
+  dataMigration: {
+    required: boolean;
+    complexity: 'none' | 'simple' | 'moderate' | 'complex';
+    estimatedDowntime: string;
+    steps: Array<{
+      order: number;
+      description: string;
+      sql?: string;
+      reversible: boolean;
+    }>;
+  };
+  rollbackPlan: {
+    feasibility: 'easy' | 'moderate' | 'difficult' | 'impossible';
+    steps: Array<{
+      order: number;
+      description: string;
+      sql?: string;
+    }>;
+    dataLossOnRollback: boolean;
+    warnings: string[];
+  };
+  performanceImpact: Array<{
+    area: string;
+    impact: 'positive' | 'negative' | 'neutral';
+    description: string;
+    recommendation?: string;
+  }>;
+  recommendations: Array<{
+    priority: 'immediate' | 'before_deploy' | 'after_deploy';
+    category: string;
+    title: string;
+    description: string;
+    sql?: string;
+  }>;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyResponse = Record<string, any>;
 
@@ -289,6 +352,26 @@ export function useAnalyzeTrigger() {
       const raw = response as unknown as AnyResponse;
       trackAIUsage({ usage: raw.usage, model: raw.model }, 'schema');
       return raw.analysis as TriggerAnalysis;
+    },
+  });
+}
+
+/**
+ * Analyze the impact of proposed schema changes (ALTER, DROP, ADD, etc.)
+ * against the current project schema.
+ */
+export function useAnalyzeSchemaEvolution() {
+  return useMutation({
+    mutationFn: async (input: {
+      projectId: string;
+      changeScript: string;
+      dialect: string;
+      focusAreas?: string[];
+    }) => {
+      const response = await apiClient.post('/ai/schema/evolution-impact', input);
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'schema-evolution');
+      return raw.impact as SchemaEvolutionImpact;
     },
   });
 }

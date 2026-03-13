@@ -17,6 +17,9 @@ import { SQLConverterPage } from '../pages/sql-converter';
 import { JPAQueryLabPage } from '../pages/jpa-query-lab';
 import { DocumentationGenerator } from '../pages/documentation-generator';
 import { AIUsageDashboard } from '../pages/ai-usage-dashboard';
+import { AWRAnalyzerPage } from '../pages/awr-analyzer';
+import { DisasterRecovery } from '../pages/disaster-recovery';
+import { CostOptimizer } from '../pages/cost-optimizer';
 import { NotFound } from '../pages/not-found';
 
 export const router = createBrowserRouter([
@@ -52,6 +55,10 @@ export const router = createBrowserRouter([
       {
         path: 'tools/connections',
         element: <Connections />,
+      },
+      {
+        path: 'tools/awr-analyzer',
+        element: <AWRAnalyzerPage />,
       },
       // Project workspace
       {
@@ -93,6 +100,14 @@ export const router = createBrowserRouter([
           {
             path: 'connections',
             element: <Connections />,
+          },
+          {
+            path: 'disaster-recovery',
+            element: <DisasterRecovery />,
+          },
+          {
+            path: 'cost-optimizer',
+            element: <CostOptimizer />,
           },
         ],
       },
