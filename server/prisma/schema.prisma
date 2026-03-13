@@ -1,9 +1,14 @@
+// ============================================================================
+// Aqua DB Copilot — Enterprise PostgreSQL Schema
+// Banking-grade database schema with proper types, constraints, and indexes
+// ============================================================================
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -12,14 +17,14 @@ datasource db {
 // ============================================================
 
 model Project {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  dialect     String   // postgresql | mysql | oracle | sqlserver | snowflake | bigquery | mongodb | mariadb
-  status      String   @default("active")
-  schemas     String?  // JSON array of schema names, e.g. ["public", "auth", "billing"]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(200)
+  description String?  @db.Text
+  dialect     String   @db.VarChar(30) // postgresql | mysql | oracle | sqlserver | snowflake | bigquery | mongodb | mariadb
+  status      String   @default("active") @db.VarChar(20)
+  schemas     String?  @db.Text // JSON array of schema names, e.g. ["public", "auth", "billing"]
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
 
   files              ProjectFile[]
   schemaSnapshots    SchemaSnapshot[]
@@ -35,21 +40,23 @@ model Project {
   columnMappings     ColumnMappingConfig[]
   dataSheetMappings  DataSheetMappingConfig[]
   savedDiagrams      SavedDiagram[]
+  aiUsageLogs        AIUsageLog[]
+  aiBudget           AIBudgetConfig?
 
   @@index([status])
   @@index([createdAt])
 }
 
 model ProjectFile {
-  id         String   @id @default(uuid())
-  projectId  String
-  fileName   String
-  filePath   String
-  fileType   String
+  id         String   @id @default(uuid()) @db.Uuid
+  projectId  String   @db.Uuid
+  fileName   String   @db.VarChar(500)
+  filePath   String   @db.VarChar(1000)
+  fileType   String   @db.VarChar(50)
   fileSize   Int
-  dialect    String?
-  checksum   String
-  uploadedAt DateTime @default(now())
+  dialect    String?  @db.VarChar(30)
+  checksum   String   @db.VarChar(128)
+  uploadedAt DateTime @default(now()) @db.Timestamptz
 
   project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   parseResult FileParseResult?
@@ -59,15 +66,15 @@ model ProjectFile {
 }
 
 model FileParseResult {
-  id             String    @id @default(uuid())
-  fileId         String    @unique
-  status         String    @default("pending")
+  id             String    @id @default(uuid()) @db.Uuid
+  fileId         String    @unique @db.Uuid
+  status         String    @default("pending") @db.VarChar(20)
   statementCount Int       @default(0)
   tableCount     Int       @default(0)
   errorCount     Int       @default(0)
-  errors         String?
-  parsedAt       DateTime?
-  duration       Int?
+  errors         String?   @db.Text
+  parsedAt       DateTime? @db.Timestamptz
+  duration       Int?      // milliseconds
 
   file ProjectFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
 }
@@ -77,12 +84,12 @@ model FileParseResult {
 // ============================================================
 
 model SchemaSnapshot {
-  id           String   @id @default(uuid())
-  projectId    String
+  id           String   @id @default(uuid()) @db.Uuid
+  projectId    String   @db.Uuid
   version      Int
-  label        String?
-  snapshotData String
-  createdAt    DateTime @default(now())
+  label        String?  @db.VarChar(200)
+  snapshotData String   @db.Text // JSON: full schema snapshot
+  createdAt    DateTime @default(now()) @db.Timestamptz
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -91,16 +98,16 @@ model SchemaSnapshot {
 }
 
 model TableMetadata {
-  id            String   @id @default(uuid())
-  projectId     String
-  schemaName    String   @default("public")
-  tableName     String
-  tableType     String   @default("table")
-  description   String?
+  id            String   @id @default(uuid()) @db.Uuid
+  projectId     String   @db.Uuid
+  schemaName    String   @default("public") @db.VarChar(128)
+  tableName     String   @db.VarChar(256)
+  tableType     String   @default("table") @db.VarChar(30)
+  description   String?  @db.Text
   estimatedRows BigInt?
-  originalDDL   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  originalDDL   String?  @db.Text
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @updatedAt @db.Timestamptz
 
   project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
   columns     ColumnMetadata[]
@@ -116,21 +123,21 @@ model TableMetadata {
 }
 
 model ColumnMetadata {
-  id                 String  @id @default(uuid())
-  tableId            String
-  columnName         String
-  dataType           String
-  normalizedType     String?
+  id                 String  @id @default(uuid()) @db.Uuid
+  tableId            String  @db.Uuid
+  columnName         String  @db.VarChar(256)
+  dataType           String  @db.VarChar(100)
+  normalizedType     String? @db.VarChar(100)
   ordinalPosition    Int
   isNullable         Boolean @default(true)
   isPrimaryKey       Boolean @default(false)
   isUnique           Boolean @default(false)
-  defaultValue       String?
+  defaultValue       String? @db.Text
   characterMaxLength Int?
   numericPrecision   Int?
   numericScale       Int?
-  description        String?
-  sensitivityTag     String?
+  description        String? @db.Text
+  sensitivityTag     String? @db.VarChar(30) // PII | PHI | Financial | Public | Internal
 
   table TableMetadata @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
@@ -139,14 +146,14 @@ model ColumnMetadata {
 }
 
 model IndexMetadata {
-  id          String  @id @default(uuid())
-  tableId     String
-  indexName   String
-  indexType   String
+  id          String  @id @default(uuid()) @db.Uuid
+  tableId     String  @db.Uuid
+  indexName   String  @db.VarChar(256)
+  indexType   String  @db.VarChar(30)
   isUnique    Boolean @default(false)
   isPrimary   Boolean @default(false)
-  columns     String
-  originalDDL String?
+  columns     String  @db.Text // JSON: column names
+  originalDDL String? @db.Text
 
   table TableMetadata @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
@@ -154,12 +161,12 @@ model IndexMetadata {
 }
 
 model ConstraintMetadata {
-  id             String  @id @default(uuid())
-  tableId        String
-  constraintName String
-  constraintType String
-  definition     String?
-  columns        String
+  id             String  @id @default(uuid()) @db.Uuid
+  tableId        String  @db.Uuid
+  constraintName String  @db.VarChar(256)
+  constraintType String  @db.VarChar(30) // PRIMARY_KEY | FOREIGN_KEY | UNIQUE | CHECK | NOT_NULL
+  definition     String? @db.Text
+  columns        String  @db.Text // JSON: column names
 
   table TableMetadata @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
@@ -167,16 +174,16 @@ model ConstraintMetadata {
 }
 
 model RelationshipMetadata {
-  id               String  @id @default(uuid())
-  sourceTableId    String
-  targetTableId    String
-  relationshipType String
-  sourceColumns    String
-  targetColumns    String
-  constraintName   String?
+  id               String  @id @default(uuid()) @db.Uuid
+  sourceTableId    String  @db.Uuid
+  targetTableId    String  @db.Uuid
+  relationshipType String  @db.VarChar(30) // one-to-one | one-to-many | many-to-many
+  sourceColumns    String  @db.Text
+  targetColumns    String  @db.Text
+  constraintName   String? @db.VarChar(256)
   isInferred       Boolean @default(false)
-  onDelete         String?
-  onUpdate         String?
+  onDelete         String? @db.VarChar(30)
+  onUpdate         String? @db.VarChar(30)
 
   sourceTable TableMetadata @relation("SourceTable", fields: [sourceTableId], references: [id], onDelete: Cascade)
   targetTable TableMetadata @relation("TargetTable", fields: [targetTableId], references: [id], onDelete: Cascade)
@@ -186,16 +193,16 @@ model RelationshipMetadata {
 }
 
 model TriggerMetadata {
-  id          String   @id @default(uuid())
-  tableId     String
-  triggerName String
-  timing      String   // BEFORE | AFTER | INSTEAD OF
-  event       String   // INSERT | UPDATE | DELETE
-  triggerBody String
+  id          String   @id @default(uuid()) @db.Uuid
+  tableId     String   @db.Uuid
+  triggerName String   @db.VarChar(256)
+  timing      String   @db.VarChar(20) // BEFORE | AFTER | INSTEAD OF
+  event       String   @db.VarChar(20) // INSERT | UPDATE | DELETE
+  triggerBody String   @db.Text
   isEnabled   Boolean  @default(true)
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
 
   table TableMetadata @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
@@ -208,38 +215,39 @@ model TriggerMetadata {
 // ============================================================
 
 model SavedQuery {
-  id          String   @id @default(uuid())
-  projectId   String
-  title       String
-  description String?
-  sql         String
-  dialect     String
-  category    String?
+  id          String   @id @default(uuid()) @db.Uuid
+  projectId   String   @db.Uuid
+  title       String   @db.VarChar(500)
+  description String?  @db.Text
+  sql         String   @db.Text
+  dialect     String   @db.VarChar(30)
+  category    String?  @db.VarChar(50)
   isFavorite  Boolean  @default(false)
-  tags        String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  tags        String?  @db.Text // JSON array of tags
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
 
   project    Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   executions QueryExecution[]
 
   @@index([projectId])
+  @@index([projectId, isFavorite])
 }
 
 model QueryExecution {
-  id            String   @id @default(uuid())
-  projectId     String
-  savedQueryId  String?
-  sql           String
-  dialect       String
-  status        String
+  id            String   @id @default(uuid()) @db.Uuid
+  projectId     String   @db.Uuid
+  savedQueryId  String?  @db.Uuid
+  sql           String   @db.Text
+  dialect       String   @db.VarChar(30)
+  status        String   @db.VarChar(20) // success | error | cancelled
   rowsAffected  Int?
   rowsReturned  Int?
-  executionTime Int?
-  resultPreview String?
-  explainPlan   String?
-  errorMessage  String?
-  executedAt    DateTime @default(now())
+  executionTime Int?     // milliseconds
+  resultPreview String?  @db.Text // JSON: first N rows
+  explainPlan   String?  @db.Text
+  errorMessage  String?  @db.Text
+  executedAt    DateTime @default(now()) @db.Timestamptz
 
   project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   savedQuery SavedQuery? @relation(fields: [savedQueryId], references: [id], onDelete: SetNull)
@@ -252,15 +260,15 @@ model QueryExecution {
 // ============================================================
 
 model PerformanceRun {
-  id              String    @id @default(uuid())
-  projectId       String
-  runType         String
-  status          String
-  summary         String?
-  findings        String?
-  recommendations String?
-  startedAt       DateTime  @default(now())
-  completedAt     DateTime?
+  id              String    @id @default(uuid()) @db.Uuid
+  projectId       String    @db.Uuid
+  runType         String    @db.VarChar(50)
+  status          String    @db.VarChar(20)
+  summary         String?   @db.Text
+  findings        String?   @db.Text // JSON
+  recommendations String?   @db.Text // JSON
+  startedAt       DateTime  @default(now()) @db.Timestamptz
+  completedAt     DateTime? @db.Timestamptz
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -272,21 +280,21 @@ model PerformanceRun {
 // ============================================================
 
 model Migration {
-  id            String    @id @default(uuid())
-  projectId     String
-  version       String
-  title         String
-  description   String?
-  upSQL         String
-  downSQL       String?
-  status        String    @default("draft")
-  appliedAt     DateTime?
-  sourceDialect String
-  targetDialect String
-  checksum      String
-  dependsOn     String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id            String    @id @default(uuid()) @db.Uuid
+  projectId     String    @db.Uuid
+  version       String    @db.VarChar(50)
+  title         String    @db.VarChar(500)
+  description   String?   @db.Text
+  upSQL         String    @db.Text
+  downSQL       String?   @db.Text
+  status        String    @default("draft") @db.VarChar(20) // draft | pending | applied | failed | rolled_back
+  appliedAt     DateTime? @db.Timestamptz
+  sourceDialect String    @db.VarChar(30)
+  targetDialect String    @db.VarChar(30)
+  checksum      String    @db.VarChar(128)
+  dependsOn     String?   @db.Text // JSON: array of version strings
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -295,16 +303,16 @@ model Migration {
 }
 
 model ColumnMappingConfig {
-  id              String   @id @default(uuid())
-  projectId       String
-  name            String
-  sourceTableName String
-  targetTableName String
-  sourceDialect   String
-  targetDialect   String
-  mappings        String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id              String   @id @default(uuid()) @db.Uuid
+  projectId       String   @db.Uuid
+  name            String   @db.VarChar(200)
+  sourceTableName String   @db.VarChar(256)
+  targetTableName String   @db.VarChar(256)
+  sourceDialect   String   @db.VarChar(30)
+  targetDialect   String   @db.VarChar(30)
+  mappings        String   @db.Text // JSON: column mapping config
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @updatedAt @db.Timestamptz
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -312,14 +320,14 @@ model ColumnMappingConfig {
 }
 
 model DataSheetMappingConfig {
-  id              String   @id @default(uuid())
-  projectId       String
-  name            String
-  sourceTableName String
-  csvFileName     String
-  mappings        String   // JSON: DataSheetMapping[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id              String   @id @default(uuid()) @db.Uuid
+  projectId       String   @db.Uuid
+  name            String   @db.VarChar(200)
+  sourceTableName String   @db.VarChar(256)
+  csvFileName     String   @db.VarChar(500)
+  mappings        String   @db.Text // JSON: DataSheetMapping[]
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @updatedAt @db.Timestamptz
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -331,21 +339,21 @@ model DataSheetMappingConfig {
 // ============================================================
 
 model SavedDiagram {
-  id            String   @id @default(uuid())
-  projectId     String
-  name          String
-  description   String?
-  diagramType   String   // er-full | er-compact | dependency-graph | schema-group
-  includedTables String? // JSON: string[] of table IDs (null = all tables)
-  nodePositions  String? // JSON: Record<string, {x:number,y:number}>
-  layoutDirection String @default("TB") // TB | LR
-  showColumns    Boolean @default(true)
-  showLabels     Boolean @default(true)
-  colorBySchema  Boolean @default(false)
-  annotations    String? // JSON: Array<{id,x,y,text,color}>
-  isDefault      Boolean @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(uuid()) @db.Uuid
+  projectId       String   @db.Uuid
+  name            String   @db.VarChar(200)
+  description     String?  @db.Text
+  diagramType     String   @db.VarChar(30) // er-full | er-compact | dependency-graph | schema-group
+  includedTables  String?  @db.Text // JSON: string[] of table IDs (null = all)
+  nodePositions   String?  @db.Text // JSON: Record<string, {x,y}>
+  layoutDirection String   @default("TB") @db.VarChar(5) // TB | LR
+  showColumns     Boolean  @default(true)
+  showLabels      Boolean  @default(true)
+  colorBySchema   Boolean  @default(false)
+  annotations     String?  @db.Text // JSON: Array<{id,x,y,text,color}>
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @updatedAt @db.Timestamptz
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -357,20 +365,21 @@ model SavedDiagram {
 // ============================================================
 
 model DataLifecycleRule {
-  id            String   @id @default(uuid())
-  projectId     String
-  ruleName      String
-  ruleType      String
-  targetTable   String
-  targetColumns String?
-  configuration String
+  id            String   @id @default(uuid()) @db.Uuid
+  projectId     String   @db.Uuid
+  ruleName      String   @db.VarChar(200)
+  ruleType      String   @db.VarChar(30) // retention | archive | masking | deletion
+  targetTable   String   @db.VarChar(256)
+  targetColumns String?  @db.Text // JSON: column names
+  configuration String   @db.Text // JSON: rule config
   isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @updatedAt @db.Timestamptz
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, ruleType])
+  @@index([isActive])
 }
 
 // ============================================================
@@ -378,12 +387,12 @@ model DataLifecycleRule {
 // ============================================================
 
 model AIConversation {
-  id        String   @id @default(uuid())
-  projectId String
-  title     String
-  context   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @db.Uuid
+  title     String   @db.VarChar(500)
+  context   String   @db.VarChar(50) // schema | query | performance | migration | lifecycle
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
 
   project  Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   messages AIMessage[]
@@ -392,12 +401,12 @@ model AIConversation {
 }
 
 model AIMessage {
-  id             String   @id @default(uuid())
-  conversationId String
-  role           String
-  content        String
-  metadata       String?
-  createdAt      DateTime @default(now())
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  role           String   @db.VarChar(20) // user | assistant | system
+  content        String   @db.Text
+  metadata       String?  @db.Text // JSON: token usage, model info, etc.
+  createdAt      DateTime @default(now()) @db.Timestamptz
 
   conversation AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
@@ -409,20 +418,20 @@ model AIMessage {
 // ============================================================
 
 model DatabaseConnection {
-  id                String    @id @default(uuid())
-  projectId         String
-  name              String
-  dialect           String
-  host              String
+  id                String    @id @default(uuid()) @db.Uuid
+  projectId         String    @db.Uuid
+  name              String    @db.VarChar(200)
+  dialect           String    @db.VarChar(30)
+  host              String    @db.VarChar(500)
   port              Int
-  database          String
-  username          String
-  passwordEncrypted String
+  database          String    @db.VarChar(200)
+  username          String    @db.VarChar(200)
+  passwordEncrypted String    @db.Text
   sslEnabled        Boolean   @default(false)
-  sslConfig         String?
+  sslConfig         String?   @db.Text // JSON: SSL cert paths
   isActive          Boolean   @default(true)
-  lastTestedAt      DateTime?
-  createdAt         DateTime  @default(now())
+  lastTestedAt      DateTime? @db.Timestamptz
+  createdAt         DateTime  @default(now()) @db.Timestamptz
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -434,39 +443,83 @@ model DatabaseConnection {
 // ============================================================
 
 model AppSettings {
-  id    String @id @default("singleton")
-  key   String @unique
-  value String
+  id    String @id @default("singleton") @db.VarChar(50)
+  key   String @unique @db.VarChar(200)
+  value String @db.Text
 }
 
 model AIProviderConfig {
-  id              String   @id @default(uuid())
-  provider        String
-  apiKeyEncrypted String?
-  baseUrl         String?
-  model           String
+  id              String   @id @default(uuid()) @db.Uuid
+  provider        String   @db.VarChar(30) // anthropic | openai | ollama
+  apiKeyEncrypted String?  @db.Text
+  baseUrl         String?  @db.VarChar(500)
+  model           String   @db.VarChar(100)
   isDefault       Boolean  @default(false)
   maxTokens       Int      @default(4096)
   temperature     Float    @default(0.3)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @updatedAt @db.Timestamptz
 
   @@unique([provider, model])
 }
 
 model AuditLog {
-  id        String   @id @default(uuid())
-  projectId String?
-  action    String
-  entity    String
-  entityId  String?
-  details   String?
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String?  @db.Uuid
+  action    String   @db.VarChar(50) // CREATE | UPDATE | DELETE | EXECUTE | LOGIN | EXPORT
+  entity    String   @db.VarChar(100) // table name or entity type
+  entityId  String?  @db.Uuid
+  details   String?  @db.Text // JSON: action details
+  ipAddress String?  @db.VarChar(45) // IPv4 or IPv6
+  userAgent String?  @db.VarChar(500)
+  createdAt DateTime @default(now()) @db.Timestamptz
 
   project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([projectId, createdAt])
   @@index([action, createdAt])
+  @@index([entityId])
+}
+
+// ============================================================
+// AI OBSERVABILITY & TOKEN GOVERNANCE
+// ============================================================
+
+model AIUsageLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  projectId     String?  @db.Uuid
+  module        String   @db.VarChar(30)   // schema | query | performance | datagen | docs | migration | chat
+  endpoint      String   @db.VarChar(100)  // e.g. /ai/schema/suggest
+  provider      String   @db.VarChar(30)   // anthropic | openai | ollama
+  model         String   @db.VarChar(100)  // claude-sonnet-4-20250514 etc.
+  inputTokens   Int      @default(0)
+  outputTokens  Int      @default(0)
+  totalTokens   Int      @default(0)
+  estimatedCost Float    @default(0)       // USD
+  durationMs    Int      @default(0)
+  status        String   @db.VarChar(20)   // success | error
+  errorMessage  String?  @db.Text
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([module, createdAt])
+  @@index([provider, model, createdAt])
+  @@index([createdAt])
+}
+
+model AIBudgetConfig {
+  id                String   @id @default(uuid()) @db.Uuid
+  projectId         String?  @unique @db.Uuid // null = global budget
+  monthlyTokenLimit BigInt
+  warningThreshold  Float    @default(0.8)  // 80%
+  isHardLimit       Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @updatedAt @db.Timestamptz
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([isActive])
 }

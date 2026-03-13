@@ -17,6 +17,9 @@ import { buildDocumentationPrompt } from '../services/ai/prompt-templates/docume
 import { buildMigrationAssessmentPrompt } from '../services/ai/prompt-templates/migration-assessment.prompt.js';
 import { buildMigrationScriptGeneratorPrompt } from '../services/ai/prompt-templates/migration-script-generator.prompt.js';
 import { buildColumnMappingPrompt } from '../services/ai/prompt-templates/column-mapping.prompt.js';
+import { buildDialectValidationPrompt } from '../services/ai/prompt-templates/dialect-validation.prompt.js';
+import { calculateSmartMaxTokens } from '../services/ai/ai-response-cache.js';
+import { optimizeSqlForTokens } from '../services/ai/sql-token-optimizer.js';
 import { prisma } from '../config/prisma.js';
 import { logger } from '../config/logger.js';
 
@@ -38,7 +41,7 @@ export const chat = asyncHandler(async (req: Request, res: Response) => {
     return;
   }
 
-  const provider = await AIProviderFactory.getDefault();
+  const provider = await AIProviderFactory.getTracked({ module: 'chat', endpoint: '/ai/chat', projectId });
 
   // If a projectId is provided, prepend schema context as a system message
   let contextMessages = [...messages];
@@ -163,7 +166,7 @@ export const suggestSchema = asyncHandler(
       existingSchema,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'schema', endpoint: '/ai/schema/suggest', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.3,
@@ -223,7 +226,7 @@ export const optimizeQuery = asyncHandler(
       explainPlan,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'query', endpoint: '/ai/query/optimize', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
@@ -278,7 +281,7 @@ export const generateSQL = asyncHandler(
       schemaContext,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'query', endpoint: '/ai/query/generate', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
@@ -332,7 +335,7 @@ export const explainQuery = asyncHandler(
 
     const messages = buildQueryExplanationPrompt(sql, dialect, schemaContext);
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'query', endpoint: '/ai/query/explain', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
@@ -394,7 +397,7 @@ export const reviewSchema = asyncHandler(
 
     const messages = buildSchemaReviewPrompt(schemaContext, dialect);
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'schema', endpoint: '/ai/schema/review', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.3,
@@ -477,7 +480,7 @@ export const recommendIndexes = asyncHandler(
       dialect,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'performance', endpoint: '/ai/performance/recommend-indexes', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
@@ -561,7 +564,7 @@ export const recommendPartitions = asyncHandler(
       dataVolume,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'performance', endpoint: '/ai/performance/recommend-partitions', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
@@ -638,7 +641,7 @@ export const analyzeTrigger = asyncHandler(
       description,
     });
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'schema', endpoint: '/ai/schema/trigger-analysis', projectId });
     const triggerResponse = await provider.chat({
       messages: triggerMessages,
       temperature: 0.3,
@@ -714,7 +717,7 @@ export const generateSyntheticData = asyncHandler(
       distributionConfig,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'datagen', endpoint: '/ai/datagen/synthetic-scripts', projectId });
     const syntheticResponse = await provider.chat({
       messages: syntheticMessages,
       temperature: 0.3,
@@ -783,7 +786,7 @@ export const simulateQueryPlan = asyncHandler(
       estimatedRowCounts,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'datagen', endpoint: '/ai/datagen/query-planner', projectId });
     const plannerResponse = await provider.chat({
       messages: plannerMessages,
       temperature: 0.2,
@@ -854,7 +857,7 @@ export const simulateDataDistribution = asyncHandler(
       dialect,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'datagen', endpoint: '/ai/datagen/data-distribution', projectId });
     const distResponse = await provider.chat({
       messages: distMessages,
       temperature: 0.2,
@@ -924,7 +927,7 @@ export const generateDocumentation = asyncHandler(
       additionalContext,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'docs', endpoint: '/ai/docs/generate', projectId });
     const docResponse = await provider.chat({
       messages: docMessages,
       temperature: 0.3,
@@ -991,7 +994,7 @@ export const assessMigration = asyncHandler(
       targetDialect,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'migration', endpoint: '/ai/migration/assess', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
@@ -1060,7 +1063,7 @@ export const generateMigrationScripts = asyncHandler(
       tables,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'migration', endpoint: '/ai/migration/generate-scripts', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
@@ -1143,7 +1146,7 @@ export const suggestColumnMapping = asyncHandler(
       schemaContext,
     );
 
-    const provider = await AIProviderFactory.getDefault();
+    const provider = await AIProviderFactory.getTracked({ module: 'migration', endpoint: '/ai/migration/suggest-column-mapping', projectId });
     const response = await provider.chat({
       messages,
       temperature: 0.2,
@@ -1164,6 +1167,119 @@ export const suggestColumnMapping = asyncHandler(
         result,
         usage: response.usage,
         model: response.model,
+      },
+    });
+  },
+);
+
+// ---------- Dialect Conversion Validation (AI) ----------
+
+export const validateDialectConversion = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { sql, sourceDialect, targetDialect } = req.body as {
+      sql: string;
+      sourceDialect: string;
+      targetDialect: string;
+    };
+
+    if (!sql || !sourceDialect || !targetDialect) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'BAD_REQUEST',
+          message: 'sql, sourceDialect, and targetDialect are required',
+        },
+      });
+      return;
+    }
+
+    // ── Token Optimization: compress SQL before sending to AI ──
+    const optimized = optimizeSqlForTokens(sql);
+    logger.info('SQL token optimization', {
+      originalTokens: Math.ceil(optimized.originalChars / 4),
+      optimizedTokens: Math.ceil(optimized.optimizedChars / 4),
+      savedTokens: optimized.estimatedTokensSaved,
+      insertsTruncated: optimized.insertsWereTruncated,
+    });
+
+    const messages = buildDialectValidationPrompt(
+      optimized.optimizedSql,
+      sourceDialect,
+      targetDialect,
+      {
+        insertsWereTruncated: optimized.insertsWereTruncated,
+        truncatedInsertCount: optimized.truncatedInsertCount,
+      },
+    );
+
+    // Smart maxTokens: estimate based on optimized SQL size (not original).
+    // Output needs: corrected SQL (≈ optimized size) + JSON wrapper/issues (~2000 tokens).
+    const smartMaxTokens = calculateSmartMaxTokens(optimized.optimizedSql, 16384, 2000);
+
+    const provider = await AIProviderFactory.getTracked({ module: 'migration', endpoint: '/ai/migration/validate-conversion' });
+    const aiResponse = await provider.chat({
+      messages,
+      temperature: 0.2,
+      maxTokens: smartMaxTokens,
+      jsonMode: true,
+    });
+
+    let validation: Record<string, unknown>;
+    try {
+      // Strip markdown code fences if present (```json ... ```)
+      let jsonStr = aiResponse.content.trim();
+      const fenceMatch = jsonStr.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/);
+      if (fenceMatch) {
+        jsonStr = fenceMatch[1].trim();
+      }
+      validation = JSON.parse(jsonStr);
+    } catch {
+      // Last resort: try to extract JSON object from the response
+      const jsonMatch = aiResponse.content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          validation = JSON.parse(jsonMatch[0]);
+        } catch {
+          validation = {
+            valid: false,
+            issues: [],
+            overallAssessment: aiResponse.content.substring(0, 500),
+            compatibilityScore: 0,
+          };
+        }
+      } else {
+        validation = {
+          valid: false,
+          issues: [],
+          overallAssessment: aiResponse.content.substring(0, 500),
+          compatibilityScore: 0,
+        };
+      }
+    }
+
+    // If INSERTs were truncated, the AI only validated DDL.
+    // Reconstruct correctedSql by merging AI's corrected DDL with original INSERT data.
+    if (optimized.insertsWereTruncated && validation.correctedSql && typeof validation.correctedSql === 'string') {
+      // The AI returned only corrected DDL; the user's original SQL still has the full INSERTs.
+      // We keep AI's corrected DDL as-is — the frontend already has the full original SQL
+      // and the user can apply DDL fixes to their editable textarea.
+      validation.correctedSql = validation.correctedSql as string;
+      validation.insertsTruncatedNote =
+        `Note: ${optimized.truncatedInsertCount} INSERT statement(s) were excluded from AI validation to save tokens. ` +
+        `The corrected SQL above contains only DDL (CREATE/ALTER/INDEX). Your original INSERT data remains unchanged.`;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        validation,
+        usage: aiResponse.usage,
+        model: aiResponse.model,
+        tokenSavings: {
+          originalTokens: Math.ceil(optimized.originalChars / 4),
+          optimizedTokens: Math.ceil(optimized.optimizedChars / 4),
+          saved: optimized.estimatedTokensSaved,
+        },
       },
     });
   },

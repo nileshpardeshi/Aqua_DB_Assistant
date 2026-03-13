@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { trackAIUsage } from '@/lib/ai-usage-tracker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -86,12 +87,16 @@ export interface GenerateDocConfig {
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyResponse = Record<string, any>;
+
 export function useGenerateDocumentation() {
   return useMutation({
     mutationFn: async (input: GenerateDocConfig) => {
       const response = await apiClient.post('/ai/docs/generate', input);
-      return (response as unknown as { documentation: DocumentationResult })
-        .documentation;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'docs');
+      return raw.documentation as DocumentationResult;
     },
   });
 }

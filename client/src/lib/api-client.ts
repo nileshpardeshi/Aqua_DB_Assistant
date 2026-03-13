@@ -21,9 +21,11 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     // Extract meaningful error message
+    // Server error format: { success: false, error: { code, message } }
+    const serverError = error.response?.data?.error;
     const message =
       error.response?.data?.message ||
-      error.response?.data?.error ||
+      (typeof serverError === 'string' ? serverError : serverError?.message) ||
       error.message ||
       'An unexpected error occurred';
 

@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { trackAIUsage } from '@/lib/ai-usage-tracker';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,9 @@ export interface MigrationScriptBundle {
   rollbackStrategy: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyResponse = Record<string, any>;
+
 // ── Hooks ────────────────────────────────────────────────────────────────────
 
 /**
@@ -74,8 +78,9 @@ export function useAssessMigration() {
       targetDialect: string;
     }) => {
       const response = await apiClient.post('/ai/migration/assess', input);
-      const wrapper = response as unknown as { assessment: MigrationAssessment };
-      return wrapper.assessment;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'migration');
+      return raw.assessment as MigrationAssessment;
     },
   });
 }
@@ -92,8 +97,9 @@ export function useGenerateMigrationScripts() {
       tables?: string[];
     }) => {
       const response = await apiClient.post('/ai/migration/generate-scripts', input);
-      const wrapper = response as unknown as { scripts: MigrationScriptBundle };
-      return wrapper.scripts;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'migration');
+      return raw.scripts as MigrationScriptBundle;
     },
   });
 }

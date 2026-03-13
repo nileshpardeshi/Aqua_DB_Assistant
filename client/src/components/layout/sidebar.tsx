@@ -18,8 +18,8 @@ import {
   ArrowRightLeft,
   FlaskConical,
   ScrollText,
-  Wand2,
   FileText,
+  Coins,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { APP_NAME, APP_TAGLINE, getDialect } from '../../config/constants';
@@ -43,6 +43,7 @@ const toolNavItems: NavItem[] = [
   { label: 'JPA Query Lab', icon: FlaskConical, path: '/tools/jpa-lab' },
   { label: 'DB Connections', icon: Plug, path: '/tools/connections' },
   { label: 'Audit Logs', icon: ScrollText, path: '/audit-logs' },
+  { label: 'AI Usage', icon: Coins, path: '/ai-usage' },
 ];
 
 function getProjectNavItems(projectId: string): NavItem[] {
@@ -52,7 +53,6 @@ function getProjectNavItems(projectId: string): NavItem[] {
     { label: 'Diagram Studio', icon: GitFork, path: `/project/${projectId}/schema/er-diagram` },
     { label: 'Query Intelligence', icon: Terminal, path: `/project/${projectId}/query` },
     { label: 'Performance Lab', icon: Gauge, path: `/project/${projectId}/performance` },
-    { label: 'Data Generator', icon: Wand2, path: `/project/${projectId}/datagen` },
     { label: 'DB Docs', icon: FileText, path: `/project/${projectId}/docs` },
     { label: 'Data Lifecycle', icon: Shield, path: `/project/${projectId}/data-lifecycle` },
     { label: 'Migration Studio', icon: GitBranch, path: `/project/${projectId}/migrations` },

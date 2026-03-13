@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../lib/api-client';
+import { trackAIUsage } from '@/lib/ai-usage-tracker';
 
 // ── Types (aligned with Prisma Migration model) ─────────────────────────────
 
@@ -57,11 +58,44 @@ export interface ConversionChange {
   reason: string;
 }
 
+export interface ValidationIssue {
+  severity: 'error' | 'warning' | 'info';
+  category: 'data_type' | 'syntax' | 'feature' | 'naming' | 'constraint';
+  message: string;
+  line?: number;
+  suggestion?: string;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  issues: ValidationIssue[];
+  summary: {
+    errors: number;
+    warnings: number;
+    info: number;
+  };
+}
+
+export interface AIValidationResult {
+  valid: boolean;
+  issues: Array<{
+    severity: 'error' | 'warning' | 'info';
+    category: string;
+    message: string;
+    line?: number;
+    suggestion?: string;
+  }>;
+  overallAssessment: string;
+  compatibilityScore: number;
+  correctedSql?: string;
+}
+
 export interface ConvertDialectResult {
   sql: string;
   changes: ConversionChange[];
   sourceDialect: string;
   targetDialect: string;
+  validation?: ValidationResult;
 }
 
 // ── Query Keys ───────────────────────────────────────────────────────────────
@@ -218,6 +252,35 @@ export function useConvertDialect() {
         }
       );
       return response as unknown as ConvertDialectResult;
+    },
+  });
+}
+
+/**
+ * AI-powered validation of converted SQL.
+ */
+export function useAIValidateConversion() {
+  return useMutation({
+    mutationFn: async (input: {
+      sql: string;
+      sourceDialect: string;
+      targetDialect: string;
+    }) => {
+      const response = await apiClient.post(
+        '/ai/migration/validate-conversion',
+        input,
+      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = response as unknown as Record<string, any>;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'migration');
+      const v = (raw.validation ?? {}) as Partial<AIValidationResult>;
+      return {
+        valid: v.valid ?? false,
+        issues: Array.isArray(v.issues) ? v.issues : [],
+        overallAssessment: v.overallAssessment ?? 'Unable to parse AI response',
+        compatibilityScore: v.compatibilityScore ?? 0,
+        correctedSql: typeof v.correctedSql === 'string' ? v.correctedSql : undefined,
+      } as AIValidationResult;
     },
   });
 }

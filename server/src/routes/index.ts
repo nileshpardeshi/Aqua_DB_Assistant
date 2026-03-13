@@ -15,7 +15,9 @@ import savedDiagramRoutes from './saved-diagram.routes.js';
 import dataLifecycleRoutes from './data-lifecycle.routes.js';
 import connectionRoutes from './connection.routes.js';
 import auditRoutes from './audit.routes.js';
+import aiUsageRoutes from './ai-usage.routes.js';
 import toolsRoutes from './tools.routes.js';
+import sandboxRoutes from './sandbox.routes.js';
 
 const router = Router();
 
@@ -38,6 +40,8 @@ router.use('/api/v1/projects/:projectId/connections', connectionRoutes);
 router.use('/api/v1/ai', aiRoutes);
 router.use('/api/v1/settings', settingsRoutes);
 router.use('/api/v1/audit-logs', auditRoutes);
+router.use('/api/v1/ai-usage', aiUsageRoutes);
 router.use('/api/v1/tools', toolsRoutes);
+router.use('/api/v1/projects/:projectId/sandbox', sandboxRoutes);
 
 export default router;

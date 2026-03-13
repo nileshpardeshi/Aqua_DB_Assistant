@@ -27,10 +27,12 @@ const envSchema = z.object({
     .enum(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly'])
     .default('info'),
   DEFAULT_AI_PROVIDER: z
-    .enum(['anthropic', 'openai', 'ollama'])
+    .enum(['anthropic', 'openai', 'gemini', 'openrouter', 'ollama'])
     .default('anthropic'),
   ANTHROPIC_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
+  OPENROUTER_API_KEY: z.string().optional(),
   OLLAMA_BASE_URL: z.string().url().optional(),
 });
 

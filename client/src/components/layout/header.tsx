@@ -1,8 +1,9 @@
 import { useLocation, Link, useParams } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Sun, Moon, Bell, Menu, X, Database, FileUp, Search, Settings, GitBranch, Zap, Trash2 } from 'lucide-react';
+import { Sun, Moon, Bell, Menu, X, Database, FileUp, Search, Settings, GitBranch, Zap, Trash2, Coins } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useUIStore } from '../../stores/use-ui-store';
+import { useAITokenStore } from '../../stores/use-ai-token-store';
 import { useProject } from '../../hooks/use-projects';
 import { useAuditLogs } from '../../hooks/use-audit-logs';
 
@@ -26,6 +27,11 @@ function useBreadcrumbs(): Breadcrumb[] {
 
   if (segments[0] === 'settings') {
     crumbs.push({ label: 'Settings' });
+    return crumbs;
+  }
+
+  if (segments[0] === 'ai-usage') {
+    crumbs.push({ label: 'AI Usage' });
     return crumbs;
   }
 
@@ -86,6 +92,82 @@ function formatTimeAgo(dateStr: string): string {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
   return new Date(dateStr).toLocaleDateString();
+}
+
+function SessionTokenBadge() {
+  const { sessionTokens, sessionCost, sessionCallCount, recentCalls, resetSession } = useAITokenStore();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClick);
+      return () => document.removeEventListener('mousedown', handleClick);
+    }
+  }, [open]);
+
+  if (sessionCallCount === 0) return null;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className={cn(
+          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
+          'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50'
+        )}
+        title="AI token usage this session"
+      >
+        <Coins className="w-3.5 h-3.5" />
+        <span>{sessionTokens.toLocaleString()}</span>
+        <span className="text-amber-500/70">~${sessionCost.toFixed(4)}</span>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <h3 className="text-sm font-semibold text-foreground">Session AI Usage</h3>
+            <button
+              onClick={() => { resetSession(); setOpen(false); }}
+              className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+
+          <div className="px-4 py-3 space-y-2 border-b border-border">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Total Tokens</span>
+              <span className="font-medium text-foreground">{sessionTokens.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Est. Cost</span>
+              <span className="font-medium text-foreground">${sessionCost.toFixed(4)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">AI Calls</span>
+              <span className="font-medium text-foreground">{sessionCallCount}</span>
+            </div>
+          </div>
+
+          <div className="max-h-48 overflow-y-auto">
+            {recentCalls.slice(0, 10).map((call, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-2 text-[11px] border-b border-border/50 last:border-b-0">
+                <div>
+                  <span className="font-medium text-foreground capitalize">{call.module}</span>
+                  <span className="text-muted-foreground ml-1.5">{call.totalTokens.toLocaleString()} tokens</span>
+                </div>
+                <span className="text-muted-foreground">${call.cost.toFixed(4)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function Header() {
@@ -155,6 +237,9 @@ export function Header() {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1">
+        {/* AI Token Counter */}
+        <SessionTokenBadge />
+
         {/* Theme Toggle */}
         <button
           onClick={() => setTheme(isDark ? 'light' : 'dark')}

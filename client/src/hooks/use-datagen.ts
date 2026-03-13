@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { trackAIUsage } from '@/lib/ai-usage-tracker';
 
 // ── Synthetic Data Types ──────────────────────────────────────────────────────
 
@@ -155,6 +156,9 @@ export interface DataDistributionResult {
   summary: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyResponse = Record<string, any>;
+
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
 export function useGenerateSyntheticData() {
@@ -164,8 +168,9 @@ export function useGenerateSyntheticData() {
         '/ai/datagen/synthetic-scripts',
         input,
       );
-      return (response as unknown as { generation: SyntheticDataResult })
-        .generation;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'datagen');
+      return raw.generation as SyntheticDataResult;
     },
   });
 }
@@ -177,8 +182,9 @@ export function useSimulateQueryPlan() {
         '/ai/datagen/query-planner',
         input,
       );
-      return (response as unknown as { simulation: QueryPlanResult })
-        .simulation;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'performance');
+      return raw.simulation as QueryPlanResult;
     },
   });
 }
@@ -190,8 +196,9 @@ export function useSimulateDataDistribution() {
         '/ai/datagen/data-distribution',
         input,
       );
-      return (response as unknown as { simulation: DataDistributionResult })
-        .simulation;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'performance');
+      return raw.simulation as DataDistributionResult;
     },
   });
 }

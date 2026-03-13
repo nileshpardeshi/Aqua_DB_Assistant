@@ -1,19 +1,29 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Database,
   Play,
-  Loader2,
-  RefreshCw,
   Columns3,
   Shuffle,
   TrendingUp,
   Hash,
-  FlaskConical,
   Coffee,
+  Copy,
+  Download,
+  Check,
+  AlertTriangle,
+  Link2,
+  ChevronDown,
+  ChevronRight,
+  Layers,
+  Table2,
+  Lock,
+  FileText,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCreatePerformanceRun } from '@/hooks/use-performance';
+import { useTables, useRelationships, type Table, type Column } from '@/hooks/use-schema';
+import { DatagenTestPanel } from './datagen-test-panel';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,7 +34,7 @@ interface ParamFieldDef {
   placeholder?: string;
   defaultValue?: string;
   options?: string[];
-  width?: string; // Tailwind width class
+  width?: string;
 }
 
 interface GeneratorDef {
@@ -43,13 +53,30 @@ interface ColumnConfig {
   type: string;
   generator: string;
   params: Record<string, string>;
+  isConstant?: boolean;
+  constantValue?: string;
+  isPrimaryKey?: boolean;
+  isForeignKey?: boolean;
+  referencesTable?: string;
+  referencesColumn?: string;
+}
+
+interface TableConfig {
+  tableName: string;
+  tableId?: string;
+  rowCount: number;
+  columns: ColumnConfig[];
+  expanded: boolean;
 }
 
 type Distribution = 'random' | 'sequential' | 'realistic';
+type GenerationMode = 'single' | 'multi';
+type ScriptStyle = 'bulk' | 'individual';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const ROW_COUNT_OPTIONS = [
+const ROW_COUNT_PRESETS = [
+  { label: '100', value: 100 },
   { label: '1K', value: 1000 },
   { label: '10K', value: 10000 },
   { label: '100K', value: 100000 },
@@ -81,6 +108,13 @@ const GENERATOR_CATEGORIES: GeneratorCategory[] = [
     ],
   },
   {
+    label: 'FK Reference',
+    generators: [
+      // FK Reference has NO static params — rendered via custom dropdown UI
+      { name: 'FK Reference' },
+    ],
+  },
+  {
     label: 'Identity',
     generators: [
       { name: 'UUID', javaExpression: 'UUID.randomUUID().toString()' },
@@ -95,19 +129,10 @@ const GENERATOR_CATEGORIES: GeneratorCategory[] = [
         { key: 'min', label: 'Min', type: 'number', placeholder: '0', defaultValue: '0', width: 'w-20' },
         { key: 'max', label: 'Max', type: 'number', placeholder: '100', defaultValue: '100', width: 'w-20' },
       ]},
-      { name: 'Random Long', javaExpression: 'ThreadLocalRandom.current().nextLong(min, max + 1)', params: [
-        { key: 'min', label: 'Min', type: 'number', placeholder: '0', defaultValue: '0', width: 'w-20' },
-        { key: 'max', label: 'Max', type: 'number', placeholder: '1000000', defaultValue: '1000000', width: 'w-24' },
-      ]},
       { name: 'Random Float', javaExpression: 'ThreadLocalRandom.current().nextFloat()', params: [
         { key: 'min', label: 'Min', type: 'number', placeholder: '0.0', defaultValue: '0', width: 'w-16' },
         { key: 'max', label: 'Max', type: 'number', placeholder: '1.0', defaultValue: '1', width: 'w-16' },
         { key: 'precision', label: 'Decimals', type: 'number', placeholder: '2', defaultValue: '2', width: 'w-14' },
-      ]},
-      { name: 'Random Double', javaExpression: 'ThreadLocalRandom.current().nextDouble(min, max)', params: [
-        { key: 'min', label: 'Min', type: 'number', placeholder: '0.0', defaultValue: '0', width: 'w-16' },
-        { key: 'max', label: 'Max', type: 'number', placeholder: '1.0', defaultValue: '1', width: 'w-16' },
-        { key: 'precision', label: 'Decimals', type: 'number', placeholder: '4', defaultValue: '4', width: 'w-14' },
       ]},
       { name: 'Gaussian', javaExpression: 'new Random().nextGaussian() * stdDev + mean', params: [
         { key: 'mean', label: 'Mean', type: 'number', placeholder: '0', defaultValue: '0', width: 'w-16' },
@@ -118,24 +143,19 @@ const GENERATOR_CATEGORIES: GeneratorCategory[] = [
         { key: 'max', label: 'Max', type: 'number', placeholder: '999', defaultValue: '999', width: 'w-20' },
         { key: 'symbol', label: 'Symbol', type: 'text', placeholder: '$', defaultValue: '$', width: 'w-12' },
       ]},
+      { name: 'BigDecimal', javaExpression: 'BigDecimal.valueOf(random * max).setScale(scale)', params: [
+        { key: 'max', label: 'Max', type: 'number', placeholder: '10000', defaultValue: '10000', width: 'w-20' },
+        { key: 'scale', label: 'Scale', type: 'number', placeholder: '2', defaultValue: '2', width: 'w-14' },
+      ]},
     ],
   },
   {
     label: 'Strings',
     generators: [
-      { name: 'Random String', javaExpression: 'RandomStringUtils.random(length)', params: [
+      { name: 'Random String', params: [
         { key: 'length', label: 'Length', type: 'number', placeholder: '10', defaultValue: '10', width: 'w-16' },
         { key: 'charset', label: 'Charset', type: 'select', defaultValue: 'alphanumeric',
-          options: ['alphanumeric', 'alpha', 'numeric', 'hex', 'ascii'] },
-      ]},
-      { name: 'Random Alpha', javaExpression: 'RandomStringUtils.randomAlphabetic(length)', params: [
-        { key: 'length', label: 'Length', type: 'number', placeholder: '10', defaultValue: '10', width: 'w-16' },
-      ]},
-      { name: 'Random Alphanumeric', javaExpression: 'RandomStringUtils.randomAlphanumeric(length)', params: [
-        { key: 'length', label: 'Length', type: 'number', placeholder: '10', defaultValue: '10', width: 'w-16' },
-      ]},
-      { name: 'Hex String', params: [
-        { key: 'length', label: 'Bytes', type: 'number', placeholder: '16', defaultValue: '16', width: 'w-16' },
+          options: ['alphanumeric', 'alpha', 'numeric', 'hex'] },
       ]},
       { name: 'Regex Pattern', params: [
         { key: 'pattern', label: 'Regex', type: 'text', placeholder: '[A-Z]{3}-\\d{4}', width: 'w-40' },
@@ -171,8 +191,6 @@ const GENERATOR_CATEGORIES: GeneratorCategory[] = [
       { name: 'State', javaExpression: 'faker.address().state()' },
       { name: 'Country', javaExpression: 'faker.address().country()' },
       { name: 'Zip Code', javaExpression: 'faker.address().zipCode()' },
-      { name: 'Latitude', javaExpression: 'faker.address().latitude()' },
-      { name: 'Longitude', javaExpression: 'faker.address().longitude()' },
     ],
   },
   {
@@ -185,8 +203,6 @@ const GENERATOR_CATEGORIES: GeneratorCategory[] = [
         { key: 'to', label: 'To', type: 'text', placeholder: '2026-12-31', defaultValue: '2026-12-31', width: 'w-28' },
       ]},
       { name: 'ISO DateTime', javaExpression: 'Instant.now().toString()' },
-      { name: 'Unix Timestamp', javaExpression: 'System.currentTimeMillis()' },
-      { name: 'Time Only', javaExpression: 'LocalTime.now()' },
     ],
   },
   {
@@ -194,10 +210,7 @@ const GENERATOR_CATEGORIES: GeneratorCategory[] = [
     generators: [
       { name: 'URL', javaExpression: 'faker.internet().url()' },
       { name: 'IP Address', javaExpression: 'faker.internet().ipV4Address()' },
-      { name: 'IPv6', javaExpression: 'faker.internet().ipV6Address()' },
-      { name: 'MAC Address', javaExpression: 'faker.internet().macAddress()' },
       { name: 'Domain', javaExpression: 'faker.internet().domainName()' },
-      { name: 'User Agent', javaExpression: 'faker.internet().userAgentAny()' },
     ],
   },
   {
@@ -206,9 +219,6 @@ const GENERATOR_CATEGORIES: GeneratorCategory[] = [
       { name: 'Word', javaExpression: 'faker.lorem().word()' },
       { name: 'Sentence', javaExpression: 'faker.lorem().sentence()' },
       { name: 'Paragraph', javaExpression: 'faker.lorem().paragraph()' },
-      { name: 'Lorem Text', params: [
-        { key: 'words', label: 'Words', type: 'number', placeholder: '50', defaultValue: '50', width: 'w-16' },
-      ]},
     ],
   },
   {
@@ -220,124 +230,713 @@ const GENERATOR_CATEGORIES: GeneratorCategory[] = [
     ],
   },
   {
-    label: 'Java Standard Library',
-    generators: [
-      { name: 'UUID.randomUUID()', javaExpression: 'java.util.UUID.randomUUID().toString()' },
-      { name: 'Math.random()', javaExpression: 'Math.random()' },
-      { name: 'ThreadLocalRandom.nextInt()', javaExpression: 'ThreadLocalRandom.current().nextInt(min, max + 1)', params: [
-        { key: 'min', label: 'Min', type: 'number', placeholder: '0', defaultValue: '0', width: 'w-20' },
-        { key: 'max', label: 'Max', type: 'number', placeholder: '1000', defaultValue: '1000', width: 'w-20' },
-      ]},
-      { name: 'ThreadLocalRandom.nextLong()', javaExpression: 'ThreadLocalRandom.current().nextLong(min, max + 1)', params: [
-        { key: 'min', label: 'Min', type: 'number', placeholder: '0', defaultValue: '0', width: 'w-20' },
-        { key: 'max', label: 'Max', type: 'number', placeholder: '1000000', defaultValue: '1000000', width: 'w-24' },
-      ]},
-      { name: 'ThreadLocalRandom.nextDouble()', javaExpression: 'ThreadLocalRandom.current().nextDouble(min, max)', params: [
-        { key: 'min', label: 'Min', type: 'number', placeholder: '0.0', defaultValue: '0', width: 'w-16' },
-        { key: 'max', label: 'Max', type: 'number', placeholder: '1.0', defaultValue: '1', width: 'w-16' },
-      ]},
-      { name: 'BigDecimal.valueOf()', javaExpression: 'BigDecimal.valueOf(random.nextDouble() * max).setScale(scale, RoundingMode.HALF_UP)', params: [
-        { key: 'max', label: 'Max', type: 'number', placeholder: '10000', defaultValue: '10000', width: 'w-20' },
-        { key: 'scale', label: 'Scale', type: 'number', placeholder: '2', defaultValue: '2', width: 'w-14' },
-      ]},
-      { name: 'LocalDate.now()', javaExpression: 'java.time.LocalDate.now()' },
-      { name: 'LocalDateTime.now()', javaExpression: 'java.time.LocalDateTime.now()' },
-      { name: 'Instant.now()', javaExpression: 'java.time.Instant.now()' },
-      { name: 'System.currentTimeMillis()', javaExpression: 'System.currentTimeMillis()' },
-      { name: 'String.format()', javaExpression: 'String.format(pattern, args...)', params: [
-        { key: 'pattern', label: 'Pattern', type: 'text', placeholder: '%s-%05d', width: 'w-28' },
-        { key: 'prefix', label: 'Prefix', type: 'text', placeholder: 'ORD', width: 'w-20' },
-      ]},
-      { name: 'SecureRandom', javaExpression: 'new SecureRandom().nextInt(bound)', params: [
-        { key: 'bound', label: 'Bound', type: 'number', placeholder: '1000000', defaultValue: '1000000', width: 'w-24' },
-      ]},
-      { name: 'Base64 Encode', javaExpression: 'Base64.getEncoder().encodeToString(bytes)', params: [
-        { key: 'length', label: 'Byte length', type: 'number', placeholder: '16', defaultValue: '16', width: 'w-16' },
-      ]},
-      { name: 'MD5 Hash', javaExpression: 'MessageDigest.getInstance("MD5").digest(input)' },
-      { name: 'SHA-256 Hash', javaExpression: 'MessageDigest.getInstance("SHA-256").digest(input)' },
-    ],
-  },
-  {
     label: 'Custom',
     generators: [
       { name: 'Custom Expression', params: [
-        { key: 'expression', label: 'Expression', type: 'text', placeholder: 'faker.name().fullName() or custom Java/SQL', width: 'w-64' },
+        { key: 'expression', label: 'SQL Expression', type: 'text', placeholder: "gen_random_uuid() or custom SQL", width: 'w-64' },
       ]},
     ],
   },
 ];
 
-// Lookup map: generator name → GeneratorDef
 const GENERATOR_DEF_MAP = new Map<string, GeneratorDef>(
   GENERATOR_CATEGORIES.flatMap(cat => cat.generators.map(g => [g.name, g] as const))
 );
 
-// ── Default Columns ──────────────────────────────────────────────────────────
+// ── FK Type Compatibility Check ──────────────────────────────────────────────
 
-const DEFAULT_COLUMNS: ColumnConfig[] = [
-  { name: 'id', type: 'INT', generator: 'Incremental ID', params: {} },
-  { name: 'name', type: 'VARCHAR(255)', generator: 'Full Name', params: {} },
-  { name: 'email', type: 'VARCHAR(255)', generator: 'Email', params: {} },
-  { name: 'created_at', type: 'TIMESTAMP', generator: 'Timestamp', params: {} },
-  { name: 'status', type: 'VARCHAR(50)', generator: 'Boolean', params: {} },
-];
+function normalizeTypeFamily(dataType: string): string {
+  const t = dataType.toUpperCase().trim();
+  if (t.includes('UUID')) return 'uuid';
+  if (t.includes('SERIAL') || t.includes('INT') || t.includes('BIGINT') || t.includes('SMALLINT')) return 'integer';
+  if (t.includes('NUMERIC') || t.includes('DECIMAL') || t.includes('FLOAT') || t.includes('DOUBLE') || t.includes('REAL')) return 'numeric';
+  if (t.includes('VARCHAR') || t.includes('TEXT') || t.includes('CHAR')) return 'text';
+  if (t.includes('BOOL')) return 'boolean';
+  if (t.includes('TIMESTAMP')) return 'timestamp';
+  if (t.includes('DATE')) return 'date';
+  if (t.includes('TIME')) return 'time';
+  if (t.includes('JSON')) return 'json';
+  if (t.includes('BYTEA') || t.includes('BLOB')) return 'binary';
+  return 'other';
+}
+
+function checkFKTypeCompatibility(fkColType: string, parentColType: string): { compatible: boolean; message: string } {
+  const fkFamily = normalizeTypeFamily(fkColType);
+  const parentFamily = normalizeTypeFamily(parentColType);
+
+  if (fkFamily === parentFamily) {
+    return { compatible: true, message: '' };
+  }
+
+  // Allow integer ↔ numeric compatibility
+  if ((fkFamily === 'integer' && parentFamily === 'numeric') || (fkFamily === 'numeric' && parentFamily === 'integer')) {
+    return { compatible: true, message: '' };
+  }
+
+  return {
+    compatible: false,
+    message: `Type mismatch: FK column is ${fkColType} (${fkFamily}) but parent column is ${parentColType} (${parentFamily})`,
+  };
+}
+
+// ── Auto-detect Generator from Column Metadata ──────────────────────────────
+
+function autoDetectGenerator(col: Column): { generator: string; params: Record<string, string> } {
+  const name = col.name.toLowerCase();
+  const type = col.dataType.toLowerCase();
+
+  if (col.isForeignKey && col.referencesTable && col.referencesColumn) {
+    return { generator: 'FK Reference', params: { refTable: col.referencesTable, refColumn: col.referencesColumn } };
+  }
+
+  if (col.isPrimaryKey) {
+    if (type.includes('uuid')) return { generator: 'UUID', params: {} };
+    if (type.includes('serial') || type.includes('int')) return { generator: 'Sequence', params: { start: '1', step: '1' } };
+    return { generator: 'UUID', params: {} };
+  }
+
+  if (name === 'email' || name.endsWith('_email')) return { generator: 'Email', params: {} };
+  if (name === 'phone' || name.includes('phone') || name.includes('mobile')) return { generator: 'Phone', params: {} };
+  if (name === 'first_name' || name === 'firstname') return { generator: 'First Name', params: {} };
+  if (name === 'last_name' || name === 'lastname') return { generator: 'Last Name', params: {} };
+  if (name === 'name' || name === 'full_name' || name === 'fullname' || name === 'customer_name') return { generator: 'Full Name', params: {} };
+  if (name === 'username' || name === 'user_name' || name === 'login') return { generator: 'Username', params: {} };
+  if (name === 'city') return { generator: 'City', params: {} };
+  if (name === 'state' || name === 'province') return { generator: 'State', params: {} };
+  if (name === 'country') return { generator: 'Country', params: {} };
+  if (name === 'zip' || name === 'zip_code' || name === 'postal_code') return { generator: 'Zip Code', params: {} };
+  if (name === 'address' || name.includes('street')) return { generator: 'Address', params: {} };
+  if (name === 'company' || name === 'company_name') return { generator: 'Company', params: {} };
+  if (name === 'department') return { generator: 'Department', params: {} };
+  if (name === 'title' || name === 'job_title') return { generator: 'Job Title', params: {} };
+  if (name === 'url' || name === 'website') return { generator: 'URL', params: {} };
+  if (name === 'ip' || name === 'ip_address') return { generator: 'IP Address', params: {} };
+
+  if (name === 'status' || name.endsWith('_status') || name === 'type' || name.endsWith('_type')) {
+    return { generator: 'Enum Values', params: { values: 'active,inactive,pending,suspended' } };
+  }
+
+  if (name.startsWith('is_') || name.startsWith('has_') || type === 'boolean' || type === 'bool') {
+    return { generator: 'Boolean', params: {} };
+  }
+
+  if (name.includes('created') || name.includes('updated') || name.includes('deleted') || name.includes('_at') || name.includes('_date')) {
+    if (type.includes('timestamp') || type.includes('timestamptz')) return { generator: 'Timestamp', params: {} };
+    return { generator: 'Date', params: {} };
+  }
+  if (type.includes('timestamp') || type.includes('timestamptz')) return { generator: 'Timestamp', params: {} };
+  if (type === 'date') return { generator: 'Date', params: {} };
+
+  if (name.includes('amount') || name.includes('price') || name.includes('balance') || name.includes('salary') || name.includes('total') || name.includes('fee')) {
+    return { generator: 'BigDecimal', params: { max: '50000', scale: '2' } };
+  }
+  if (name.includes('rate') || name.includes('percentage') || name.includes('ratio')) {
+    return { generator: 'Random Float', params: { min: '0', max: '100', precision: '2' } };
+  }
+  if (name.includes('count') || name.includes('quantity') || name.includes('age')) {
+    return { generator: 'Random Integer', params: { min: '1', max: '1000' } };
+  }
+  if (type.includes('int') || type.includes('serial')) return { generator: 'Random Integer', params: { min: '1', max: '100000' } };
+  if (type.includes('numeric') || type.includes('decimal') || type.includes('float') || type.includes('double') || type.includes('real')) {
+    return { generator: 'BigDecimal', params: { max: '10000', scale: '2' } };
+  }
+
+  if (type.includes('uuid')) return { generator: 'UUID', params: {} };
+
+  if (name.includes('description') || name.includes('notes') || name.includes('comment') || name.includes('remarks')) {
+    return { generator: 'Sentence', params: {} };
+  }
+
+  return { generator: 'Random String', params: { length: '10', charset: 'alphanumeric' } };
+}
+
+// ── Topological Sort for FK Dependencies ────────────────────────────────────
+
+function resolveInsertOrder(tables: TableConfig[]): TableConfig[] {
+  const tableNames = new Set(tables.map(t => t.tableName));
+  const graph = new Map<string, Set<string>>();
+  const inDegree = new Map<string, number>();
+
+  for (const t of tables) {
+    graph.set(t.tableName, new Set());
+    inDegree.set(t.tableName, 0);
+  }
+
+  for (const t of tables) {
+    for (const col of t.columns) {
+      if (col.generator === 'FK Reference' && col.params.refTable && tableNames.has(col.params.refTable) && col.params.refTable !== t.tableName) {
+        graph.get(col.params.refTable)!.add(t.tableName);
+        inDegree.set(t.tableName, (inDegree.get(t.tableName) || 0) + 1);
+      }
+    }
+  }
+
+  const queue: string[] = [];
+  for (const [name, deg] of inDegree) {
+    if (deg === 0) queue.push(name);
+  }
+
+  const sorted: string[] = [];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    sorted.push(current);
+    for (const dep of graph.get(current) || []) {
+      const newDeg = (inDegree.get(dep) || 1) - 1;
+      inDegree.set(dep, newDeg);
+      if (newDeg === 0) queue.push(dep);
+    }
+  }
+
+  for (const t of tables) {
+    if (!sorted.includes(t.tableName)) sorted.push(t.tableName);
+  }
+
+  const tableMap = new Map(tables.map(t => [t.tableName, t]));
+  return sorted.map(name => tableMap.get(name)!);
+}
+
+// ── Find parent table's PK generator type ────────────────────────────────────
+
+function getParentPKGenerator(tables: TableConfig[], parentTableName: string, parentColumn: string): string {
+  const parentTable = tables.find(t => t.tableName === parentTableName);
+  if (!parentTable) return 'unknown';
+  const pkCol = parentTable.columns.find(c => c.name === parentColumn);
+  if (!pkCol) return 'unknown';
+  return pkCol.generator;
+}
+
+// ── SQL Script Generator (Bulk — generate_series) ────────────────────────────
+
+function generateBulkSQL(tables: TableConfig[], distribution: Distribution): string {
+  const ordered = resolveInsertOrder(tables);
+  const lines: string[] = [
+    '-- ============================================================================',
+    '-- Aqua DB Copilot — Synthetic Data Generation Script (Bulk)',
+    `-- Generated: ${new Date().toISOString()}`,
+    `-- Style: Bulk INSERT ... SELECT FROM generate_series()`,
+    `-- Distribution: ${distribution}`,
+    `-- Tables: ${ordered.map(t => `${t.tableName} (${t.rowCount.toLocaleString()})`).join(', ')}`,
+    '-- ============================================================================',
+    '',
+    'BEGIN;',
+    '',
+  ];
+
+  for (const table of ordered) {
+    const cols = table.columns.filter(c => c.generator !== 'Null');
+    if (cols.length === 0) continue;
+
+    // Check if any FK columns reference a parent in the generation chain
+    const fkCols = cols.filter(c => c.generator === 'FK Reference' && c.params.refTable);
+    const needsParentArrays = fkCols.filter(c => {
+      const parentGen = getParentPKGenerator(ordered, c.params.refTable, c.params.refColumn || 'id');
+      return parentGen === 'UUID' || parentGen === 'ULID';
+    });
+
+    lines.push(`-- ── ${table.tableName}: ${table.rowCount.toLocaleString()} rows ──`);
+
+    // If we need to reference UUID parent keys, pre-fetch them into arrays
+    if (needsParentArrays.length > 0) {
+      for (const fkCol of needsParentArrays) {
+        const refTable = fkCol.params.refTable;
+        const refCol = fkCol.params.refColumn || 'id';
+        const alias = `_${refTable}_${refCol}_ids`;
+        lines.push(`-- Pre-fetch parent keys for FK: ${fkCol.name} → ${refTable}.${refCol}`);
+        lines.push(`WITH ${alias} AS (`);
+        lines.push(`  SELECT ARRAY(SELECT ${refCol} FROM ${refTable} ORDER BY ${refCol}) AS ids`);
+        lines.push(`)`)
+      }
+    }
+
+    lines.push(`INSERT INTO ${table.tableName} (${cols.map(c => c.name).join(', ')})`);
+    lines.push('SELECT');
+
+    const selectParts: string[] = [];
+    for (let i = 0; i < cols.length; i++) {
+      const col = cols[i];
+      const comma = i < cols.length - 1 ? ',' : '';
+      const expr = generateColumnExpression(col, table.rowCount, ordered);
+      selectParts.push(`  ${expr}${comma}  -- ${col.name}`);
+    }
+    lines.push(...selectParts);
+
+    // Add FROM clause — join with parent ID arrays if needed
+    if (needsParentArrays.length > 0) {
+      const crossJoins = needsParentArrays.map(fkCol => {
+        const alias = `_${fkCol.params.refTable}_${fkCol.params.refColumn || 'id'}_ids`;
+        return alias;
+      });
+      lines.push(`FROM generate_series(1, ${table.rowCount}) AS s(i), ${crossJoins.join(', ')};`);
+    } else {
+      lines.push(`FROM generate_series(1, ${table.rowCount}) AS s(i);`);
+    }
+    lines.push('');
+  }
+
+  lines.push('COMMIT;');
+  lines.push('');
+  lines.push('-- Analyze tables for updated statistics');
+  for (const table of ordered) {
+    lines.push(`ANALYZE ${table.tableName};`);
+  }
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+// ── SQL Script Generator (Individual INSERTs) ────────────────────────────────
+
+function generateIndividualSQL(tables: TableConfig[], distribution: Distribution): string {
+  const ordered = resolveInsertOrder(tables);
+  const lines: string[] = [
+    '-- ============================================================================',
+    '-- Aqua DB Copilot — Synthetic Data Generation Script (Individual INSERTs)',
+    `-- Generated: ${new Date().toISOString()}`,
+    `-- Style: Individual INSERT statements`,
+    `-- Distribution: ${distribution}`,
+    `-- Tables: ${ordered.map(t => `${t.tableName} (${t.rowCount.toLocaleString()})`).join(', ')}`,
+    '-- ============================================================================',
+    '',
+    'BEGIN;',
+    '',
+  ];
+
+  for (const table of ordered) {
+    const cols = table.columns.filter(c => c.generator !== 'Null');
+    if (cols.length === 0) continue;
+
+    const effectiveCount = Math.min(table.rowCount, 10000); // Cap at 10K for individual INSERTs
+    const wasCapped = table.rowCount > 10000;
+
+    lines.push(`-- ── ${table.tableName}: ${effectiveCount.toLocaleString()} rows${wasCapped ? ` (capped from ${table.rowCount.toLocaleString()})` : ''} ──`);
+
+    // Generate batched VALUES (100 rows per INSERT for performance)
+    const batchSize = 100;
+    for (let batchStart = 0; batchStart < effectiveCount; batchStart += batchSize) {
+      const batchEnd = Math.min(batchStart + batchSize, effectiveCount);
+      lines.push(`INSERT INTO ${table.tableName} (${cols.map(c => c.name).join(', ')}) VALUES`);
+
+      for (let row = batchStart; row < batchEnd; row++) {
+        const values = cols.map(col => generateIndividualValue(col, row + 1, table.rowCount, ordered));
+        const comma = row < batchEnd - 1 ? ',' : ';';
+        lines.push(`  (${values.join(', ')})${comma}`);
+      }
+      lines.push('');
+    }
+  }
+
+  lines.push('COMMIT;');
+  lines.push('');
+  lines.push('-- Analyze tables for updated statistics');
+  for (const table of ordered) {
+    lines.push(`ANALYZE ${table.tableName};`);
+  }
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+function generateIndividualValue(col: ColumnConfig, rowNum: number, _totalRows: number, allTables: TableConfig[]): string {
+  if (col.isConstant && col.constantValue !== undefined) {
+    const val = col.constantValue;
+    if (val === '' || val.toLowerCase() === 'null') return 'NULL';
+    if (/^\d+$/.test(val)) return val;
+    if (/^\d+\.\d+$/.test(val)) return val;
+    if (val.toLowerCase() === 'true' || val.toLowerCase() === 'false') return val.toUpperCase();
+    return `'${val.replace(/'/g, "''")}'`;
+  }
+
+  const p = col.params;
+  const frac = pseudoRandom(rowNum);
+
+  switch (col.generator) {
+    case 'UUID': return `gen_random_uuid()`;
+    case 'Incremental ID':
+    case 'Sequence': {
+      const start = parseInt(p.start || '1', 10);
+      const step = parseInt(p.step || '1', 10);
+      return String(start + (rowNum - 1) * step);
+    }
+    case 'ULID': return `encode(gen_random_bytes(16), 'hex')`;
+    case 'Null': return 'NULL';
+    case 'Static Value': return `'${(p.value || '').replace(/'/g, "''")}'`;
+    case 'Boolean': return frac > 0.5 ? 'TRUE' : 'FALSE';
+    case 'FK Reference': {
+      // For individual inserts, reference parent data that was already inserted
+      const refTable = p.refTable || 'parent';
+      const refCol = p.refColumn || 'id';
+      const parentTable = allTables.find(t => t.tableName === refTable);
+      if (parentTable) {
+        const parentPKGen = getParentPKGenerator(allTables, refTable, refCol);
+        if (parentPKGen === 'Sequence' || parentPKGen === 'Incremental ID') {
+          const parentCount = parentTable.rowCount;
+          const refId = Math.floor(frac * parentCount) + 1;
+          return String(refId);
+        }
+        if (parentPKGen === 'UUID' || parentPKGen === 'ULID') {
+          // UUID parent in generation set — use subquery from already-inserted data
+          return `(SELECT ${refCol} FROM ${refTable} OFFSET ${Math.floor(frac * 1000) % Math.max(parentTable.rowCount, 1)} LIMIT 1)`;
+        }
+      }
+      // Parent not in generation set — generate standalone value based on column type
+      const colType = col.type.toUpperCase();
+      if (colType.includes('UUID')) {
+        return `'${crypto.randomUUID()}'`;
+      }
+      return String(Math.floor(frac * 1000) + 1);
+    }
+    case 'Random Integer': {
+      const min = parseInt(p.min || '0', 10);
+      const max = parseInt(p.max || '100', 10);
+      return String(Math.floor(min + frac * (max - min)));
+    }
+    case 'Random Float':
+    case 'BigDecimal': {
+      const min = parseFloat(p.min || '0');
+      const max = parseFloat(p.max || '1');
+      const prec = parseInt(p.precision || p.scale || '2', 10);
+      return (min + frac * (max - min)).toFixed(prec);
+    }
+    case 'Gaussian': {
+      const mean = parseFloat(p.mean || '0');
+      const stddev = parseFloat(p.stddev || '1');
+      const offsets = [-0.5, 1.2, -1.8, 0.3, 0.9, -0.7, 1.5, -1.1, 0.6, -0.2];
+      return (mean + offsets[rowNum % 10] * stddev).toFixed(2);
+    }
+    case 'Currency': {
+      const min = parseFloat(p.min || '1');
+      const max = parseFloat(p.max || '999');
+      return (min + frac * (max - min)).toFixed(2);
+    }
+    case 'Random String': {
+      const len = parseInt(p.length || '10', 10);
+      return `substr(md5('${rowNum}'), 1, ${len})`;
+    }
+    case 'Enum Values':
+    case 'Weighted Random': {
+      const values = (p.values || 'A,B,C').split(',').map(v => v.trim()).filter(Boolean);
+      const picked = values[(rowNum - 1) % values.length];
+      return `'${picked.replace(/'/g, "''")}'`;
+    }
+    case 'Formatted String': {
+      const fmt = p.format || 'ITEM-%05d';
+      const num = String(rowNum).padStart(5, '0');
+      const result = fmt.replace(/%0?\d*d/, num);
+      return `'${result.replace(/'/g, "''")}'`;
+    }
+    case 'First Name': {
+      const names = ['Alice','Bob','Carol','David','Eve','Frank','Grace','Hank','Iris','Jack','Kate','Leo','Mia','Nick','Olivia','Paul','Quinn','Rose','Sam','Tina'];
+      return `'${names[(rowNum - 1) % names.length]}'`;
+    }
+    case 'Last Name': {
+      const names = ['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Rodriguez','Martinez','Anderson','Taylor','Thomas','Jackson','White','Harris','Martin','Thompson','Moore','Clark'];
+      return `'${names[(rowNum - 1) % names.length]}'`;
+    }
+    case 'Full Name': {
+      const first = ['Alice','Bob','Carol','David','Eve','Frank','Grace','Hank','Iris','Jack'];
+      const last = ['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Rodriguez','Martinez'];
+      return `'${first[(rowNum - 1) % first.length]} ${last[Math.floor(frac * last.length)]}'`;
+    }
+    case 'Email': return `'user${rowNum}@${['gmail.com','yahoo.com','outlook.com','company.com','test.org'][(rowNum - 1) % 5]}'`;
+    case 'Phone': return `'+1-555-${String(rowNum % 10000).padStart(4, '0')}'`;
+    case 'Username': return `'user_${rowNum}'`;
+    case 'City': {
+      const cities = ['New York','San Francisco','London','Tokyo','Berlin','Paris','Mumbai','Sydney','Toronto','Dubai'];
+      return `'${cities[(rowNum - 1) % cities.length]}'`;
+    }
+    case 'State': {
+      const states = ['California','New York','Texas','Florida','Illinois','Ohio','Pennsylvania','Georgia','Michigan','Virginia'];
+      return `'${states[(rowNum - 1) % states.length]}'`;
+    }
+    case 'Country': {
+      const countries = ['United States','Canada','United Kingdom','Germany','France','Japan','India','Australia','Brazil','Mexico'];
+      return `'${countries[(rowNum - 1) % countries.length]}'`;
+    }
+    case 'Zip Code': return `'${String(rowNum % 100000).padStart(5, '0')}'`;
+    case 'Address': {
+      const streets = ['Main St','Oak Ave','Pine Rd','Elm Dr','Maple Ln','Cedar Way','Park Blvd','Hill Rd'];
+      return `'${rowNum % 9999 + 1} ${streets[(rowNum - 1) % streets.length]}'`;
+    }
+    case 'Company': {
+      const companies = ['Acme Corp','TechStart Inc','GlobalServ Ltd','DataFlow Co','CloudBase LLC','NexGen Systems','BluePeak Solutions','GreenLeaf Tech'];
+      return `'${companies[(rowNum - 1) % companies.length]}'`;
+    }
+    case 'Department': {
+      const depts = ['Engineering','Marketing','Sales','HR','Finance','Operations','Legal','Support'];
+      return `'${depts[(rowNum - 1) % depts.length]}'`;
+    }
+    case 'Job Title': {
+      const titles = ['Software Engineer','Product Manager','Designer','Data Analyst','VP Engineering','Director','Architect','Team Lead'];
+      return `'${titles[(rowNum - 1) % titles.length]}'`;
+    }
+    case 'Date': {
+      const base = new Date('2022-01-01');
+      base.setDate(base.getDate() + Math.floor(frac * 1095));
+      return `'${base.toISOString().split('T')[0]}'`;
+    }
+    case 'Timestamp': {
+      const base = new Date('2022-01-01T00:00:00Z');
+      base.setHours(base.getHours() + Math.floor(frac * 26280));
+      return `'${base.toISOString().replace('T', ' ').replace('Z', '')}'`;
+    }
+    case 'Date Range': {
+      const from = new Date(p.from || '2020-01-01');
+      const to = new Date(p.to || '2026-12-31');
+      const diff = to.getTime() - from.getTime();
+      const d = new Date(from.getTime() + frac * diff);
+      return `'${d.toISOString().split('T')[0]}'`;
+    }
+    case 'ISO DateTime': {
+      const base = new Date('2022-01-01T00:00:00Z');
+      base.setHours(base.getHours() + Math.floor(frac * 26280));
+      return `'${base.toISOString()}'`;
+    }
+    case 'URL': {
+      const domains = ['example.com','test.io','demo.org','app.co'];
+      return `'https://${domains[(rowNum - 1) % domains.length]}/${rowNum}'`;
+    }
+    case 'IP Address': {
+      const a = (rowNum % 223) + 1, b = (rowNum * 3) % 256, c = (rowNum * 7) % 256, d = (rowNum * 11) % 256;
+      return `'${a}.${b}.${c}.${d}'`;
+    }
+    case 'Domain': {
+      const domains = ['example.com','test.io','demo.org','app.co','site.dev'];
+      return `'${domains[(rowNum - 1) % domains.length]}'`;
+    }
+    case 'Word': {
+      const words = ['lorem','ipsum','dolor','sit','amet','consectetur','adipiscing','elit'];
+      return `'${words[(rowNum - 1) % words.length]}'`;
+    }
+    case 'Sentence': {
+      const adj = ['quick','lazy','smart','brave','calm'];
+      const noun = ['fox','dog','cat','bird','fish'];
+      const verb = ['runs','sleeps','jumps','plays','swims'];
+      return `'The ${adj[(rowNum - 1) % 5]} ${noun[Math.floor(frac * 5)]} ${verb[(rowNum + 2) % 5]}.'`;
+    }
+    case 'Paragraph': return `'Lorem ipsum dolor sit amet, row ${rowNum}.'`;
+    case 'Regex Pattern': return `substr(md5('${rowNum}'), 1, 10)`;
+    case 'Custom Expression': return p.expression || 'NULL';
+    default: return `'value_${rowNum}'`;
+  }
+}
+
+function pseudoRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
+
+// ── Bulk SQL: Column Expression Generator ────────────────────────────────────
+
+function generateColumnExpression(col: ColumnConfig, _rowCount: number, allTables: TableConfig[]): string {
+  if (col.isConstant && col.constantValue !== undefined) {
+    const val = col.constantValue;
+    if (val === '' || val.toLowerCase() === 'null') return 'NULL';
+    if (/^\d+$/.test(val)) return val;
+    if (/^\d+\.\d+$/.test(val)) return val;
+    if (val.toLowerCase() === 'true' || val.toLowerCase() === 'false') return val.toUpperCase();
+    return `'${val.replace(/'/g, "''")}'`;
+  }
+
+  const p = col.params;
+
+  switch (col.generator) {
+    case 'UUID':
+      return 'gen_random_uuid()';
+    case 'Incremental ID':
+    case 'Sequence': {
+      const start = parseInt(p.start || '1', 10);
+      const step = parseInt(p.step || '1', 10);
+      if (start === 1 && step === 1) return 's.i';
+      return `${start} + (s.i - 1) * ${step}`;
+    }
+    case 'ULID':
+      return "encode(gen_random_bytes(16), 'hex')";
+    case 'Null':
+      return 'NULL';
+    case 'Static Value':
+      return `'${(p.value || '').replace(/'/g, "''")}'`;
+    case 'Boolean':
+      return '(random() > 0.5)';
+    case 'FK Reference': {
+      const refTable = p.refTable || 'parent';
+      const refCol = p.refColumn || 'id';
+      const parentPKGen = getParentPKGenerator(allTables, refTable, refCol);
+
+      // If parent PK is sequential integer, directly calculate the FK value
+      if (parentPKGen === 'Sequence' || parentPKGen === 'Incremental ID') {
+        const parentTable = allTables.find(t => t.tableName === refTable);
+        const parentCount = parentTable?.rowCount || 1000;
+        return `floor(random() * ${parentCount} + 1)::int`;
+      }
+
+      // If parent is in generation set with UUID/ULID, use the pre-fetched ARRAY from CTE
+      if (parentPKGen === 'UUID' || parentPKGen === 'ULID') {
+        const alias = `_${refTable}_${refCol}_ids`;
+        return `${alias}.ids[floor(random() * array_length(${alias}.ids, 1) + 1)::int]`;
+      }
+
+      // Parent table not in generation set — generate standalone value based on column type
+      const colType = col.type.toUpperCase();
+      if (colType.includes('UUID')) {
+        return 'gen_random_uuid()';
+      }
+      if (colType.includes('INT') || colType.includes('SERIAL')) {
+        return `floor(random() * 1000 + 1)::int`;
+      }
+      // Fallback: random integer
+      return `floor(random() * 1000 + 1)::int`;
+    }
+    case 'Random Integer': {
+      const min = p.min || '0';
+      const max = p.max || '100';
+      return `floor(random() * (${max} - ${min} + 1) + ${min})::int`;
+    }
+    case 'Random Float':
+    case 'BigDecimal': {
+      const min = p.min || '0';
+      const max = p.max || '1';
+      const prec = p.precision || p.scale || '2';
+      return `round((random() * (${max} - ${min}) + ${min})::numeric, ${prec})`;
+    }
+    case 'Gaussian': {
+      const mean = p.mean || '0';
+      const stddev = p.stddev || '1';
+      return `round((${mean} + ${stddev} * (random() + random() + random() - 1.5) / 0.7071)::numeric, 2)`;
+    }
+    case 'Currency': {
+      const min = p.min || '1';
+      const max = p.max || '999';
+      return `round((random() * (${max} - ${min}) + ${min})::numeric, 2)`;
+    }
+    case 'Random String': {
+      const len = p.length || '10';
+      return `substr(md5(random()::text || s.i::text), 1, ${len})`;
+    }
+    case 'Enum Values': {
+      const values = (p.values || 'A,B,C').split(',').map(v => v.trim()).filter(Boolean);
+      const arr = values.map(v => `'${v.replace(/'/g, "''")}'`).join(', ');
+      return `(ARRAY[${arr}])[floor(random() * ${values.length} + 1)::int]`;
+    }
+    case 'Weighted Random': {
+      const values = (p.values || 'A,B,C').split(',').map(v => v.trim()).filter(Boolean);
+      const arr = values.map(v => `'${v.replace(/'/g, "''")}'`).join(', ');
+      return `(ARRAY[${arr}])[floor(random() * ${values.length} + 1)::int]`;
+    }
+    case 'Formatted String': {
+      const fmt = p.format || 'ITEM-%05d';
+      if (fmt.includes('%')) {
+        return `'${fmt.replace(/%0?(\d*)d/, "' || lpad(s.i::text, ${fmt.match(/%0?(\d+)d/)?.[1] || '5'}, '0') || '")}'`;
+      }
+      return `'${fmt.replace(/'/g, "''")}' || s.i::text`;
+    }
+    case 'First Name': {
+      const names = "'Alice','Bob','Carol','David','Eve','Frank','Grace','Hank','Iris','Jack','Kate','Leo','Mia','Nick','Olivia','Paul','Quinn','Rose','Sam','Tina'";
+      return `(ARRAY[${names}])[floor(random() * 20 + 1)::int]`;
+    }
+    case 'Last Name': {
+      const names = "'Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Rodriguez','Martinez','Anderson','Taylor','Thomas','Jackson','White','Harris','Martin','Thompson','Moore','Clark'";
+      return `(ARRAY[${names}])[floor(random() * 20 + 1)::int]`;
+    }
+    case 'Full Name': {
+      const first = "'Alice','Bob','Carol','David','Eve','Frank','Grace','Hank','Iris','Jack'";
+      const last = "'Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Rodriguez','Martinez'";
+      return `(ARRAY[${first}])[floor(random() * 10 + 1)::int] || ' ' || (ARRAY[${last}])[floor(random() * 10 + 1)::int]`;
+    }
+    case 'Email':
+      return `'user' || s.i || '@' || (ARRAY['gmail.com','yahoo.com','outlook.com','company.com','test.org'])[floor(random() * 5 + 1)::int]`;
+    case 'Phone':
+      return `'+1-555-' || lpad(floor(random() * 10000)::text, 4, '0')`;
+    case 'Username':
+      return `'user_' || substr(md5(s.i::text), 1, 8)`;
+    case 'City': {
+      const cities = "'New York','San Francisco','London','Tokyo','Berlin','Paris','Mumbai','Sydney','Toronto','Dubai'";
+      return `(ARRAY[${cities}])[floor(random() * 10 + 1)::int]`;
+    }
+    case 'State': {
+      const states = "'California','New York','Texas','Florida','Illinois','Ohio','Pennsylvania','Georgia','Michigan','Virginia'";
+      return `(ARRAY[${states}])[floor(random() * 10 + 1)::int]`;
+    }
+    case 'Country': {
+      const countries = "'United States','Canada','United Kingdom','Germany','France','Japan','India','Australia','Brazil','Mexico'";
+      return `(ARRAY[${countries}])[floor(random() * 10 + 1)::int]`;
+    }
+    case 'Zip Code':
+      return `lpad(floor(random() * 100000)::text, 5, '0')`;
+    case 'Address':
+      return `floor(random() * 9999 + 1)::text || ' ' || (ARRAY['Main St','Oak Ave','Pine Rd','Elm Dr','Maple Ln','Cedar Way','Park Blvd','Hill Rd'])[floor(random() * 8 + 1)::int]`;
+    case 'Company': {
+      const companies = "'Acme Corp','TechStart Inc','GlobalServ Ltd','DataFlow Co','CloudBase LLC','NexGen Systems','BluePeak Solutions','GreenLeaf Tech'";
+      return `(ARRAY[${companies}])[floor(random() * 8 + 1)::int]`;
+    }
+    case 'Department': {
+      const depts = "'Engineering','Marketing','Sales','HR','Finance','Operations','Legal','Support'";
+      return `(ARRAY[${depts}])[floor(random() * 8 + 1)::int]`;
+    }
+    case 'Job Title': {
+      const titles = "'Software Engineer','Product Manager','Designer','Data Analyst','VP Engineering','Director','Architect','Team Lead'";
+      return `(ARRAY[${titles}])[floor(random() * 8 + 1)::int]`;
+    }
+    case 'Date':
+      return `CURRENT_DATE - floor(random() * 365 * 3)::int`;
+    case 'Timestamp':
+      return `NOW() - (random() * interval '1095 days')`;
+    case 'Date Range': {
+      const from = p.from || '2020-01-01';
+      const to = p.to || '2026-12-31';
+      return `'${from}'::date + floor(random() * ('${to}'::date - '${from}'::date))::int`;
+    }
+    case 'ISO DateTime':
+      return `to_char(NOW() - (random() * interval '1095 days'), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
+    case 'URL':
+      return `'https://' || (ARRAY['example.com','test.io','demo.org','app.co'])[floor(random() * 4 + 1)::int] || '/' || substr(md5(s.i::text), 1, 8)`;
+    case 'IP Address':
+      return `floor(random() * 223 + 1)::text || '.' || floor(random() * 256)::text || '.' || floor(random() * 256)::text || '.' || floor(random() * 256)::text`;
+    case 'Domain':
+      return `(ARRAY['example.com','test.io','demo.org','app.co','site.dev'])[floor(random() * 5 + 1)::int]`;
+    case 'Word':
+      return `(ARRAY['lorem','ipsum','dolor','sit','amet','consectetur','adipiscing','elit'])[floor(random() * 8 + 1)::int]`;
+    case 'Sentence':
+      return `'The ' || (ARRAY['quick','lazy','smart','brave','calm'])[floor(random() * 5 + 1)::int] || ' ' || (ARRAY['fox','dog','cat','bird','fish'])[floor(random() * 5 + 1)::int] || ' ' || (ARRAY['runs','sleeps','jumps','plays','swims'])[floor(random() * 5 + 1)::int] || '.'`;
+    case 'Paragraph':
+      return `'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ' || md5(s.i::text)`;
+    case 'Regex Pattern':
+      return `substr(md5(random()::text), 1, 10)`;
+    case 'Custom Expression':
+      return p.expression || 'NULL';
+    default:
+      return `'value_' || s.i`;
+  }
+}
 
 // ── Sample Value Generator ───────────────────────────────────────────────────
 
 const SAMPLE_FRACTIONS = [0.42, 0.17, 0.88, 0.03, 0.65];
 
-function pseudoRandomString(rowIndex: number, length: number, charset: string): string {
-  let result = '';
-  let seed = rowIndex * 31 + 7;
-  for (let i = 0; i < Math.min(length, 24); i++) {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    result += charset[seed % charset.length];
-  }
-  return result;
-}
+function generateSampleValue(generator: string, params: Record<string, string>, rowIndex: number, isConstant?: boolean, constantValue?: string): string {
+  if (isConstant && constantValue !== undefined) return constantValue || 'NULL';
 
-function generateSampleValue(generator: string, params: Record<string, string>, rowIndex: number): string {
   const frac = SAMPLE_FRACTIONS[rowIndex % 5];
 
-  // ── Tier 1: Parameterized generators ─────────────────────────────────
   switch (generator) {
-    case 'Static Value':
-      return params.value || '(empty)';
-    case 'Null':
-      return 'NULL';
+    case 'Static Value': return params.value || '(empty)';
+    case 'Null': return 'NULL';
     case 'Sequence': {
       const start = parseInt(params.start || '1', 10);
       const step = parseInt(params.step || '1', 10);
       return String(start + rowIndex * step);
     }
-    case 'Random Integer':
-    case 'ThreadLocalRandom.nextInt()':
-    case 'SecureRandom': {
+    case 'FK Reference': return `→ ${params.refTable || 'parent'}.${params.refColumn || 'id'}[${rowIndex + 1}]`;
+    case 'Random Integer': {
       const min = parseInt(params.min || '0', 10);
-      const max = parseInt(params.max || params.bound || '100', 10);
-      return String(Math.floor(min + frac * (max - min)));
-    }
-    case 'Random Long':
-    case 'ThreadLocalRandom.nextLong()': {
-      const min = parseInt(params.min || '0', 10);
-      const max = parseInt(params.max || '1000000', 10);
+      const max = parseInt(params.max || '100', 10);
       return String(Math.floor(min + frac * (max - min)));
     }
     case 'Random Float':
-    case 'Random Double':
-    case 'ThreadLocalRandom.nextDouble()':
-    case 'Math.random()': {
+    case 'BigDecimal': {
       const min = parseFloat(params.min || '0');
       const max = parseFloat(params.max || '1');
-      const precision = parseInt(params.precision || '2', 10);
-      return (min + frac * (max - min)).toFixed(precision);
-    }
-    case 'Gaussian': {
-      const mean = parseFloat(params.mean || '0');
-      const stddev = parseFloat(params.stddev || '1');
-      const offsets = [-0.5, 1.2, -1.8, 0.3, 0.9];
-      return (mean + offsets[rowIndex % 5] * stddev).toFixed(2);
+      const prec = parseInt(params.precision || params.scale || '2', 10);
+      return (min + frac * (max - min)).toFixed(prec);
     }
     case 'Currency': {
       const sym = params.symbol || '$';
@@ -345,85 +944,28 @@ function generateSampleValue(generator: string, params: Record<string, string>, 
       const max = parseFloat(params.max || '999');
       return `${sym}${(min + frac * (max - min)).toFixed(2)}`;
     }
-    case 'BigDecimal.valueOf()': {
-      const max = parseFloat(params.max || '10000');
-      const scale = parseInt(params.scale || '2', 10);
-      return (frac * max).toFixed(scale);
-    }
-    case 'Random String': {
-      const len = parseInt(params.length || '10', 10);
-      const charsets: Record<string, string> = {
-        alphanumeric: 'abcdefghijklmnopqrstuvwxyz0123456789',
-        alpha: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
-        numeric: '0123456789',
-        hex: '0123456789abcdef',
-        ascii: 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*',
-      };
-      return pseudoRandomString(rowIndex, len, charsets[params.charset || 'alphanumeric'] || charsets.alphanumeric);
-    }
-    case 'Random Alpha': {
-      const len = parseInt(params.length || '10', 10);
-      return pseudoRandomString(rowIndex, len, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    }
-    case 'Random Alphanumeric': {
-      const len = parseInt(params.length || '10', 10);
-      return pseudoRandomString(rowIndex, len, 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    }
-    case 'Hex String':
-    case 'Base64 Encode': {
-      const len = parseInt(params.length || '16', 10);
-      return pseudoRandomString(rowIndex, len * 2, '0123456789abcdef').slice(0, len * 2);
-    }
-    case 'Regex Pattern': {
-      const examples = ['ABC-1234', 'XYZ-5678', 'DEF-9012', 'GHI-3456', 'JKL-7890'];
-      return examples[rowIndex % 5];
-    }
     case 'Enum Values':
     case 'Weighted Random': {
       const values = (params.values || 'A,B,C').split(',').map(v => v.trim()).filter(Boolean);
       return values.length > 0 ? values[rowIndex % values.length] : '(empty)';
     }
-    case 'Formatted String':
-    case 'String.format()': {
-      const format = params.format || params.pattern || 'ITEM-%05d';
-      const prefix = params.prefix || '';
+    case 'Formatted String': {
+      const format = params.format || 'ITEM-%05d';
       const num = String(rowIndex + 1).padStart(5, '0');
-      let result = format;
-      if (result.includes('%s')) result = result.replace('%s', prefix || 'VAL');
-      result = result.replace(/%0?\d*d/, num);
-      return result;
+      return format.replace(/%0?\d*d/, num);
     }
     case 'Date Range': {
       const dates = ['2021-03-15', '2022-07-22', '2023-01-10', '2024-09-05', '2025-06-18'];
       return dates[rowIndex % 5];
     }
-    case 'Lorem Text': {
-      const words = params.words || '50';
-      return `Lorem ipsum dolor sit... (${words} words)`;
-    }
-    case 'Custom Expression':
-      return params.expression ? `eval(${params.expression.slice(0, 30)})` : 'custom_value';
-    default:
-      break;
+    case 'Custom Expression': return params.expression ? `eval(${params.expression.slice(0, 30)})` : 'custom_value';
+    default: break;
   }
 
-  // ── Tier 2: Java generators → basic equivalents ──────────────────────
-  const javaMapping: Record<string, string> = {
-    'UUID.randomUUID()': 'UUID',
-    'LocalDate.now()': 'Date',
-    'LocalDateTime.now()': 'Timestamp',
-    'Instant.now()': 'ISO DateTime',
-    'System.currentTimeMillis()': 'Unix Timestamp',
-  };
-  if (javaMapping[generator]) {
-    return generateSampleValue(javaMapping[generator], params, rowIndex);
-  }
-
-  // ── Tier 3: Static sample arrays ─────────────────────────────────────
   const samples: Record<string, string[]> = {
     'Incremental ID': ['1', '2', '3', '4', '5'],
-    'UUID': ['a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', 'c3d4e5f6-a7b8-9012-cdef-123456789012', 'd4e5f6a7-b8c9-0123-defa-234567890123', 'e5f6a7b8-c9d0-1234-efab-345678901234'],
-    'ULID': ['01ARZ3NDEKTSV4RRFFQ69G5FAV', '01BX5ZZKBKACTAV9WEVGEMMVRY', '01CDF8RYZNGXJ5HFBPBQ2T4GVN', '01DRVS55FXNG6V1P5J8CVKJ4MR', '01EWMPB1K7T4YNVKC5J7YGGBHJ'],
+    'UUID': ['a1b2c3d4-e5f6-..', 'b2c3d4e5-f6a7-..', 'c3d4e5f6-a7b8-..', 'd4e5f6a7-b8c9-..', 'e5f6a7b8-c9d0-..'],
+    'ULID': ['01ARZ3NDEKTSV4RR', '01BX5ZZKBKACTAV9', '01CDF8RYZNGXJ5HF', '01DRVS55FXNG6V1P', '01EWMPB1K7T4YNVK'],
     'Full Name': ['Alice Johnson', 'Bob Smith', 'Carol Williams', 'David Brown', 'Eve Davis'],
     'First Name': ['Alice', 'Bob', 'Carol', 'David', 'Eve'],
     'Last Name': ['Johnson', 'Smith', 'Williams', 'Brown', 'Davis'],
@@ -433,8 +975,6 @@ function generateSampleValue(generator: string, params: Record<string, string>, 
     'Timestamp': ['2025-01-15 08:30:00', '2025-02-20 14:22:00', '2025-03-10 09:45:00', '2025-04-05 16:10:00', '2025-05-12 11:05:00'],
     'Date': ['2025-01-15', '2025-02-20', '2025-03-10', '2025-04-05', '2025-05-12'],
     'ISO DateTime': ['2025-01-15T08:30:00Z', '2025-02-20T14:22:00Z', '2025-03-10T09:45:00Z', '2025-04-05T16:10:00Z', '2025-05-12T11:05:00Z'],
-    'Unix Timestamp': ['1705305000', '1708430520', '1710064700', '1712332200', '1715508300'],
-    'Time Only': ['08:30:00', '14:22:00', '09:45:00', '16:10:00', '11:05:00'],
     'Boolean': ['true', 'false', 'true', 'true', 'false'],
     'Company': ['Acme Corp', 'TechStart Inc', 'GlobalServ Ltd', 'DataFlow Co', 'CloudBase LLC'],
     'Department': ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'],
@@ -443,170 +983,371 @@ function generateSampleValue(generator: string, params: Record<string, string>, 
     'State': ['California', 'New York', 'Texas', 'Florida', 'Illinois'],
     'Country': ['United States', 'Canada', 'United Kingdom', 'Japan', 'Germany'],
     'Zip Code': ['10001', '94102', 'SW1A 1AA', '100-0001', '10115'],
-    'Latitude': ['40.7128', '37.7749', '51.5074', '35.6762', '52.5200'],
-    'Longitude': ['-74.0060', '-122.4194', '-0.1278', '139.6503', '13.4050'],
     'Address': ['123 Main St', '456 Oak Ave', '789 Pine Rd', '321 Elm Dr', '654 Maple Ln'],
     'Paragraph': ['Lorem ipsum dolor sit amet...', 'Sed do eiusmod tempor...', 'Ut enim ad minim veniam...', 'Duis aute irure dolor...', 'Excepteur sint occaecat...'],
     'Sentence': ['The quick brown fox.', 'A lazy dog sleeps.', 'Hello world again.', 'Testing data here.', 'Sample text value.'],
     'Word': ['lorem', 'ipsum', 'dolor', 'sit', 'amet'],
     'URL': ['https://example.com/a', 'https://test.io/b', 'https://demo.org/c', 'https://app.co/d', 'https://site.dev/e'],
     'IP Address': ['192.168.1.1', '10.0.0.42', '172.16.0.100', '192.168.0.55', '10.10.10.10'],
-    'IPv6': ['2001:0db8:85a3::8a2e:0370:7334', 'fe80::1', '::1', '2001:db8::1', 'fd00::1'],
-    'MAC Address': ['00:1A:2B:3C:4D:5E', 'AA:BB:CC:DD:EE:FF', '12:34:56:78:9A:BC', 'DE:AD:BE:EF:00:01', 'FE:DC:BA:98:76:54'],
     'Domain': ['example.com', 'test.io', 'demo.org', 'app.co', 'site.dev'],
-    'User Agent': ['Mozilla/5.0 (Win NT 10.0; x64)', 'Mozilla/5.0 (Mac; Intel)', 'Mozilla/5.0 (Linux; Android)', 'Mozilla/5.0 (iPhone; iOS 17)', 'Mozilla/5.0 (X11; Linux)'],
-    'MD5 Hash': ['d41d8cd98f00b204', '098f6bcd4621d373', '5d41402abc4b2a76', '7d793037a076832b', 'e99a18c428cb38d5'],
-    'SHA-256 Hash': ['e3b0c44298fc1c14...', 'a591a6d40bf42040...', '2cf24dba5fb0a301...', 'd7a8fbb307d78094...', '5e884898da280471...'],
+    'Random String': ['abc123def4', 'xyz789ghi0', 'mno456pqr1', 'stu234vwx5', 'jkl678abc9'],
+    'Regex Pattern': ['ABC-1234', 'XYZ-5678', 'DEF-9012', 'GHI-3456', 'JKL-7890'],
+    'Gaussian': ['0.35', '-1.22', '0.88', '-0.15', '1.67'],
     'Auto Detect': ['value_1', 'value_2', 'value_3', 'value_4', 'value_5'],
   };
 
-  const values = samples[generator] || samples['Auto Detect'];
-  return values[rowIndex % values.length];
+  return (samples[generator] || samples['Auto Detect'])[rowIndex % 5];
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function SyntheticDataGenerator() {
   const { projectId } = useParams();
-  const createRun = useCreatePerformanceRun();
+  const { data: schemaTables, isLoading: tablesLoading } = useTables(projectId);
+  const { data: relationships } = useRelationships(projectId);
 
-  const [tableName, setTableName] = useState('');
-  const [rowCount, setRowCount] = useState(10000);
+  // Mode & Style
+  const [mode, setMode] = useState<GenerationMode>('single');
+  const [scriptStyle, setScriptStyle] = useState<ScriptStyle>('bulk');
   const [distribution, setDistribution] = useState<Distribution>('realistic');
-  const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
-  const [newColumnName, setNewColumnName] = useState('');
-  const [newColumnType, setNewColumnType] = useState('VARCHAR(255)');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
+
+  // Single table state
+  const [selectedTableId, setSelectedTableId] = useState<string>('');
+  const [tableName, setTableName] = useState('');
+  const [rowCount, setRowCount] = useState(1000);
+  const [customRowCount, setCustomRowCount] = useState('');
+  const [columns, setColumns] = useState<ColumnConfig[]>([]);
+
+  // Multi-table state
+  const [multiTables, setMultiTables] = useState<TableConfig[]>([]);
+
+  // Output
+  const [generatedSQL, setGeneratedSQL] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const handleAddColumn = useCallback(() => {
-    if (!newColumnName.trim()) return;
-    setColumns(prev => [
-      ...prev,
-      { name: newColumnName.trim(), type: newColumnType, generator: 'Auto Detect', params: {} },
-    ]);
-    setNewColumnName('');
-    setNewColumnType('VARCHAR(255)');
-  }, [newColumnName, newColumnType]);
+  // Detect FK columns in single mode
+  const hasFKColumns = useMemo(() => columns.some(c => c.isForeignKey), [columns]);
 
-  const handleRemoveColumn = useCallback((index: number) => {
-    setColumns(prev => prev.filter((_, i) => i !== index));
+  // ── Table Selection Handler ──────────────────────────────────────────────
+
+  const handleSelectTable = useCallback((tableId: string) => {
+    setSelectedTableId(tableId);
+    const table = schemaTables?.find((t: Table) => t.id === tableId);
+    if (!table) {
+      setTableName('');
+      setColumns([]);
+      return;
+    }
+    setTableName(table.name);
+    const detectedCols: ColumnConfig[] = table.columns.map((col: Column) => {
+      const detected = autoDetectGenerator(col);
+      return {
+        name: col.name,
+        type: col.dataType,
+        generator: detected.generator,
+        params: detected.params,
+        isPrimaryKey: col.isPrimaryKey,
+        isForeignKey: col.isForeignKey,
+        referencesTable: col.referencesTable || undefined,
+        referencesColumn: col.referencesColumn || undefined,
+      };
+    });
+    setColumns(detectedCols);
+    setShowPreview(true);
+    setGeneratedSQL('');
+  }, [schemaTables]);
+
+  // ── Multi-table: Add table ───────────────────────────────────────────────
+
+  const handleAddMultiTable = useCallback((tableId: string) => {
+    const table = schemaTables?.find((t: Table) => t.id === tableId);
+    if (!table) return;
+    if (multiTables.some(mt => mt.tableName === table.name)) return;
+
+    const detectedCols: ColumnConfig[] = table.columns.map((col: Column) => {
+      const detected = autoDetectGenerator(col);
+      return {
+        name: col.name,
+        type: col.dataType,
+        generator: detected.generator,
+        params: detected.params,
+        isPrimaryKey: col.isPrimaryKey,
+        isForeignKey: col.isForeignKey,
+        referencesTable: col.referencesTable || undefined,
+        referencesColumn: col.referencesColumn || undefined,
+      };
+    });
+
+    setMultiTables(prev => [...prev, {
+      tableName: table.name,
+      tableId: table.id,
+      rowCount: 1000,
+      columns: detectedCols,
+      expanded: true,
+    }]);
+    setGeneratedSQL('');
+  }, [schemaTables, multiTables]);
+
+  const handleRemoveMultiTable = useCallback((index: number) => {
+    setMultiTables(prev => prev.filter((_, i) => i !== index));
+    setGeneratedSQL('');
   }, []);
 
-  const handleUpdateGenerator = useCallback((index: number, generator: string) => {
+  const handleToggleMultiTable = useCallback((index: number) => {
+    setMultiTables(prev => prev.map((t, i) => i === index ? { ...t, expanded: !t.expanded } : t));
+  }, []);
+
+  const handleUpdateMultiTableRows = useCallback((index: number, count: number) => {
+    setMultiTables(prev => prev.map((t, i) => i === index ? { ...t, rowCount: count } : t));
+  }, []);
+
+  // ── Column Update Handlers ───────────────────────────────────────────────
+
+  const handleUpdateGenerator = useCallback((index: number, generator: string, multiTableIndex?: number) => {
     const genDef = GENERATOR_DEF_MAP.get(generator);
     const defaultParams: Record<string, string> = {};
     if (genDef?.params) {
       for (const p of genDef.params) {
-        if (p.defaultValue !== undefined) {
-          defaultParams[p.key] = p.defaultValue;
+        if (p.defaultValue !== undefined) defaultParams[p.key] = p.defaultValue;
+      }
+    }
+    if (multiTableIndex !== undefined) {
+      setMultiTables(prev => prev.map((t, ti) =>
+        ti === multiTableIndex
+          ? { ...t, columns: t.columns.map((c, ci) => ci === index ? { ...c, generator, params: defaultParams } : c) }
+          : t
+      ));
+    } else {
+      setColumns(prev => prev.map((c, i) => i === index ? { ...c, generator, params: defaultParams } : c));
+    }
+    setGeneratedSQL('');
+  }, []);
+
+  const handleUpdateParam = useCallback((index: number, key: string, value: string, multiTableIndex?: number) => {
+    if (multiTableIndex !== undefined) {
+      setMultiTables(prev => prev.map((t, ti) =>
+        ti === multiTableIndex
+          ? { ...t, columns: t.columns.map((c, ci) => ci === index ? { ...c, params: { ...c.params, [key]: value } } : c) }
+          : t
+      ));
+    } else {
+      setColumns(prev => prev.map((c, i) => i === index ? { ...c, params: { ...c.params, [key]: value } } : c));
+    }
+    setGeneratedSQL('');
+  }, []);
+
+  const handleToggleConstant = useCallback((index: number, multiTableIndex?: number) => {
+    if (multiTableIndex !== undefined) {
+      setMultiTables(prev => prev.map((t, ti) =>
+        ti === multiTableIndex
+          ? { ...t, columns: t.columns.map((c, ci) => ci === index ? { ...c, isConstant: !c.isConstant } : c) }
+          : t
+      ));
+    } else {
+      setColumns(prev => prev.map((c, i) => i === index ? { ...c, isConstant: !c.isConstant } : c));
+    }
+    setGeneratedSQL('');
+  }, []);
+
+  const handleSetConstantValue = useCallback((index: number, value: string, multiTableIndex?: number) => {
+    if (multiTableIndex !== undefined) {
+      setMultiTables(prev => prev.map((t, ti) =>
+        ti === multiTableIndex
+          ? { ...t, columns: t.columns.map((c, ci) => ci === index ? { ...c, constantValue: value } : c) }
+          : t
+      ));
+    } else {
+      setColumns(prev => prev.map((c, i) => i === index ? { ...c, constantValue: value } : c));
+    }
+    setGeneratedSQL('');
+  }, []);
+
+  // ── Generate SQL ─────────────────────────────────────────────────────────
+
+  const effectiveRowCount = customRowCount ? parseInt(customRowCount, 10) || rowCount : rowCount;
+
+  // ── FK Type Mismatch Detection ───────────────────────────────────────────
+
+  const fkTypeMismatches = useMemo(() => {
+    const errors: Array<{ table: string; column: string; message: string }> = [];
+    const tablesToCheck = mode === 'single'
+      ? [{ tableName, columns }]
+      : multiTables;
+
+    for (const t of tablesToCheck) {
+      for (const col of t.columns) {
+        if (col.generator !== 'FK Reference' || !col.params.refTable || !col.params.refColumn) continue;
+        const parentTable = schemaTables?.find((st: Table) => st.name === col.params.refTable);
+        const parentCol = parentTable?.columns.find((c: Column) => c.name === col.params.refColumn);
+        if (parentCol) {
+          const check = checkFKTypeCompatibility(col.type, parentCol.dataType);
+          if (!check.compatible) {
+            errors.push({ table: t.tableName, column: col.name, message: check.message });
+          }
         }
       }
     }
-    setColumns(prev =>
-      prev.map((c, i) => (i === index ? { ...c, generator, params: defaultParams } : c))
-    );
-  }, []);
+    return errors;
+  }, [mode, tableName, columns, multiTables, schemaTables]);
 
-  const handleUpdateParam = useCallback((index: number, key: string, value: string) => {
-    setColumns(prev =>
-      prev.map((c, i) =>
-        i === index ? { ...c, params: { ...c.params, [key]: value } } : c
-      )
-    );
-  }, []);
+  const handleGenerate = useCallback(() => {
+    if (fkTypeMismatches.length > 0) return; // Block generation on type mismatches
 
-  const handleLoadDemo = useCallback(() => {
-    setTableName('orders');
-    setRowCount(100000);
-    setDistribution('realistic');
-    setColumns([
-      { name: 'id', type: 'BIGINT', generator: 'Incremental ID', params: {} },
-      { name: 'order_number', type: 'VARCHAR(20)', generator: 'Formatted String', params: { format: 'ORD-%05d' } },
-      { name: 'customer_id', type: 'BIGINT', generator: 'Random Integer', params: { min: '1', max: '10000' } },
-      { name: 'product_name', type: 'VARCHAR(255)', generator: 'Company', params: {} },
-      { name: 'total', type: 'DECIMAL(10,2)', generator: 'BigDecimal.valueOf()', params: { max: '999', scale: '2' } },
-      { name: 'status', type: 'VARCHAR(50)', generator: 'Enum Values', params: { values: 'pending,processing,shipped,delivered,cancelled' } },
-      { name: 'email', type: 'VARCHAR(255)', generator: 'Email', params: {} },
-      { name: 'shipping_city', type: 'VARCHAR(100)', generator: 'City', params: {} },
-      { name: 'tracking_id', type: 'VARCHAR(36)', generator: 'UUID.randomUUID()', params: {} },
-      { name: 'created_at', type: 'TIMESTAMP', generator: 'LocalDateTime.now()', params: {} },
-    ]);
-    setShowPreview(true);
-  }, []);
+    const tables: TableConfig[] = mode === 'single'
+      ? [{ tableName, rowCount: effectiveRowCount, columns, expanded: true }]
+      : multiTables;
 
-  const handleGenerate = useCallback(async () => {
-    if (!tableName.trim() || !projectId) return;
-    setIsGenerating(true);
-    setProgress(0);
+    if (tables.length === 0 || (mode === 'single' && !tableName.trim())) return;
 
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 95) {
-          clearInterval(interval);
-          return 95;
-        }
-        return prev + Math.random() * 15;
-      });
-    }, 300);
+    const sql = scriptStyle === 'bulk'
+      ? generateBulkSQL(tables, distribution)
+      : generateIndividualSQL(tables, distribution);
+    setGeneratedSQL(sql);
+    setShowPreview(false);
+  }, [mode, tableName, effectiveRowCount, columns, multiTables, distribution, scriptStyle, fkTypeMismatches]);
 
-    try {
-      await createRun.mutateAsync({
-        projectId,
-        type: 'data-generation',
-        name: `Generate ${rowCount.toLocaleString()} rows for ${tableName}`,
-        config: { tableName, rowCount, distribution, columns },
-      });
-      setProgress(100);
-    } catch {
-      // Error handled by mutation
-    } finally {
-      clearInterval(interval);
-      setTimeout(() => {
-        setIsGenerating(false);
-        setProgress(0);
-      }, 1000);
+  const handleCopy = useCallback(async () => {
+    await navigator.clipboard.writeText(generatedSQL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [generatedSQL]);
+
+  const handleDownload = useCallback(() => {
+    const blob = new Blob([generatedSQL], { type: 'text/sql' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `synthetic-data-${mode === 'single' ? tableName : 'multi-table'}-${scriptStyle}-${Date.now()}.sql`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [generatedSQL, mode, tableName, scriptStyle]);
+
+  // ── Auto-detect from related tables for multi-mode ───────────────────────
+
+  const handleAutoDetectFKChain = useCallback(() => {
+    if (!schemaTables || !relationships) return;
+
+    const tablesWithFKs = new Set<string>();
+    for (const rel of relationships) {
+      const srcName = rel.sourceTableName || schemaTables.find((t: Table) => t.id === rel.sourceTable)?.name;
+      const tgtName = rel.targetTableName || schemaTables.find((t: Table) => t.id === rel.targetTable)?.name;
+      if (srcName) tablesWithFKs.add(srcName);
+      if (tgtName) tablesWithFKs.add(tgtName);
     }
-  }, [tableName, rowCount, distribution, columns, projectId, createRun]);
+
+    const toAdd: Table[] = schemaTables.filter((t: Table) => tablesWithFKs.has(t.name));
+    const newTables: TableConfig[] = toAdd.map((table: Table) => ({
+      tableName: table.name,
+      tableId: table.id,
+      rowCount: 1000,
+      columns: table.columns.map((col: Column) => {
+        const detected = autoDetectGenerator(col);
+        return {
+          name: col.name,
+          type: col.dataType,
+          generator: detected.generator,
+          params: detected.params,
+          isPrimaryKey: col.isPrimaryKey,
+          isForeignKey: col.isForeignKey,
+          referencesTable: col.referencesTable || undefined,
+          referencesColumn: col.referencesColumn || undefined,
+        };
+      }),
+      expanded: false,
+    }));
+
+    setMultiTables(newTables);
+    setGeneratedSQL('');
+  }, [schemaTables, relationships]);
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
-      {/* Table Name & Row Count */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1.5">Table Name</label>
-          <div className="relative">
-            <Database className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={tableName}
-              onChange={e => setTableName(e.target.value)}
-              placeholder="e.g., users, orders, products"
-              className="w-full pl-10 pr-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
-            />
-          </div>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1.5">Number of Rows</label>
-          <div className="flex gap-2">
-            {ROW_COUNT_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setRowCount(opt.value)}
-                className={cn(
-                  'flex-1 px-3 py-2.5 text-sm font-medium rounded-lg border transition-all',
-                  rowCount === opt.value
-                    ? 'bg-aqua-50 border-aqua-300 text-aqua-700 shadow-sm'
-                    : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+      {/* Mode Toggle */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <button
+          onClick={() => { setMode('single'); setGeneratedSQL(''); }}
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all',
+            mode === 'single'
+              ? 'bg-aqua-50 border-aqua-300 text-aqua-700 shadow-sm'
+              : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
+          )}
+        >
+          <Table2 className="w-4 h-4" />
+          Single Table
+        </button>
+        <button
+          onClick={() => { setMode('multi'); setGeneratedSQL(''); }}
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all',
+            mode === 'multi'
+              ? 'bg-aqua-50 border-aqua-300 text-aqua-700 shadow-sm'
+              : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
+          )}
+        >
+          <Layers className="w-4 h-4" />
+          Multi-Table (FK Chain)
+        </button>
+
+        {/* Script Style Toggle */}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-xs text-slate-500">Script Style:</span>
+          <button
+            onClick={() => { setScriptStyle('bulk'); setGeneratedSQL(''); }}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-all',
+              scriptStyle === 'bulk'
+                ? 'bg-aqua-50 border-aqua-300 text-aqua-700'
+                : 'bg-card border-slate-200 text-slate-500 hover:bg-slate-50'
+            )}
+            title="Bulk INSERT ... SELECT FROM generate_series() — fast for large datasets"
+          >
+            <Zap className="w-3 h-3" />
+            Bulk
+          </button>
+          <button
+            onClick={() => { setScriptStyle('individual'); setGeneratedSQL(''); }}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-all',
+              scriptStyle === 'individual'
+                ? 'bg-aqua-50 border-aqua-300 text-aqua-700'
+                : 'bg-card border-slate-200 text-slate-500 hover:bg-slate-50'
+            )}
+            title="Individual INSERT VALUES — readable, max 10K rows"
+          >
+            <FileText className="w-3 h-3" />
+            Individual
+          </button>
         </div>
       </div>
+
+      {/* Individual INSERT warning */}
+      {scriptStyle === 'individual' && (
+        <div className="flex items-start gap-3 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+          <FileText className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-blue-700">
+            <strong>Individual mode</strong> generates separate INSERT VALUES statements (batched 100/INSERT). Capped at 10,000 rows per table for script size.
+            Use <strong>Bulk</strong> mode for larger datasets.
+          </p>
+        </div>
+      )}
+
+      {/* FK Warning Banner for Single Mode */}
+      {mode === 'single' && hasFKColumns && (
+        <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Foreign Key Columns Detected</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              This table has FK references. For correct referential integrity, consider using <strong>Multi-Table (FK Chain)</strong> mode to generate parent data first.
+              In single-table mode, FK columns will reference existing data in the parent table.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Distribution */}
       <div>
@@ -636,251 +1377,717 @@ export function SyntheticDataGenerator() {
         </div>
       </div>
 
-      {/* Column Configuration */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
-            <Columns3 className="w-3.5 h-3.5" />
-            Column Configuration
-          </label>
-          <span className="text-[10px] text-slate-500">
-            {columns.length} column{columns.length !== 1 ? 's' : ''} &middot; {GENERATOR_CATEGORIES.reduce((s, c) => s + c.generators.length, 0)} generators available
-          </span>
-        </div>
-
-        <div className="bg-card border border-slate-200 rounded-lg overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            <div className="col-span-3">Column</div>
-            <div className="col-span-2">Type</div>
-            <div className="col-span-5">Generator</div>
-            <div className="col-span-2 text-right">Action</div>
-          </div>
-
-          {/* Column Rows */}
-          {columns.map((colCfg, idx) => {
-            const genDef = GENERATOR_DEF_MAP.get(colCfg.generator);
-            const hasParams = genDef?.params && genDef.params.length > 0;
-            const hasJava = !!genDef?.javaExpression;
-
-            return (
-              <div key={idx} className="border-b border-slate-100 last:border-b-0">
-                {/* Main Row */}
-                <div className="grid grid-cols-12 gap-2 px-4 py-2 items-center hover:bg-slate-50/50">
-                  <div className="col-span-3">
-                    <span className="text-sm font-mono text-slate-700">{colCfg.name}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-xs text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded">
-                      {colCfg.type}
-                    </span>
-                  </div>
-                  <div className="col-span-5">
-                    <select
-                      value={colCfg.generator}
-                      onChange={e => handleUpdateGenerator(idx, e.target.value)}
-                      className="w-full text-xs border border-slate-200 rounded px-2 py-1.5 bg-card text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
-                    >
-                      {GENERATOR_CATEGORIES.map(cat => (
-                        <optgroup key={cat.label} label={cat.label}>
-                          {cat.generators.map(gen => (
-                            <option key={gen.name} value={gen.name}>{gen.name}</option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-span-2 text-right">
-                    <button
-                      onClick={() => handleRemoveColumn(idx)}
-                      className="text-xs text-red-500 hover:text-red-700 transition-colors px-2 py-1"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-
-                {/* Parameter Sub-Row */}
-                {(hasParams || hasJava) && (
-                  <div className="px-4 pb-2.5 pt-0">
-                    <div className="ml-[25%] pl-3 border-l-2 border-aqua-200 flex items-center gap-2.5 flex-wrap">
-                      {genDef?.params?.map(paramDef => (
-                        <div key={paramDef.key} className="flex items-center gap-1">
-                          <label className="text-[10px] text-slate-500 whitespace-nowrap font-medium">
-                            {paramDef.label}:
-                          </label>
-                          {paramDef.type === 'select' ? (
-                            <select
-                              value={colCfg.params[paramDef.key] ?? paramDef.defaultValue ?? ''}
-                              onChange={e => handleUpdateParam(idx, paramDef.key, e.target.value)}
-                              className="text-[11px] border border-slate-200 rounded px-1.5 py-0.5 bg-card text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
-                            >
-                              {paramDef.options?.map(opt => (
-                                <option key={opt} value={opt}>{opt}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              type={paramDef.type}
-                              value={colCfg.params[paramDef.key] ?? paramDef.defaultValue ?? ''}
-                              onChange={e => handleUpdateParam(idx, paramDef.key, e.target.value)}
-                              placeholder={paramDef.placeholder}
-                              className={cn(
-                                'text-[11px] font-mono border border-slate-200 rounded px-1.5 py-0.5 bg-card text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-aqua-500/30',
-                                paramDef.width || 'w-24',
-                              )}
-                            />
-                          )}
-                        </div>
-                      ))}
-                      {hasJava && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold bg-amber-50 text-amber-700 rounded font-mono max-w-[280px] truncate border border-amber-200">
-                          <Coffee className="w-3 h-3 flex-shrink-0" />
-                          {genDef!.javaExpression}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Add Column Row */}
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-slate-50/50 items-center">
-            <div className="col-span-3">
-              <input
-                type="text"
-                value={newColumnName}
-                onChange={e => setNewColumnName(e.target.value)}
-                placeholder="column_name"
-                className="w-full text-sm font-mono border border-slate-200 rounded px-2 py-1.5 bg-card text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
-                onKeyDown={e => { if (e.key === 'Enter') handleAddColumn(); }}
-              />
-            </div>
-            <div className="col-span-2">
-              <input
-                type="text"
-                value={newColumnType}
-                onChange={e => setNewColumnType(e.target.value)}
-                placeholder="VARCHAR(255)"
-                className="w-full text-xs font-mono border border-slate-200 rounded px-2 py-1.5 bg-card text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
-              />
-            </div>
-            <div className="col-span-5" />
-            <div className="col-span-2 text-right">
-              <button
-                onClick={handleAddColumn}
-                disabled={!newColumnName.trim()}
-                className={cn(
-                  'text-xs font-medium px-3 py-1.5 rounded transition-colors',
-                  newColumnName.trim()
-                    ? 'text-aqua-700 bg-aqua-50 hover:bg-aqua-100'
-                    : 'text-slate-400 cursor-not-allowed'
-                )}
+      {/* ════════════════════ SINGLE TABLE MODE ════════════════════ */}
+      {mode === 'single' && (
+        <>
+          {/* Table Selection & Row Count */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Select Table</label>
+              <select
+                value={selectedTableId}
+                onChange={e => handleSelectTable(e.target.value)}
+                disabled={tablesLoading}
+                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
               >
-                + Add
-              </button>
+                <option value="">-- Select a table from schema --</option>
+                {schemaTables?.map((t: Table) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({t.columns.length} cols{t.estimatedRows ? `, ~${t.estimatedRows.toLocaleString()} rows` : ''})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Number of Rows</label>
+              <div className="flex gap-2 items-center">
+                {ROW_COUNT_PRESETS.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { setRowCount(opt.value); setCustomRowCount(''); }}
+                    className={cn(
+                      'px-3 py-2 text-xs font-medium rounded-lg border transition-all',
+                      rowCount === opt.value && !customRowCount
+                        ? 'bg-aqua-50 border-aqua-300 text-aqua-700 shadow-sm'
+                        : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+                <input
+                  type="number"
+                  value={customRowCount}
+                  onChange={e => setCustomRowCount(e.target.value)}
+                  placeholder="Custom"
+                  min={1}
+                  className={cn(
+                    'w-24 text-xs border rounded-lg px-2 py-2 bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-aqua-500/30',
+                    customRowCount ? 'border-aqua-300' : 'border-slate-200'
+                  )}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Generate Button & Progress */}
-      <div className="flex items-center gap-4">
+          {/* Column Configuration */}
+          {columns.length > 0 && (
+            <ColumnConfigTable
+              columns={columns}
+              schemaTables={schemaTables}
+              onUpdateGenerator={(idx, gen) => handleUpdateGenerator(idx, gen)}
+              onUpdateParam={(idx, key, val) => handleUpdateParam(idx, key, val)}
+              onToggleConstant={(idx) => handleToggleConstant(idx)}
+              onSetConstantValue={(idx, val) => handleSetConstantValue(idx, val)}
+            />
+          )}
+
+          {/* Preview */}
+          {showPreview && columns.length > 0 && (
+            <PreviewTable columns={columns} />
+          )}
+        </>
+      )}
+
+      {/* ════════════════════ MULTI-TABLE MODE ════════════════════ */}
+      {mode === 'multi' && (
+        <>
+          {/* Add Tables */}
+          <div className="flex items-center gap-3">
+            <select
+              onChange={e => { handleAddMultiTable(e.target.value); e.target.value = ''; }}
+              value=""
+              disabled={tablesLoading}
+              className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2.5 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30"
+            >
+              <option value="">+ Add table to generation chain...</option>
+              {schemaTables?.filter((t: Table) => !multiTables.some(mt => mt.tableName === t.name)).map((t: Table) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({t.columns.length} cols)
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleAutoDetectFKChain}
+              disabled={!schemaTables || !relationships}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              <Link2 className="w-3.5 h-3.5" />
+              Auto-Detect FK Chain
+            </button>
+          </div>
+
+          {/* Multi-table Insert Order Info */}
+          {multiTables.length > 1 && (
+            <div className="flex items-start gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <Link2 className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-800">Insert Order (Topologically Sorted)</p>
+                <p className="text-xs text-blue-700 mt-0.5">
+                  {resolveInsertOrder(multiTables).map((t, i) => (
+                    <span key={t.tableName}>
+                      {i > 0 && ' → '}
+                      <strong>{t.tableName}</strong>
+                      <span className="text-blue-500"> ({t.rowCount.toLocaleString()})</span>
+                    </span>
+                  ))}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Table Cards */}
+          {multiTables.map((tbl, tblIdx) => (
+            <div key={tbl.tableName} className="border border-slate-200 rounded-lg overflow-hidden bg-card">
+              {/* Table Header */}
+              <div
+                className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200 cursor-pointer"
+                onClick={() => handleToggleMultiTable(tblIdx)}
+              >
+                <div className="flex items-center gap-3">
+                  {tbl.expanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                  <Database className="w-4 h-4 text-aqua-600" />
+                  <span className="text-sm font-semibold text-slate-700">{tbl.tableName}</span>
+                  <span className="text-xs text-slate-500">{tbl.columns.length} columns</span>
+                  {tbl.columns.some(c => c.isForeignKey) && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 rounded-full">
+                      <Link2 className="w-3 h-3" /> FK refs
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-slate-500">Rows:</label>
+                    <input
+                      type="number"
+                      value={tbl.rowCount}
+                      onChange={e => handleUpdateMultiTableRows(tblIdx, parseInt(e.target.value) || 100)}
+                      min={1}
+                      className="w-24 text-xs border border-slate-200 rounded px-2 py-1 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleRemoveMultiTable(tblIdx)}
+                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+              {/* Table Body */}
+              {tbl.expanded && (
+                <div className="p-4">
+                  <ColumnConfigTable
+                    columns={tbl.columns}
+                    schemaTables={schemaTables}
+                    onUpdateGenerator={(idx, gen) => handleUpdateGenerator(idx, gen, tblIdx)}
+                    onUpdateParam={(idx, key, val) => handleUpdateParam(idx, key, val, tblIdx)}
+                    onToggleConstant={(idx) => handleToggleConstant(idx, tblIdx)}
+                    onSetConstantValue={(idx, val) => handleSetConstantValue(idx, val, tblIdx)}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* ════════════════════ FK TYPE MISMATCH WARNINGS ════════════════════ */}
+      {fkTypeMismatches.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 space-y-1">
+          <div className="flex items-center gap-2 text-sm font-semibold text-red-800">
+            <AlertTriangle className="w-4 h-4" />
+            FK Type Mismatch — Fix before generating
+          </div>
+          {fkTypeMismatches.map((err, i) => (
+            <p key={i} className="text-xs text-red-700 ml-6">
+              <span className="font-mono font-medium">{err.table}.{err.column}</span>: {err.message}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* ════════════════════ ACTION BUTTONS ════════════════════ */}
+      <div className="flex items-center gap-3 flex-wrap">
         <button
           onClick={handleGenerate}
-          disabled={isGenerating || !tableName.trim()}
+          disabled={(mode === 'single' ? !tableName.trim() : multiTables.length === 0) || fkTypeMismatches.length > 0}
           className={cn(
             'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
-            isGenerating || !tableName.trim()
+            (mode === 'single' && !tableName.trim()) || (mode === 'multi' && multiTables.length === 0) || fkTypeMismatches.length > 0
               ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
               : 'bg-aqua-600 text-white hover:bg-aqua-700'
           )}
         >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4" />
-              Generate Data
-            </>
-          )}
+          <Play className="w-4 h-4" />
+          Generate {scriptStyle === 'bulk' ? 'Bulk' : 'Individual'} SQL
         </button>
 
-        <button
-          onClick={() => setShowPreview(!showPreview)}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-        >
-          <Hash className="w-3.5 h-3.5" />
-          {showPreview ? 'Hide' : 'Show'} Preview
-        </button>
+        {mode === 'single' && columns.length > 0 && (
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            <Hash className="w-3.5 h-3.5" />
+            {showPreview ? 'Hide' : 'Show'} Preview
+          </button>
+        )}
 
-        <button
-          onClick={handleLoadDemo}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-        >
-          <FlaskConical className="w-3.5 h-3.5" />
-          Load Demo
-        </button>
-
-        {isGenerating && (
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-slate-500">Generating rows...</span>
-              <span className="text-xs font-medium text-aqua-600">{Math.round(progress)}%</span>
-            </div>
-            <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-aqua-500 to-cyan-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
+        {generatedSQL && (
+          <>
+            <button
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? 'Copied!' : 'Copy SQL'}
+            </button>
+            <button
+              onClick={handleDownload}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download .sql
+            </button>
+          </>
         )}
       </div>
 
-      {/* Preview Table */}
-      {showPreview && columns.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-semibold text-slate-700">Sample Preview (5 rows)</h4>
-            <button
-              onClick={() => setShowPreview(false)}
-              className="text-xs text-slate-500 hover:text-slate-700"
-            >
-              <RefreshCw className="w-3 h-3" />
-            </button>
+      {/* ════════════════════ GENERATED SQL + EXECUTION PLAN ════════════════════ */}
+      {generatedSQL && (() => {
+        const activeTables = mode === 'single'
+          ? (tableName ? [{ tableName, rowCount: effectiveRowCount, columns, expanded: true }] : [])
+          : multiTables;
+        const ordered = resolveInsertOrder(activeTables);
+        // Collect FK edges: { from: parentTable, to: childTable, fkCol, refCol }
+        const fkEdges: Array<{ from: string; to: string; fkCol: string; refCol: string }> = [];
+        for (const t of activeTables) {
+          for (const col of t.columns) {
+            if (col.generator === 'FK Reference' && col.params.refTable && col.params.refColumn) {
+              fkEdges.push({
+                from: col.params.refTable,
+                to: t.tableName,
+                fkCol: col.name,
+                refCol: col.params.refColumn,
+              });
+            }
+          }
+        }
+        const hasFKs = fkEdges.length > 0;
+
+        return (
+        <div className={cn(
+          'grid gap-6',
+          hasFKs ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'
+        )}>
+          {/* SQL Output */}
+          <div className={hasFKs ? 'lg:col-span-2' : ''}>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-semibold text-slate-700">
+                Generated PostgreSQL Script ({scriptStyle === 'bulk' ? 'Bulk' : 'Individual'})
+              </h4>
+              <span className="text-[10px] text-slate-500">{generatedSQL.split('\n').length} lines</span>
+            </div>
+            <div className="bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+              <pre className="p-4 text-xs text-green-400 font-mono overflow-x-auto max-h-[500px] overflow-y-auto whitespace-pre leading-relaxed">
+                {generatedSQL}
+              </pre>
+            </div>
           </div>
-          <div className="bg-card border border-slate-200 rounded-lg overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  {columns.map((c, i) => (
-                    <th key={i} className="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">
-                      {c.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: 5 }, (_, rowIdx) => (
-                  <tr key={rowIdx} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50">
-                    {columns.map((c, colIdx) => (
-                      <td key={colIdx} className="px-3 py-2 text-slate-700 font-mono whitespace-nowrap">
-                        {generateSampleValue(c.generator, c.params, rowIdx)}
-                      </td>
+
+          {/* Execution Plan & FK Diagram */}
+          {hasFKs && (
+            <div className="lg:col-span-1">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-semibold text-slate-700">Execution Plan</h4>
+                <span className="text-[10px] text-slate-500">{ordered.length} tables</span>
+              </div>
+              <div className="border border-slate-200 rounded-lg bg-card overflow-hidden">
+                {/* Execution Order */}
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                    Execution Order (Topological Sort)
+                  </p>
+                  <div className="space-y-0">
+                    {ordered.map((t, idx) => {
+                      const tableEdges = fkEdges.filter(e => e.to === t.tableName);
+                      const isParent = fkEdges.some(e => e.from === t.tableName);
+                      const isChild = tableEdges.length > 0;
+                      return (
+                        <div key={t.tableName}>
+                          <div className="flex items-center gap-2 py-1.5">
+                            {/* Step Number */}
+                            <span className={cn(
+                              'flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
+                              isParent && !isChild
+                                ? 'bg-blue-100 text-blue-700'
+                                : isChild
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-slate-100 text-slate-600'
+                            )}>
+                              {idx + 1}
+                            </span>
+                            {/* Table Name */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <Database className={cn(
+                                  'w-3 h-3 flex-shrink-0',
+                                  isParent && !isChild ? 'text-blue-500' : isChild ? 'text-amber-500' : 'text-slate-400'
+                                )} />
+                                <span className="text-xs font-semibold text-slate-700 truncate">{t.tableName}</span>
+                              </div>
+                              <div className="flex items-center gap-2 ml-4.5 mt-0.5">
+                                <span className="text-[10px] text-slate-500">
+                                  {t.rowCount.toLocaleString()} rows
+                                </span>
+                                {isParent && !isChild && (
+                                  <span className="text-[9px] font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                                    Parent
+                                  </span>
+                                )}
+                                {isChild && isParent && (
+                                  <span className="text-[9px] font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
+                                    Parent + Child
+                                  </span>
+                                )}
+                                {isChild && !isParent && (
+                                  <span className="text-[9px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                                    Child
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {/* Arrow between steps */}
+                          {idx < ordered.length - 1 && (
+                            <div className="flex items-center ml-2 py-0.5">
+                              <div className="w-0.5 h-3 bg-slate-300 ml-[9px]" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* FK Relationships */}
+                <div className="px-4 py-3">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                    FK Relationships
+                  </p>
+                  <div className="space-y-2">
+                    {fkEdges.map((edge, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 text-[11px]">
+                        {/* Parent */}
+                        <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-blue-700 font-mono">
+                          <Lock className="w-2.5 h-2.5" />
+                          <span className="font-semibold">{edge.from}</span>
+                          <span className="text-blue-500">.{edge.refCol}</span>
+                        </div>
+                        {/* Arrow */}
+                        <div className="flex items-center text-slate-400">
+                          <div className="w-3 h-px bg-slate-300" />
+                          <svg className="w-2.5 h-2.5 text-slate-400 -ml-px" fill="none" viewBox="0 0 8 8">
+                            <path d="M1 1l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                        {/* Child */}
+                        <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-amber-700 font-mono">
+                          <Link2 className="w-2.5 h-2.5" />
+                          <span className="font-semibold">{edge.to}</span>
+                          <span className="text-amber-500">.{edge.fkCol}</span>
+                        </div>
+                      </div>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200">
+                  <div className="flex items-center justify-between text-[10px] text-slate-500">
+                    <span>{ordered.length} tables · {fkEdges.length} FK reference{fkEdges.length !== 1 ? 's' : ''}</span>
+                    <span>
+                      Total: {ordered.reduce((sum, t) => sum + t.rowCount, 0).toLocaleString()} rows
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+        );
+      })()}
+
+      {/* ════════════════════ TEST & PREVIEW PANEL ════════════════════ */}
+      <DatagenTestPanel
+        generatedSQL={generatedSQL}
+        tables={
+          mode === 'single'
+            ? (tableName ? [{ tableName, rowCount: effectiveRowCount, columns, expanded: true }] : [])
+            : multiTables
+        }
+        generateSampleValue={generateSampleValue}
+      />
+    </div>
+  );
+}
+
+// ── Column Config Table Sub-Component ────────────────────────────────────────
+
+function ColumnConfigTable({
+  columns,
+  schemaTables,
+  onUpdateGenerator,
+  onUpdateParam,
+  onToggleConstant,
+  onSetConstantValue,
+}: {
+  columns: ColumnConfig[];
+  schemaTables?: Table[];
+  onUpdateGenerator: (index: number, generator: string) => void;
+  onUpdateParam: (index: number, key: string, value: string) => void;
+  onToggleConstant: (index: number) => void;
+  onSetConstantValue: (index: number, value: string) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
+          <Columns3 className="w-3.5 h-3.5" />
+          Column Configuration
+        </label>
+        <span className="text-[10px] text-slate-500">
+          {columns.length} column{columns.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      <div className="bg-card border border-slate-200 rounded-lg overflow-hidden">
+        {/* Header */}
+        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+          <div className="col-span-2">Column</div>
+          <div className="col-span-2">Type</div>
+          <div className="col-span-4">Generator</div>
+          <div className="col-span-2">Constant</div>
+          <div className="col-span-2">Badges</div>
+        </div>
+
+        {/* Rows */}
+        {columns.map((colCfg, idx) => {
+          const genDef = GENERATOR_DEF_MAP.get(colCfg.generator);
+          const isFKRef = colCfg.generator === 'FK Reference';
+          const hasParams = !isFKRef && genDef?.params && genDef.params.length > 0;
+          const hasJava = !!genDef?.javaExpression;
+
+          return (
+            <div key={idx} className="border-b border-slate-100 last:border-b-0">
+              {/* Main Row */}
+              <div className="grid grid-cols-12 gap-2 px-4 py-2 items-center hover:bg-slate-50/50">
+                <div className="col-span-2">
+                  <span className="text-sm font-mono text-slate-700">{colCfg.name}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-[11px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded truncate block">
+                    {colCfg.type}
+                  </span>
+                </div>
+                <div className="col-span-4">
+                  <select
+                    value={colCfg.generator}
+                    onChange={e => onUpdateGenerator(idx, e.target.value)}
+                    disabled={colCfg.isConstant}
+                    className={cn(
+                      'w-full text-xs border border-slate-200 rounded px-2 py-1.5 bg-card text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30',
+                      colCfg.isConstant && 'opacity-50'
+                    )}
+                  >
+                    {GENERATOR_CATEGORIES.map(cat => (
+                      <optgroup key={cat.label} label={cat.label}>
+                        {cat.generators.map(gen => (
+                          <option key={gen.name} value={gen.name}>{gen.name}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onToggleConstant(idx)}
+                      className={cn(
+                        'w-8 h-4 rounded-full transition-colors relative',
+                        colCfg.isConstant ? 'bg-aqua-500' : 'bg-slate-300'
+                      )}
+                    >
+                      <span className={cn(
+                        'absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all',
+                        colCfg.isConstant ? 'left-4' : 'left-0.5'
+                      )} />
+                    </button>
+                    {colCfg.isConstant && (
+                      <input
+                        type="text"
+                        value={colCfg.constantValue || ''}
+                        onChange={e => onSetConstantValue(idx, e.target.value)}
+                        placeholder="Value"
+                        className="w-20 text-[11px] border border-slate-200 rounded px-1.5 py-0.5 bg-card text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
+                      />
+                    )}
+                  </div>
+                </div>
+                <div className="col-span-2 flex items-center gap-1 flex-wrap">
+                  {colCfg.isPrimaryKey && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold bg-blue-100 text-blue-700 rounded">
+                      <Lock className="w-2.5 h-2.5" /> PK
+                    </span>
+                  )}
+                  {colCfg.isForeignKey && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 text-amber-700 rounded">
+                      <Link2 className="w-2.5 h-2.5" /> FK
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* FK Reference Custom Dropdown UI */}
+              {!colCfg.isConstant && isFKRef && (() => {
+                // Type compatibility check
+                const selectedParentTable = schemaTables?.find((t: Table) => t.name === colCfg.params.refTable);
+                const selectedParentCol = selectedParentTable?.columns.find((c: Column) => c.name === colCfg.params.refColumn);
+                const typeCheck = selectedParentCol
+                  ? checkFKTypeCompatibility(colCfg.type, selectedParentCol.dataType)
+                  : null;
+
+                return (
+                <div className="px-4 pb-2.5 pt-0">
+                  <div className={cn(
+                    'ml-[16.67%] pl-3 border-l-2 flex items-center gap-3 flex-wrap',
+                    typeCheck && !typeCheck.compatible ? 'border-red-400' : 'border-amber-300'
+                  )}>
+                    <div className="flex items-center gap-1">
+                      <label className="text-[10px] text-slate-500 whitespace-nowrap font-medium">
+                        Parent Table:
+                      </label>
+                      <select
+                        value={colCfg.params.refTable || ''}
+                        onChange={e => {
+                          onUpdateParam(idx, 'refTable', e.target.value);
+                          // Auto-select first type-compatible PK column of selected table
+                          const selTable = schemaTables?.find((t: Table) => t.name === e.target.value);
+                          if (selTable) {
+                            // Try to find a compatible PK column first
+                            const compatiblePK = selTable.columns.find((c: Column) =>
+                              c.isPrimaryKey && checkFKTypeCompatibility(colCfg.type, c.dataType).compatible
+                            );
+                            if (compatiblePK) {
+                              onUpdateParam(idx, 'refColumn', compatiblePK.name);
+                            } else {
+                              // Fall back to any PK
+                              const pkCol = selTable.columns.find((c: Column) => c.isPrimaryKey);
+                              if (pkCol) onUpdateParam(idx, 'refColumn', pkCol.name);
+                            }
+                          }
+                        }}
+                        className="text-[11px] border border-amber-200 rounded px-1.5 py-1 bg-amber-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400/50 min-w-[140px]"
+                      >
+                        <option value="">-- Select parent table --</option>
+                        {schemaTables?.map((t: Table) => (
+                          <option key={t.id} value={t.name}>
+                            {t.name} ({t.columns.length} cols)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <label className="text-[10px] text-slate-500 whitespace-nowrap font-medium">
+                        Parent Column:
+                      </label>
+                      <select
+                        value={colCfg.params.refColumn || ''}
+                        onChange={e => onUpdateParam(idx, 'refColumn', e.target.value)}
+                        className={cn(
+                          'text-[11px] border rounded px-1.5 py-1 text-slate-700 focus:outline-none focus:ring-1 min-w-[120px]',
+                          typeCheck && !typeCheck.compatible
+                            ? 'border-red-300 bg-red-50 focus:ring-red-400/50'
+                            : 'border-amber-200 bg-amber-50 focus:ring-amber-400/50'
+                        )}
+                        disabled={!colCfg.params.refTable}
+                      >
+                        <option value="">-- Select column --</option>
+                        {schemaTables
+                          ?.find((t: Table) => t.name === colCfg.params.refTable)
+                          ?.columns.map((c: Column) => {
+                            const compat = checkFKTypeCompatibility(colCfg.type, c.dataType);
+                            return (
+                              <option key={c.id} value={c.name}>
+                                {c.name} ({c.dataType}){c.isPrimaryKey ? ' [PK]' : ''}{c.isUnique ? ' [UQ]' : ''}{!compat.compatible ? ' ⚠ type mismatch' : ''}
+                              </option>
+                            );
+                          })}
+                      </select>
+                    </div>
+                    {colCfg.params.refTable && colCfg.params.refColumn && typeCheck && (
+                      typeCheck.compatible ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-green-100 text-green-700 rounded border border-green-200">
+                          <Link2 className="w-3 h-3" />
+                          {colCfg.name} → {colCfg.params.refTable}.{colCfg.params.refColumn}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-red-100 text-red-700 rounded border border-red-200">
+                          <AlertTriangle className="w-3 h-3" />
+                          {typeCheck.message}
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+                );
+              })()}
+
+              {/* Standard Parameter Sub-Row */}
+              {!colCfg.isConstant && !isFKRef && (hasParams || hasJava) && (
+                <div className="px-4 pb-2.5 pt-0">
+                  <div className="ml-[16.67%] pl-3 border-l-2 border-aqua-200 flex items-center gap-2.5 flex-wrap">
+                    {genDef?.params?.map(paramDef => (
+                      <div key={paramDef.key} className="flex items-center gap-1">
+                        <label className="text-[10px] text-slate-500 whitespace-nowrap font-medium">
+                          {paramDef.label}:
+                        </label>
+                        {paramDef.type === 'select' ? (
+                          <select
+                            value={colCfg.params[paramDef.key] ?? paramDef.defaultValue ?? ''}
+                            onChange={e => onUpdateParam(idx, paramDef.key, e.target.value)}
+                            className="text-[11px] border border-slate-200 rounded px-1.5 py-0.5 bg-card text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
+                          >
+                            {paramDef.options?.map(opt => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type={paramDef.type}
+                            value={colCfg.params[paramDef.key] ?? paramDef.defaultValue ?? ''}
+                            onChange={e => onUpdateParam(idx, paramDef.key, e.target.value)}
+                            placeholder={paramDef.placeholder}
+                            className={cn(
+                              'text-[11px] font-mono border border-slate-200 rounded px-1.5 py-0.5 bg-card text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-aqua-500/30',
+                              paramDef.width || 'w-24',
+                            )}
+                          />
+                        )}
+                      </div>
+                    ))}
+                    {hasJava && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold bg-amber-50 text-amber-700 rounded font-mono max-w-[280px] truncate border border-amber-200">
+                        <Coffee className="w-3 h-3 flex-shrink-0" />
+                        {genDef!.javaExpression}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Preview Table Sub-Component ──────────────────────────────────────────────
+
+function PreviewTable({ columns }: { columns: ColumnConfig[] }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-xs font-semibold text-slate-700">Sample Preview (5 rows)</h4>
+      </div>
+      <div className="bg-card border border-slate-200 rounded-lg overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-slate-50 border-b border-slate-200">
+              {columns.map((c, i) => (
+                <th key={i} className="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">
+                  {c.name}
+                  {c.isPrimaryKey && <Lock className="w-2.5 h-2.5 inline ml-1 text-blue-500" />}
+                  {c.isForeignKey && <Link2 className="w-2.5 h-2.5 inline ml-1 text-amber-500" />}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 5 }, (_, rowIdx) => (
+              <tr key={rowIdx} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50">
+                {columns.map((c, colIdx) => (
+                  <td key={colIdx} className="px-3 py-2 text-slate-700 font-mono whitespace-nowrap">
+                    {generateSampleValue(c.generator, c.params, rowIdx, c.isConstant, c.constantValue)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

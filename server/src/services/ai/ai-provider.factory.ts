@@ -1,13 +1,16 @@
 import type { AIProvider } from './ai-provider.interface.js';
 import { AnthropicProvider } from './anthropic.provider.js';
 import { OpenAIProvider } from './openai.provider.js';
+import { GeminiProvider } from './gemini.provider.js';
+import { OpenRouterProvider } from './openrouter.provider.js';
+import { TrackedAIProvider, type TrackedContext } from './tracked-ai-provider.js';
 import { prisma } from '../../config/prisma.js';
 import { decrypt } from '../../utils/crypto.js';
 import { env } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
 
 export interface AIProviderCreateConfig {
-  provider: 'anthropic' | 'openai';
+  provider: 'anthropic' | 'openai' | 'gemini' | 'openrouter';
   apiKey: string;
   model?: string;
 }
@@ -22,9 +25,13 @@ export class AIProviderFactory {
         return new AnthropicProvider(config.apiKey, config.model);
       case 'openai':
         return new OpenAIProvider(config.apiKey, config.model);
+      case 'gemini':
+        return new GeminiProvider(config.apiKey, config.model);
+      case 'openrouter':
+        return new OpenRouterProvider(config.apiKey, config.model);
       default:
         throw new Error(
-          `Unsupported AI provider: ${config.provider}. Supported: anthropic, openai`,
+          `Unsupported AI provider: ${config.provider}. Supported: anthropic, openai, gemini, openrouter`,
         );
     }
   }
@@ -58,7 +65,7 @@ export class AIProviderFactory {
         });
 
         return AIProviderFactory.create({
-          provider: dbConfig.provider as 'anthropic' | 'openai',
+          provider: dbConfig.provider as AIProviderCreateConfig['provider'],
           apiKey,
           model: dbConfig.model,
         });
@@ -101,10 +108,40 @@ export class AIProviderFactory {
       return new OpenAIProvider(apiKey);
     }
 
+    if (provider === 'gemini') {
+      const apiKey = env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error(
+          'No AI provider configured. Set GEMINI_API_KEY in your environment ' +
+            'or configure a provider in Settings > AI Providers.',
+        );
+      }
+      return new GeminiProvider(apiKey);
+    }
+
+    if (provider === 'openrouter') {
+      const apiKey = env.OPENROUTER_API_KEY;
+      if (!apiKey) {
+        throw new Error(
+          'No AI provider configured. Set OPENROUTER_API_KEY in your environment ' +
+            'or configure a provider in Settings > AI Providers.',
+        );
+      }
+      return new OpenRouterProvider(apiKey);
+    }
+
     throw new Error(
       `Unsupported DEFAULT_AI_PROVIDER "${provider}". ` +
-        'Supported values: anthropic, openai. ' +
+        'Supported values: anthropic, openai, gemini, openrouter. ' +
         'Configure a provider in Settings > AI Providers or set the appropriate env vars.',
     );
+  }
+
+  /**
+   * Get the default AI provider wrapped with usage tracking and budget enforcement.
+   */
+  static async getTracked(context: TrackedContext): Promise<AIProvider> {
+    const provider = await AIProviderFactory.getDefault();
+    return new TrackedAIProvider(provider, context);
   }
 }

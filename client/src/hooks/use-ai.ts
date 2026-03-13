@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { trackAIUsage } from '@/lib/ai-usage-tracker';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,6 +100,9 @@ export interface SchemaReview {
   summary: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyResponse = Record<string, any>;
+
 // ── Hooks ────────────────────────────────────────────────────────────────────
 
 /**
@@ -112,14 +116,15 @@ export function useSuggestSchema() {
       dialect?: string;
     }) => {
       const response = await apiClient.post('/ai/schema/suggest', input);
-      return response as unknown as SchemaSuggestion;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'schema');
+      return raw as unknown as SchemaSuggestion;
     },
   });
 }
 
 /**
  * Optimize an existing SQL query with AI.
- * Backend expects { sql, dialect, projectId }, returns { optimization, usage, model }
  */
 export function useOptimizeQuery() {
   return useMutation({
@@ -129,15 +134,15 @@ export function useOptimizeQuery() {
       dialect?: string;
     }) => {
       const response = await apiClient.post('/ai/query/optimize', input);
-      const wrapper = response as unknown as { optimization: QueryOptimization };
-      return wrapper.optimization;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'query');
+      return raw.optimization as QueryOptimization;
     },
   });
 }
 
 /**
  * Generate SQL from a natural language description.
- * Backend expects { naturalLanguage, dialect, projectId }, returns { result, usage, model }
  */
 export function useGenerateSQL() {
   return useMutation({
@@ -147,15 +152,15 @@ export function useGenerateSQL() {
       dialect?: string;
     }) => {
       const response = await apiClient.post('/ai/query/generate', input);
-      const wrapper = response as unknown as { result: GeneratedSQL };
-      return wrapper.result;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'query');
+      return raw.result as GeneratedSQL;
     },
   });
 }
 
 /**
  * Explain an SQL query in plain English.
- * Backend expects { sql, dialect, projectId }, returns { explanation, usage, model }
  */
 export function useExplainQuery() {
   return useMutation({
@@ -165,8 +170,9 @@ export function useExplainQuery() {
       dialect?: string;
     }) => {
       const response = await apiClient.post('/ai/query/explain', input);
-      const wrapper = response as unknown as { explanation: QueryExplanation };
-      return wrapper.explanation;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'query');
+      return raw.explanation as QueryExplanation;
     },
   });
 }
@@ -180,7 +186,9 @@ export function useReviewSchema() {
       projectId: string;
     }) => {
       const response = await apiClient.post('/ai/schema/review', input);
-      return response as unknown as SchemaReview;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'schema');
+      return raw as unknown as SchemaReview;
     },
   });
 }
@@ -201,7 +209,9 @@ export function useAnalyzeTrigger() {
       dialect: string;
     }) => {
       const response = await apiClient.post('/ai/schema/trigger-analysis', input);
-      return (response as unknown as { analysis: TriggerAnalysis }).analysis;
+      const raw = response as unknown as AnyResponse;
+      trackAIUsage({ usage: raw.usage, model: raw.model }, 'schema');
+      return raw.analysis as TriggerAnalysis;
     },
   });
 }

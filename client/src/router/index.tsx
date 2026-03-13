@@ -15,8 +15,8 @@ import { MigrationStudio } from '../pages/migration-studio';
 import { Connections } from '../pages/connections';
 import { SQLConverterPage } from '../pages/sql-converter';
 import { JPAQueryLabPage } from '../pages/jpa-query-lab';
-import { SyntheticDataLab } from '../pages/synthetic-data-lab';
 import { DocumentationGenerator } from '../pages/documentation-generator';
+import { AIUsageDashboard } from '../pages/ai-usage-dashboard';
 import { NotFound } from '../pages/not-found';
 
 export const router = createBrowserRouter([
@@ -35,6 +35,10 @@ export const router = createBrowserRouter([
       {
         path: 'audit-logs',
         element: <AuditLogs />,
+      },
+      {
+        path: 'ai-usage',
+        element: <AIUsageDashboard />,
       },
       // Independent tools
       {
@@ -73,10 +77,6 @@ export const router = createBrowserRouter([
           {
             path: 'performance',
             element: <PerformanceLab />,
-          },
-          {
-            path: 'datagen',
-            element: <SyntheticDataLab />,
           },
           {
             path: 'docs',
