@@ -119,9 +119,9 @@ function getHealthBadge(table: Table): { label: string; color: string } {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 80) return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-  if (score >= 60) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-  return 'text-red-600 bg-red-50 border-red-200';
+  if (score >= 80) return 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800';
+  if (score >= 60) return 'text-yellow-600 bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800';
+  return 'text-red-600 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800';
 }
 
 function getSeverityIcon(severity: string) {
@@ -138,11 +138,11 @@ function getSeverityIcon(severity: string) {
 function getSeverityBg(severity: string): string {
   switch (severity) {
     case 'error':
-      return 'bg-red-50 border-red-100';
+      return 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-800';
     case 'warning':
-      return 'bg-yellow-50 border-yellow-100';
+      return 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-100 dark:border-yellow-800';
     default:
-      return 'bg-blue-50 border-blue-100';
+      return 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-800';
   }
 }
 
@@ -672,14 +672,14 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
     <div>
       {/* ── Delete Confirmation Bar ──────────────────────────────── */}
       {showDeleteConfirm && (
-        <div className="mb-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+        <div className="mb-4 flex items-center gap-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
           <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
           <span className="text-sm text-red-700 font-medium flex-1">
             Delete table &quot;{table.name}&quot;? This action cannot be undone.
           </span>
           <button
             onClick={() => setShowDeleteConfirm(false)}
-            className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted transition-colors"
           >
             Cancel
           </button>
@@ -732,7 +732,7 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
                 <button onClick={handleSaveName} className="p-1 text-aqua-600 hover:text-aqua-700">
                   <Check className="w-4 h-4" />
                 </button>
-                <button onClick={() => setIsEditingName(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                <button onClick={() => setIsEditingName(false)} className="p-1 text-muted-foreground hover:text-muted-foreground">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -745,7 +745,7 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
                 }}
               >
                 {table.name}
-                <Pencil className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Pencil className="w-3 h-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
               </h2>
             )}
 
@@ -782,7 +782,7 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
                 <button onClick={handleSaveDesc} className="p-1 text-aqua-600 hover:text-aqua-700">
                   <Check className="w-4 h-4" />
                 </button>
-                <button onClick={() => setIsEditingDesc(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                <button onClick={() => setIsEditingDesc(false)} className="p-1 text-muted-foreground hover:text-muted-foreground">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -795,7 +795,7 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
                 }}
               >
                 {table.description || 'Click to add description...'}
-                <Pencil className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Pencil className="w-3 h-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
               </p>
             )}
           </div>
@@ -803,21 +803,21 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-4 gap-2 mt-4">
-          <div className="bg-card border border-slate-200 rounded-lg px-3 py-2 text-center">
-            <div className="text-lg font-bold text-slate-800">{table.columns.length}</div>
-            <div className="text-[10px] text-slate-500 uppercase font-medium">Columns</div>
+          <div className="bg-card border border-border rounded-lg px-3 py-2 text-center">
+            <div className="text-lg font-bold text-foreground">{table.columns.length}</div>
+            <div className="text-[10px] text-muted-foreground uppercase font-medium">Columns</div>
           </div>
-          <div className="bg-card border border-slate-200 rounded-lg px-3 py-2 text-center">
-            <div className="text-lg font-bold text-slate-800">{table.indexes.length}</div>
-            <div className="text-[10px] text-slate-500 uppercase font-medium">Indexes</div>
+          <div className="bg-card border border-border rounded-lg px-3 py-2 text-center">
+            <div className="text-lg font-bold text-foreground">{table.indexes.length}</div>
+            <div className="text-[10px] text-muted-foreground uppercase font-medium">Indexes</div>
           </div>
-          <div className="bg-card border border-slate-200 rounded-lg px-3 py-2 text-center">
-            <div className="text-lg font-bold text-slate-800">{table.constraints.length}</div>
-            <div className="text-[10px] text-slate-500 uppercase font-medium">Constraints</div>
+          <div className="bg-card border border-border rounded-lg px-3 py-2 text-center">
+            <div className="text-lg font-bold text-foreground">{table.constraints.length}</div>
+            <div className="text-[10px] text-muted-foreground uppercase font-medium">Constraints</div>
           </div>
-          <div className="bg-card border border-slate-200 rounded-lg px-3 py-2 text-center">
-            <div className="text-lg font-bold text-slate-800">{incomingRels.length + outgoingRels.length}</div>
-            <div className="text-[10px] text-slate-500 uppercase font-medium">Relations</div>
+          <div className="bg-card border border-border rounded-lg px-3 py-2 text-center">
+            <div className="text-lg font-bold text-foreground">{incomingRels.length + outgoingRels.length}</div>
+            <div className="text-[10px] text-muted-foreground uppercase font-medium">Relations</div>
           </div>
         </div>
 
@@ -850,14 +850,14 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
           </button>
           <button
             onClick={handleCopyDDL}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted transition-colors"
           >
             <Copy className="w-3 h-3" />
             Copy DDL
           </button>
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 bg-card border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors ml-auto"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 bg-card border border-border rounded-lg hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors ml-auto"
           >
             <Trash2 className="w-3 h-3" />
             Delete Table
@@ -867,13 +867,13 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
 
       {/* ── AI Review Results ───────────────────────────────────── */}
       {showReview && (
-        <div className="mb-6 bg-card border border-slate-200 rounded-xl p-4">
+        <div className="mb-6 bg-card border border-border rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Bot className="w-4 h-4 text-violet-500" />
-              <h3 className="text-sm font-semibold text-slate-800">AI Schema Review</h3>
+              <h3 className="text-sm font-semibold text-foreground">AI Schema Review</h3>
             </div>
-            <button onClick={() => setShowReview(false)} className="p-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => setShowReview(false)} className="p-1 text-muted-foreground hover:text-muted-foreground">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -881,7 +881,7 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
           {reviewSchema.isPending ? (
             <div className="flex items-center justify-center py-8 gap-2">
               <Loader2 className="w-5 h-5 text-violet-500 animate-spin" />
-              <span className="text-sm text-slate-500">Analyzing table structure...</span>
+              <span className="text-sm text-muted-foreground">Analyzing table structure...</span>
             </div>
           ) : reviewResult ? (
             <div className="space-y-3">
@@ -890,13 +890,13 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
                 <div className={cn('px-3 py-1.5 rounded-lg border text-lg font-bold', getScoreColor(reviewResult.score))}>
                   {reviewResult.score}/100
                 </div>
-                <p className="text-sm text-slate-600">{reviewResult.summary}</p>
+                <p className="text-sm text-muted-foreground">{reviewResult.summary}</p>
               </div>
 
               {/* Issues List */}
               {reviewResult.issues.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Issues Found</h4>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Issues Found</h4>
                   {reviewResult.issues.map((issue, idx) => (
                     <div
                       key={idx}
@@ -906,10 +906,10 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
                         {getSeverityIcon(issue.severity)}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-xs font-semibold text-slate-700">{issue.category}</span>
+                            <span className="text-xs font-semibold text-foreground">{issue.category}</span>
                           </div>
-                          <p className="text-xs text-slate-600">{issue.message}</p>
-                          <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                          <p className="text-xs text-muted-foreground">{issue.message}</p>
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                             {issue.suggestion}
                           </p>
@@ -936,7 +936,7 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
                 'flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap',
                 activeTab === tab.key
                   ? 'border-aqua-500 text-aqua-600'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-slate-300'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               )}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -944,7 +944,7 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
               <span
                 className={cn(
                   'px-1.5 py-0.5 text-[10px] rounded-full font-medium',
-                  activeTab === tab.key ? 'bg-aqua-100 text-aqua-700' : 'bg-slate-100 text-slate-500'
+                  activeTab === tab.key ? 'bg-aqua-100 text-aqua-700' : 'bg-muted text-muted-foreground'
                 )}
               >
                 {tab.count}
@@ -961,7 +961,7 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
           <span className="text-sm text-aqua-700 font-medium flex-1">Editing columns &mdash; make changes below</span>
           <button
             onClick={handleCancelEdit}
-            className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted transition-colors"
           >
             Cancel
           </button>
@@ -1071,35 +1071,35 @@ function ColumnsTab({
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-aqua-100 bg-aqua-50/50">
-                <th className="text-left py-2.5 px-3 text-slate-500 font-semibold w-8">#</th>
-                <th className="text-left py-2.5 px-3 text-slate-500 font-semibold">Name</th>
-                <th className="text-left py-2.5 px-3 text-slate-500 font-semibold">Data Type</th>
-                <th className="text-center py-2.5 px-3 text-slate-500 font-semibold">Nullable</th>
-                <th className="text-center py-2.5 px-3 text-slate-500 font-semibold">PK</th>
-                <th className="text-center py-2.5 px-3 text-slate-500 font-semibold">Unique</th>
-                <th className="text-left py-2.5 px-3 text-slate-500 font-semibold">Default</th>
-                <th className="text-left py-2.5 px-3 text-slate-500 font-semibold">Comment</th>
-                <th className="text-center py-2.5 px-3 text-slate-500 font-semibold w-10"></th>
+                <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold w-8">#</th>
+                <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold">Name</th>
+                <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold">Data Type</th>
+                <th className="text-center py-2.5 px-3 text-muted-foreground font-semibold">Nullable</th>
+                <th className="text-center py-2.5 px-3 text-muted-foreground font-semibold">PK</th>
+                <th className="text-center py-2.5 px-3 text-muted-foreground font-semibold">Unique</th>
+                <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold">Default</th>
+                <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold">Comment</th>
+                <th className="text-center py-2.5 px-3 text-muted-foreground font-semibold w-10"></th>
               </tr>
             </thead>
             <tbody>
               {editColumns.map((col, idx) => (
-                <tr key={col.id} className="border-b border-slate-100 hover:bg-aqua-50/30 transition-colors">
-                  <td className="py-2 px-3 text-slate-400">{idx + 1}</td>
+                <tr key={col.id} className="border-b border-border/50 hover:bg-aqua-50/30 transition-colors">
+                  <td className="py-2 px-3 text-muted-foreground">{idx + 1}</td>
                   <td className="py-2 px-3">
                     <input
                       type="text"
                       value={col.columnName}
                       onChange={(e) => onColumnChange(col.id, 'columnName', e.target.value)}
                       placeholder="column_name"
-                      className="text-xs border border-slate-300 rounded px-2 py-1 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
+                      className="text-xs border border-border rounded px-2 py-1 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
                     />
                   </td>
                   <td className="py-2 px-3">
                     <select
                       value={col.dataType}
                       onChange={(e) => onColumnChange(col.id, 'dataType', e.target.value)}
-                      className="text-xs border border-slate-300 rounded px-2 py-1 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none bg-card"
+                      className="text-xs border border-border rounded px-2 py-1 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none bg-card"
                     >
                       {dialectDataTypes.map((dt) => (
                         <option key={dt} value={dt}>
@@ -1131,7 +1131,7 @@ function ColumnsTab({
                       type="checkbox"
                       checked={col.isPrimaryKey}
                       onChange={(e) => onColumnChange(col.id, 'isPrimaryKey', e.target.checked)}
-                      className="w-3.5 h-3.5 text-amber-500 border-slate-300 rounded focus:ring-aqua-500/30 cursor-pointer"
+                      className="w-3.5 h-3.5 text-amber-500 border-border rounded focus:ring-aqua-500/30 cursor-pointer"
                     />
                   </td>
                   <td className="py-2 px-3 text-center">
@@ -1139,7 +1139,7 @@ function ColumnsTab({
                       type="checkbox"
                       checked={col.isUnique}
                       onChange={(e) => onColumnChange(col.id, 'isUnique', e.target.checked)}
-                      className="w-3.5 h-3.5 text-purple-500 border-slate-300 rounded focus:ring-aqua-500/30 cursor-pointer"
+                      className="w-3.5 h-3.5 text-purple-500 border-border rounded focus:ring-aqua-500/30 cursor-pointer"
                     />
                   </td>
                   <td className="py-2 px-3">
@@ -1148,7 +1148,7 @@ function ColumnsTab({
                       value={col.defaultValue}
                       onChange={(e) => onColumnChange(col.id, 'defaultValue', e.target.value)}
                       placeholder="NULL"
-                      className="text-xs border border-slate-300 rounded px-2 py-1 w-full font-mono focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
+                      className="text-xs border border-border rounded px-2 py-1 w-full font-mono focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
                     />
                   </td>
                   <td className="py-2 px-3">
@@ -1157,7 +1157,7 @@ function ColumnsTab({
                       value={col.comment}
                       onChange={(e) => onColumnChange(col.id, 'comment', e.target.value)}
                       placeholder="Comment"
-                      className="text-xs border border-slate-300 rounded px-2 py-1 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
+                      className="text-xs border border-border rounded px-2 py-1 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
                     />
                   </td>
                   <td className="py-2 px-3 text-center">
@@ -1189,20 +1189,20 @@ function ColumnsTab({
 
   // Read-only mode
   return (
-    <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/60">
-              <th className="text-left py-2.5 px-3 text-slate-500 font-semibold w-8">#</th>
-              <th className="text-left py-2.5 px-3 text-slate-500 font-semibold">Name</th>
-              <th className="text-left py-2.5 px-3 text-slate-500 font-semibold">Type</th>
-              <th className="text-center py-2.5 px-3 text-slate-500 font-semibold">Nullable</th>
-              <th className="text-center py-2.5 px-3 text-slate-500 font-semibold">PK</th>
-              <th className="text-center py-2.5 px-3 text-slate-500 font-semibold">Unique</th>
-              <th className="text-left py-2.5 px-3 text-slate-500 font-semibold">Default</th>
-              <th className="text-left py-2.5 px-3 text-slate-500 font-semibold">Comment</th>
-              <th className="text-left py-2.5 px-3 text-slate-500 font-semibold">Reference</th>
+            <tr className="border-b border-border bg-muted/50/60">
+              <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold w-8">#</th>
+              <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold">Name</th>
+              <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold">Type</th>
+              <th className="text-center py-2.5 px-3 text-muted-foreground font-semibold">Nullable</th>
+              <th className="text-center py-2.5 px-3 text-muted-foreground font-semibold">PK</th>
+              <th className="text-center py-2.5 px-3 text-muted-foreground font-semibold">Unique</th>
+              <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold">Default</th>
+              <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold">Comment</th>
+              <th className="text-left py-2.5 px-3 text-muted-foreground font-semibold">Reference</th>
             </tr>
           </thead>
           <tbody>
@@ -1210,12 +1210,12 @@ function ColumnsTab({
               <tr
                 key={col.id || col.name}
                 className={cn(
-                  'border-b border-slate-100 transition-colors hover:bg-slate-50',
-                  idx % 2 === 0 ? 'bg-card' : 'bg-slate-50/40'
+                  'border-b border-border/50 transition-colors hover:bg-muted/50',
+                  idx % 2 === 0 ? 'bg-card' : 'bg-muted/50/40'
                 )}
               >
-                <td className="py-2.5 px-3 text-slate-400">{idx + 1}</td>
-                <td className="py-2.5 px-3 font-medium text-slate-800">
+                <td className="py-2.5 px-3 text-muted-foreground">{idx + 1}</td>
+                <td className="py-2.5 px-3 font-medium text-foreground">
                   <div className="flex items-center gap-1.5">
                     {col.isPrimaryKey && <Key className="w-3 h-3 text-amber-500" />}
                     {col.isForeignKey && <Link className="w-3 h-3 text-blue-500" />}
@@ -1223,7 +1223,7 @@ function ColumnsTab({
                   </div>
                 </td>
                 <td className="py-2.5 px-3">
-                  <span className="font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">
+                  <span className="font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded text-[11px]">
                     {col.dataType}
                   </span>
                 </td>
@@ -1231,7 +1231,7 @@ function ColumnsTab({
                   <span
                     className={cn(
                       'inline-block px-1.5 py-0.5 rounded text-[10px] font-medium',
-                      col.nullable ? 'bg-yellow-50 text-yellow-700' : 'bg-green-50 text-green-700'
+                      col.nullable ? 'bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400' : 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400'
                     )}
                   >
                     {col.nullable ? 'YES' : 'NO'}
@@ -1251,15 +1251,15 @@ function ColumnsTab({
                     </span>
                   )}
                 </td>
-                <td className="py-2.5 px-3 text-slate-400 font-mono text-[11px]">
+                <td className="py-2.5 px-3 text-muted-foreground font-mono text-[11px]">
                   {col.defaultValue ?? '-'}
                 </td>
-                <td className="py-2.5 px-3 text-slate-400 text-[11px]">
+                <td className="py-2.5 px-3 text-muted-foreground text-[11px]">
                   {col.comment ?? '-'}
                 </td>
                 <td className="py-2.5 px-3">
                   {col.isForeignKey && col.referencesTable && (
-                    <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                    <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 rounded">
                       <ArrowRight className="w-2.5 h-2.5" />
                       {col.referencesTable}
                       {col.referencesColumn && `.${col.referencesColumn}`}
@@ -1318,25 +1318,25 @@ function IndexesTab({
         <div className="bg-card border-2 border-aqua-200 rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <ListTree className="w-4 h-4 text-aqua-600" />
-            <h4 className="text-xs font-semibold text-slate-700">New Index</h4>
+            <h4 className="text-xs font-semibold text-foreground">New Index</h4>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Index Name</label>
+              <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Index Name</label>
               <input
                 type="text"
                 value={newIndex.indexName}
                 onChange={(e) => setNewIndex((p) => ({ ...p, indexName: e.target.value }))}
                 placeholder="idx_table_column"
-                className="text-xs border border-slate-300 rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
+                className="text-xs border border-border rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Index Type</label>
+              <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Index Type</label>
               <select
                 value={newIndex.indexType}
                 onChange={(e) => setNewIndex((p) => ({ ...p, indexType: e.target.value }))}
-                className="text-xs border border-slate-300 rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none bg-card"
+                className="text-xs border border-border rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none bg-card"
               >
                 {INDEX_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
@@ -1345,18 +1345,18 @@ function IndexesTab({
             </div>
           </div>
           <div>
-            <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
               <input
                 type="checkbox"
                 checked={newIndex.isUnique}
                 onChange={(e) => setNewIndex((p) => ({ ...p, isUnique: e.target.checked }))}
-                className="w-3.5 h-3.5 text-aqua-600 border-slate-300 rounded focus:ring-aqua-500/30"
+                className="w-3.5 h-3.5 text-aqua-600 border-border rounded focus:ring-aqua-500/30"
               />
               Unique Index
             </label>
           </div>
           <div>
-            <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Columns</label>
+            <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Columns</label>
             <div className="flex flex-wrap gap-1.5">
               {table.columns.map((col) => (
                 <button
@@ -1367,7 +1367,7 @@ function IndexesTab({
                     'px-2 py-1 text-[11px] font-mono rounded border transition-colors',
                     newIndex.columns.includes(col.name)
                       ? 'bg-aqua-100 text-aqua-700 border-aqua-300'
-                      : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-aqua-300 hover:text-aqua-600'
+                      : 'bg-muted/50 text-muted-foreground border-border hover:border-aqua-300 hover:text-aqua-600'
                   )}
                 >
                   {col.name}
@@ -1375,13 +1375,13 @@ function IndexesTab({
               ))}
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-border/50">
             <button
               onClick={() => {
                 setShowAddIndex(false);
                 setNewIndex({ indexName: '', indexType: 'BTREE', isUnique: false, columns: [] });
               }}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted transition-colors"
             >
               Cancel
             </button>
@@ -1405,16 +1405,16 @@ function IndexesTab({
         table.indexes.map((idx) => (
           <div
             key={idx.id || idx.name}
-            className="bg-card border border-slate-200 rounded-xl p-3 group hover:border-slate-300 transition-colors"
+            className="bg-card border border-border rounded-xl p-3 group hover:border-border transition-colors"
           >
             <div className="flex items-center gap-2 mb-1.5">
-              <ListTree className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-xs font-semibold text-slate-800">{idx.name}</span>
-              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600 rounded uppercase">
+              <ListTree className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold text-foreground">{idx.name}</span>
+              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground rounded uppercase">
                 {idx.type}
               </span>
               {idx.isUnique && (
-                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-50 text-purple-700 rounded">
+                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 rounded">
                   UNIQUE
                 </span>
               )}
@@ -1430,7 +1430,7 @@ function IndexesTab({
               {idx.columns.map((col) => (
                 <span
                   key={col}
-                  className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-50 text-slate-600 rounded border border-slate-200"
+                  className="px-1.5 py-0.5 text-[10px] font-mono bg-muted/50 text-muted-foreground rounded border border-border"
                 >
                   {col}
                 </span>
@@ -1486,25 +1486,25 @@ function ConstraintsTab({
         <div className="bg-card border-2 border-aqua-200 rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <ShieldCheck className="w-4 h-4 text-aqua-600" />
-            <h4 className="text-xs font-semibold text-slate-700">New Constraint</h4>
+            <h4 className="text-xs font-semibold text-foreground">New Constraint</h4>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Constraint Name</label>
+              <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Constraint Name</label>
               <input
                 type="text"
                 value={newConstraint.constraintName}
                 onChange={(e) => setNewConstraint((p) => ({ ...p, constraintName: e.target.value }))}
                 placeholder="pk_table_id"
-                className="text-xs border border-slate-300 rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
+                className="text-xs border border-border rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Constraint Type</label>
+              <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Constraint Type</label>
               <select
                 value={newConstraint.constraintType}
                 onChange={(e) => setNewConstraint((p) => ({ ...p, constraintType: e.target.value }))}
-                className="text-xs border border-slate-300 rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none bg-card"
+                className="text-xs border border-border rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none bg-card"
               >
                 {CONSTRAINT_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
@@ -1513,7 +1513,7 @@ function ConstraintsTab({
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Columns</label>
+            <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Columns</label>
             <div className="flex flex-wrap gap-1.5">
               {table.columns.map((col) => (
                 <button
@@ -1524,7 +1524,7 @@ function ConstraintsTab({
                     'px-2 py-1 text-[11px] font-mono rounded border transition-colors',
                     newConstraint.columns.includes(col.name)
                       ? 'bg-aqua-100 text-aqua-700 border-aqua-300'
-                      : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-aqua-300 hover:text-aqua-600'
+                      : 'bg-muted/50 text-muted-foreground border-border hover:border-aqua-300 hover:text-aqua-600'
                   )}
                 >
                   {col.name}
@@ -1532,13 +1532,13 @@ function ConstraintsTab({
               ))}
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-border/50">
             <button
               onClick={() => {
                 setShowAddConstraint(false);
                 setNewConstraint({ constraintName: '', constraintType: 'UNIQUE', columns: [] });
               }}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted transition-colors"
             >
               Cancel
             </button>
@@ -1562,21 +1562,21 @@ function ConstraintsTab({
         table.constraints.map((con) => (
           <div
             key={con.id || con.name}
-            className="bg-card border border-slate-200 rounded-xl p-3 group hover:border-slate-300 transition-colors"
+            className="bg-card border border-border rounded-xl p-3 group hover:border-border transition-colors"
           >
             <div className="flex items-center gap-2 mb-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-xs font-semibold text-slate-800">{con.name}</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold text-foreground">{con.name}</span>
               <span
                 className={cn(
                   'px-1.5 py-0.5 text-[10px] font-medium rounded uppercase',
                   con.type === 'PRIMARY KEY'
-                    ? 'bg-amber-50 text-amber-700'
+                    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
                     : con.type === 'FOREIGN KEY'
-                    ? 'bg-blue-50 text-blue-700'
+                    ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400'
                     : con.type === 'UNIQUE'
-                    ? 'bg-purple-50 text-purple-700'
-                    : 'bg-slate-100 text-slate-600'
+                    ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400'
+                    : 'bg-muted text-muted-foreground'
                 )}
               >
                 {con.type}
@@ -1593,7 +1593,7 @@ function ConstraintsTab({
               {con.columns.map((col) => (
                 <span
                   key={col}
-                  className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-50 text-slate-600 rounded border border-slate-200"
+                  className="px-1.5 py-0.5 text-[10px] font-mono bg-muted/50 text-muted-foreground rounded border border-border"
                 >
                   {col}
                 </span>
@@ -1633,7 +1633,7 @@ function RelationshipsTab({
       {/* Outgoing */}
       {outgoing.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <ArrowRight className="w-3 h-3" />
             Outgoing ({outgoing.length})
           </h4>
@@ -1648,7 +1648,7 @@ function RelationshipsTab({
       {/* Incoming */}
       {incoming.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <ArrowLeft className="w-3 h-3" />
             Incoming ({incoming.length})
           </h4>
@@ -1673,35 +1673,35 @@ function RelationshipCard({
   direction: 'incoming' | 'outgoing';
 }) {
   return (
-    <div className="bg-card border border-slate-200 rounded-xl p-3 hover:border-slate-300 transition-colors">
+    <div className="bg-card border border-border rounded-xl p-3 hover:border-border transition-colors">
       <div className="flex items-center gap-2 mb-1">
-        <GitFork className="w-3.5 h-3.5 text-slate-400" />
-        <span className="text-xs font-semibold text-slate-800">{rel.name}</span>
+        <GitFork className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-xs font-semibold text-foreground">{rel.name}</span>
         {rel.isInferred && (
-          <span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-50 text-blue-600 rounded">
+          <span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded">
             inferred
           </span>
         )}
-        <span className="px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600 rounded uppercase">
+        <span className="px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground rounded uppercase">
           {rel.type}
         </span>
         <span
           className={cn(
             'ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded',
             direction === 'outgoing'
-              ? 'bg-emerald-50 text-emerald-600'
-              : 'bg-orange-50 text-orange-600'
+              ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400'
+              : 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400'
           )}
         >
           {direction}
         </span>
       </div>
-      <div className="flex items-center gap-2 ml-5.5 text-xs text-slate-600">
-        <span className="font-mono bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 text-[11px]">
+      <div className="flex items-center gap-2 ml-5.5 text-xs text-muted-foreground">
+        <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded border border-border text-[11px]">
           {(rel.sourceTableName || rel.sourceTable)}.{rel.sourceColumn}
         </span>
-        <ArrowRight className="w-3 h-3 text-slate-400" />
-        <span className="font-mono bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 text-[11px]">
+        <ArrowRight className="w-3 h-3 text-muted-foreground" />
+        <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded border border-border text-[11px]">
           {(rel.targetTableName || rel.targetTable)}.{rel.targetColumn}
         </span>
       </div>
@@ -1807,15 +1807,15 @@ function TriggersTab({
           ) : (
             <div
               key={trigger.id}
-              className="bg-card border border-slate-200 rounded-xl p-3 group hover:border-slate-300 transition-colors"
+              className="bg-card border border-border rounded-xl p-3 group hover:border-border transition-colors"
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <Zap className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-xs font-semibold text-slate-800">{trigger.triggerName}</span>
-                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-50 text-blue-700 rounded uppercase">
+                <span className="text-xs font-semibold text-foreground">{trigger.triggerName}</span>
+                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 rounded uppercase">
                   {trigger.timing}
                 </span>
-                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-violet-50 text-violet-700 rounded uppercase">
+                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-400 rounded uppercase">
                   {trigger.event}
                 </span>
                 <button
@@ -1823,8 +1823,8 @@ function TriggersTab({
                   className={cn(
                     'ml-auto flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded transition-colors',
                     trigger.isEnabled
-                      ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/50'
+                      : 'bg-muted text-muted-foreground hover:bg-muted'
                   )}
                   title={trigger.isEnabled ? 'Click to disable' : 'Click to enable'}
                 >
@@ -1837,7 +1837,7 @@ function TriggersTab({
                 </button>
                 <button
                   onClick={() => onStartEditTrigger(trigger)}
-                  className="p-1 text-slate-400 hover:text-aqua-600 hover:bg-aqua-50 rounded opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-1 text-muted-foreground hover:text-aqua-600 hover:bg-aqua-50 rounded opacity-0 group-hover:opacity-100 transition-all"
                   title="Edit trigger"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -1851,10 +1851,10 @@ function TriggersTab({
                 </button>
               </div>
               {trigger.description && (
-                <p className="text-[11px] text-slate-500 ml-5.5 mb-1.5">{trigger.description}</p>
+                <p className="text-[11px] text-muted-foreground ml-5.5 mb-1.5">{trigger.description}</p>
               )}
               <div className="ml-5.5">
-                <pre className="text-[11px] font-mono text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-2 whitespace-pre-wrap max-h-32 overflow-y-auto">
+                <pre className="text-[11px] font-mono text-muted-foreground bg-muted/50 border border-border rounded-lg p-2 whitespace-pre-wrap max-h-32 overflow-y-auto">
                   {trigger.triggerBody}
                 </pre>
               </div>
@@ -1893,25 +1893,25 @@ function TriggerForm({
     <div className="bg-card border-2 border-aqua-200 rounded-xl p-4 space-y-3">
       <div className="flex items-center gap-2 mb-1">
         <Zap className="w-4 h-4 text-aqua-600" />
-        <h4 className="text-xs font-semibold text-slate-700">{title}</h4>
+        <h4 className="text-xs font-semibold text-foreground">{title}</h4>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Trigger Name</label>
+          <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Trigger Name</label>
           <input
             type="text"
             value={form.triggerName}
             onChange={(e) => setForm((p) => ({ ...p, triggerName: e.target.value }))}
             placeholder="trg_before_insert"
-            className="text-xs border border-slate-300 rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
+            className="text-xs border border-border rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Timing</label>
+          <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Timing</label>
           <select
             value={form.timing}
             onChange={(e) => setForm((p) => ({ ...p, timing: e.target.value }))}
-            className="text-xs border border-slate-300 rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none bg-card"
+            className="text-xs border border-border rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none bg-card"
           >
             {TRIGGER_TIMINGS.map((t) => (
               <option key={t} value={t}>{t}</option>
@@ -1919,11 +1919,11 @@ function TriggerForm({
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Event</label>
+          <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Event</label>
           <select
             value={form.event}
             onChange={(e) => setForm((p) => ({ ...p, event: e.target.value }))}
-            className="text-xs border border-slate-300 rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none bg-card"
+            className="text-xs border border-border rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none bg-card"
           >
             {TRIGGER_EVENTS.map((t) => (
               <option key={t} value={t}>{t}</option>
@@ -1932,41 +1932,42 @@ function TriggerForm({
         </div>
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Description</label>
+        <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Description</label>
         <input
           type="text"
           value={form.description}
           onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
           placeholder="What this trigger does..."
-          className="text-xs border border-slate-300 rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
+          className="text-xs border border-border rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none"
         />
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Trigger Body</label>
+        <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Trigger Body</label>
         <textarea
           value={form.triggerBody}
           onChange={(e) => setForm((p) => ({ ...p, triggerBody: e.target.value }))}
           placeholder="BEGIN&#10;  -- trigger logic here&#10;END;"
           rows={6}
-          className="text-xs font-mono border border-slate-300 rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none resize-y"
+          className="text-xs font-mono border border-border rounded px-2 py-1.5 w-full focus:border-aqua-500 focus:ring-1 focus:ring-aqua-500/30 focus:outline-none resize-y"
         />
       </div>
       {/* AI Analysis Results */}
       {isAnalyzing && (
         <div className="flex items-center gap-2 py-4 justify-center">
           <Loader2 className="w-4 h-4 text-violet-500 animate-spin" />
-          <span className="text-xs text-slate-500">Analyzing trigger with AI...</span>
+          <span className="text-xs text-muted-foreground">Analyzing trigger with AI...</span>
         </div>
       )}
 
       {analysisResult && !isAnalyzing && (
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+        <div className="bg-muted/50 border border-border rounded-lg p-3 space-y-2">
           <div className="flex items-center gap-2 mb-2">
             <Bot className="w-3.5 h-3.5 text-violet-500" />
-            <span className="text-xs font-semibold text-slate-700">AI Analysis</span>
+            <span className="text-xs font-semibold text-foreground">AI Analysis</span>
+
             <span className={cn(
               'px-1.5 py-0.5 text-[10px] font-medium rounded',
-              analysisResult.isValid ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+              analysisResult.isValid ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400'
             )}>
               {analysisResult.isValid ? 'Valid' : 'Has Issues'}
             </span>
@@ -1974,7 +1975,7 @@ function TriggerForm({
 
           {/* Explanation */}
           {analysisResult.explanation && (
-            <p className="text-[11px] text-slate-600">{analysisResult.explanation}</p>
+            <p className="text-[11px] text-muted-foreground">{analysisResult.explanation}</p>
           )}
 
           {/* Issues */}
@@ -1985,8 +1986,8 @@ function TriggerForm({
                   <div className="flex items-start gap-1.5">
                     {getSeverityIcon(issue.severity)}
                     <div>
-                      <p className="text-slate-700">{issue.message}</p>
-                      <p className="text-slate-500 mt-0.5 flex items-center gap-1">
+                      <p className="text-foreground">{issue.message}</p>
+                      <p className="text-muted-foreground mt-0.5 flex items-center gap-1">
                         <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500 flex-shrink-0" />
                         {issue.suggestion}
                       </p>
@@ -2001,7 +2002,7 @@ function TriggerForm({
           {analysisResult.optimizedBody && (
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-medium text-slate-500 uppercase">Optimized Body</span>
+                <span className="text-[10px] font-medium text-muted-foreground uppercase">Optimized Body</span>
                 <button
                   onClick={() => setForm(p => ({ ...p, triggerBody: analysisResult.optimizedBody! }))}
                   className="text-[10px] text-aqua-600 hover:text-aqua-700 font-medium"
@@ -2009,7 +2010,7 @@ function TriggerForm({
                   Apply
                 </button>
               </div>
-              <pre className="text-[10px] font-mono text-slate-600 bg-card border border-slate-200 rounded p-2 whitespace-pre-wrap max-h-24 overflow-y-auto">
+              <pre className="text-[10px] font-mono text-muted-foreground bg-card border border-border rounded p-2 whitespace-pre-wrap max-h-24 overflow-y-auto">
                 {analysisResult.optimizedBody}
               </pre>
             </div>
@@ -2017,16 +2018,16 @@ function TriggerForm({
 
           {/* Dialect Notes */}
           {analysisResult.dialectNotes && (
-            <p className="text-[10px] text-slate-500 italic">{analysisResult.dialectNotes}</p>
+            <p className="text-[10px] text-muted-foreground italic">{analysisResult.dialectNotes}</p>
           )}
 
           {/* Best Practices */}
           {analysisResult.bestPractices && analysisResult.bestPractices.length > 0 && (
             <div>
-              <span className="text-[10px] font-medium text-slate-500 uppercase">Best Practices</span>
+              <span className="text-[10px] font-medium text-muted-foreground uppercase">Best Practices</span>
               <ul className="mt-1 space-y-0.5">
                 {analysisResult.bestPractices.map((bp, idx) => (
-                  <li key={idx} className="text-[10px] text-slate-600 flex items-start gap-1">
+                  <li key={idx} className="text-[10px] text-muted-foreground flex items-start gap-1">
                     <Info className="w-2.5 h-2.5 text-blue-400 flex-shrink-0 mt-0.5" />
                     {bp}
                   </li>
@@ -2037,10 +2038,10 @@ function TriggerForm({
         </div>
       )}
 
-      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+      <div className="flex justify-end gap-2 pt-2 border-t border-border/50">
         <button
           onClick={onCancel}
-          className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          className="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted transition-colors"
         >
           Cancel
         </button>
@@ -2077,8 +2078,8 @@ function TriggerForm({
 function EmptyTabState({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-        <Info className="w-4 h-4 text-slate-400" />
+      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-3">
+        <Info className="w-4 h-4 text-muted-foreground" />
       </div>
       <p className="text-xs text-muted-foreground">{message}</p>
     </div>

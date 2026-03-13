@@ -86,7 +86,7 @@ export function ProjectCreateDialog({ open, onClose }: ProjectCreateDialogProps)
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-aqua-100 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-aqua-100 dark:bg-aqua-900/30 flex items-center justify-center">
               <Database className="w-5 h-5 text-aqua-600" />
             </div>
             <div>
@@ -110,7 +110,7 @@ export function ProjectCreateDialog({ open, onClose }: ProjectCreateDialogProps)
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Error */}
           {error && (
-            <div className="px-4 py-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">
+            <div className="px-4 py-3 text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
               {error}
             </div>
           )}
@@ -179,7 +179,7 @@ export function ProjectCreateDialog({ open, onClose }: ProjectCreateDialogProps)
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 text-sm font-medium text-muted-foreground bg-secondary rounded-lg hover:bg-slate-200 transition-colors"
+              className="px-4 py-2.5 text-sm font-medium text-muted-foreground bg-secondary rounded-lg hover:bg-muted transition-colors"
             >
               Cancel
             </button>

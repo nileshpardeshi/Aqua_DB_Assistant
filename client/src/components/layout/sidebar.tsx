@@ -41,10 +41,20 @@ const mainNavItems: NavItem[] = [
 const toolNavItems: NavItem[] = [
   { label: 'SQL Converter', icon: ArrowRightLeft, path: '/tools/sql-converter' },
   { label: 'JPA Query Lab', icon: FlaskConical, path: '/tools/jpa-lab' },
-  { label: 'DB Connections', icon: Plug, path: '/tools/connections' },
   { label: 'Audit Logs', icon: ScrollText, path: '/audit-logs' },
   { label: 'AI Usage', icon: Coins, path: '/ai-usage' },
 ];
+
+/** DB Connections path depends on active project */
+function getConnectionsNavItem(activeProjectId?: string): NavItem {
+  return {
+    label: 'DB Connections',
+    icon: Plug,
+    path: activeProjectId
+      ? `/project/${activeProjectId}/connections`
+      : '/tools/connections',
+  };
+}
 
 function getProjectNavItems(projectId: string): NavItem[] {
   return [
@@ -191,6 +201,11 @@ export function Sidebar() {
         {toolNavItems.map((item) => (
           <SidebarLink key={item.path} item={item} collapsed={sidebarCollapsed} />
         ))}
+        <SidebarLink
+          key="db-connections"
+          item={getConnectionsNavItem(displayProjectId ?? undefined)}
+          collapsed={sidebarCollapsed}
+        />
 
         {/* Project Nav */}
         {displayProjectId && projectNavItems.length > 0 && (

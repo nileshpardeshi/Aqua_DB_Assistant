@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet, useParams, useNavigate } from 'react-router-dom';
-import { Database } from 'lucide-react';
+import { Database, ArrowLeft } from 'lucide-react';
 import { getDialect } from '@/config/constants';
 import { useProject } from '@/hooks/use-projects';
 import { useProjectStore } from '@/stores/use-project-store';
@@ -57,6 +57,13 @@ export function ProjectWorkspace() {
       {/* Compact Project Header */}
       <div className="px-6 lg:px-8 py-3 border-b border-border bg-card/50">
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/')}
+            className="w-8 h-8 rounded-lg bg-secondary hover:bg-secondary/80 flex items-center justify-center transition-colors"
+            title="Back to Dashboard"
+          >
+            <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+          </button>
           <div className="w-8 h-8 rounded-lg bg-aqua-50 flex items-center justify-center">
             <Database className="w-4 h-4 text-aqua-600" />
           </div>

@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useProjectStore } from '@/stores/use-project-store';
+import { useProjects } from '@/hooks/use-projects';
 import {
   Plug,
   Plus,
@@ -63,9 +65,9 @@ const STATUS_CONFIG = {
   disconnected: {
     icon: WifiOff,
     label: 'Not Tested',
-    color: 'text-slate-500 dark:text-slate-400',
-    bg: 'bg-slate-50 dark:bg-slate-800',
-    dot: 'bg-slate-400',
+    color: 'text-muted-foreground',
+    bg: 'bg-muted/50',
+    dot: 'bg-muted-foreground',
   },
   error: {
     icon: XCircle,
@@ -77,7 +79,13 @@ const STATUS_CONFIG = {
 };
 
 export function Connections() {
-  const { projectId } = useParams();
+  const { projectId: routeProjectId } = useParams();
+  const { activeProjectId } = useProjectStore();
+  const { data: projects } = useProjects();
+  const navigate = useNavigate();
+
+  // Use route param first, then fall back to active project from store
+  const projectId = routeProjectId || activeProjectId || undefined;
   const { data: connections = [], isLoading } = useConnections(projectId);
   const createConnection = useCreateConnection();
   const updateConnection = useUpdateConnection();
@@ -326,6 +334,60 @@ export function Connections() {
 
   const isMutating = createConnection.isPending || updateConnection.isPending;
 
+  // No project selected — show project picker
+  if (!projectId) {
+    return (
+      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 flex items-center justify-center">
+            <Plug className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Database Connections</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Select a project to manage its database connections
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-5">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">
+                No Project Selected
+              </h3>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mb-4">
+                Database connections are project-specific. Please select a project to continue.
+              </p>
+              {projects && projects.length > 0 ? (
+                <div className="grid gap-2">
+                  {projects.map((project) => (
+                    <button
+                      key={project.id}
+                      onClick={() => navigate(`/project/${project.id}/connections`)}
+                      className="flex items-center gap-3 w-full px-4 py-3 text-left bg-card border border-border rounded-lg hover:bg-muted/50 hover:border-amber-300 transition-colors"
+                    >
+                      <Database className="w-4 h-4 text-aqua-600 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{project.name}</p>
+                        <p className="text-xs text-muted-foreground">{project.dialect}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  No projects found. Create a project first from the Dashboard.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 lg:p-8 max-w-7xl space-y-6">
       {/* Header */}
@@ -377,7 +439,7 @@ export function Connections() {
             return (
               <div
                 key={conn.id}
-                className="bg-card border border-slate-200 dark:border-slate-700 rounded-xl p-5 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md transition-all group"
+                className="bg-card border border-border rounded-xl p-5 hover:border-border hover:shadow-md transition-all group"
               >
                 {/* Card Header */}
                 <div className="flex items-start justify-between mb-3">
@@ -508,14 +570,14 @@ export function Connections() {
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-1.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-1.5 pt-3 border-t border-border/50">
                   <button
                     onClick={() => handleTestConnection(conn.id)}
                     disabled={isTestingThis}
                     className={cn(
                       'flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
                       isTestingThis
-                        ? 'bg-slate-100 dark:bg-slate-800 text-muted-foreground cursor-not-allowed border-slate-200 dark:border-slate-700'
+                        ? 'bg-muted text-muted-foreground cursor-not-allowed border-border'
                         : 'text-aqua-700 dark:text-aqua-400 bg-aqua-50 dark:bg-aqua-950/30 border-aqua-200 dark:border-aqua-800 hover:bg-aqua-100 dark:hover:bg-aqua-900/30'
                     )}
                   >
@@ -542,7 +604,7 @@ export function Connections() {
                       'inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors',
                       queryPanelId === conn.id
                         ? 'text-violet-700 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/30 border-slate-200 dark:border-slate-700'
+                        : 'text-muted-foreground hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/30 border-border'
                     )}
                     title="Run Query"
                   >
@@ -557,7 +619,7 @@ export function Connections() {
                       'inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors',
                       introspectPanelId === conn.id
                         ? 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 border-slate-200 dark:border-slate-700'
+                        : 'text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 border-border'
                     )}
                     title="Introspect Schema"
                   >
@@ -571,7 +633,7 @@ export function Connections() {
 
                   <button
                     onClick={() => handleEditConnection(conn)}
-                    className="inline-flex items-center justify-center p-1.5 text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                    className="inline-flex items-center justify-center p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
                     title="Edit"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -621,7 +683,7 @@ export function Connections() {
                 onChange={(e) => setQuerySql(e.target.value)}
                 placeholder="Enter SQL query..."
                 rows={3}
-                className="flex-1 px-3 py-2 text-sm font-mono border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 resize-none"
+                className="flex-1 px-3 py-2 text-sm font-mono border border-border rounded-lg bg-muted/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 resize-none"
                 onKeyDown={(e) => {
                   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                     e.preventDefault();
@@ -635,7 +697,7 @@ export function Connections() {
                 className={cn(
                   'px-4 py-2 text-sm font-semibold rounded-lg transition-colors self-end',
                   runQueryMutation.isPending || !querySql.trim()
-                    ? 'bg-slate-100 dark:bg-slate-800 text-muted-foreground cursor-not-allowed'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
                     : 'bg-violet-600 text-white hover:bg-violet-700'
                 )}
               >
@@ -679,10 +741,10 @@ export function Connections() {
                 )}
 
                 {queryResult.success && queryResult.columns.length > 0 && (
-                  <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-auto max-h-80">
+                  <div className="border border-border rounded-lg overflow-auto max-h-80">
                     <table className="w-full text-xs">
                       <thead>
-                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                        <tr className="bg-muted/50 border-b border-border">
                           {queryResult.columns.map((col) => (
                             <th
                               key={col}
@@ -697,7 +759,7 @@ export function Connections() {
                         {queryResult.rows.map((row, i) => (
                           <tr
                             key={i}
-                            className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30"
+                            className="border-b border-border/50 hover:bg-muted/50"
                           >
                             {queryResult.columns.map((col) => (
                               <td
@@ -761,10 +823,10 @@ export function Connections() {
                   const isExpanded = expandedSchemas.has(schema);
 
                   return (
-                    <div key={schema} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                    <div key={schema} className="border border-border rounded-lg overflow-hidden">
                       <button
                         onClick={() => toggleSchema(schema)}
-                        className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+                        className="flex items-center justify-between w-full px-3 py-2.5 bg-muted/50 hover:bg-muted transition-colors text-left"
                       >
                         <div className="flex items-center gap-2">
                           <Database className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -781,17 +843,17 @@ export function Connections() {
                       </button>
 
                       {isExpanded && tables.length > 0 && (
-                        <div className="border-t border-slate-200 dark:border-slate-700">
+                        <div className="border-t border-border">
                           {tables.map((table) => (
                             <div
                               key={`${table.schema}.${table.name}`}
-                              className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 last:border-b-0"
+                              className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-muted/50 border-b border-border/50 last:border-b-0"
                             >
                               <div className="flex items-center gap-2">
-                                <Table2 className="w-3 h-3 text-slate-400" />
+                                <Table2 className="w-3 h-3 text-muted-foreground" />
                                 <span className="font-mono text-foreground">{table.name}</span>
                                 {table.type !== 'BASE TABLE' && (
-                                  <span className="text-[9px] font-medium text-muted-foreground uppercase px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">
+                                  <span className="text-[9px] font-medium text-muted-foreground uppercase px-1 py-0.5 bg-muted rounded">
                                     {table.type === 'VIEW' ? 'view' : table.type}
                                   </span>
                                 )}
@@ -807,7 +869,7 @@ export function Connections() {
                       )}
 
                       {isExpanded && tables.length === 0 && (
-                        <div className="px-3 py-3 text-xs text-muted-foreground italic border-t border-slate-200 dark:border-slate-700">
+                        <div className="px-3 py-3 text-xs text-muted-foreground italic border-t border-border">
                           No tables in this schema
                         </div>
                       )}
@@ -882,7 +944,7 @@ export function Connections() {
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="e.g., Production DB"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   autoFocus
                 />
               </div>
@@ -895,7 +957,7 @@ export function Connections() {
                 <select
                   value={formDialect}
                   onChange={(e) => handleDialectChange(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                 >
                   {DIALECTS.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -916,7 +978,7 @@ export function Connections() {
                     value={formHost}
                     onChange={(e) => setFormHost(e.target.value)}
                     placeholder="localhost or db.example.com"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   />
                 </div>
                 <div>
@@ -927,7 +989,7 @@ export function Connections() {
                     type="number"
                     value={formPort}
                     onChange={(e) => setFormPort(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   />
                 </div>
               </div>
@@ -942,7 +1004,7 @@ export function Connections() {
                   value={formDatabase}
                   onChange={(e) => setFormDatabase(e.target.value)}
                   placeholder="my_database"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                 />
               </div>
 
@@ -957,7 +1019,7 @@ export function Connections() {
                     value={formUsername}
                     onChange={(e) => setFormUsername(e.target.value)}
                     placeholder="db_user"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                   />
                 </div>
                 <div>
@@ -970,7 +1032,7 @@ export function Connections() {
                       value={formPassword}
                       onChange={(e) => setFormPassword(e.target.value)}
                       placeholder={editingConnection ? '(unchanged)' : 'password'}
-                      className="w-full px-3 py-2 pr-9 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                      className="w-full px-3 py-2 pr-9 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
                     />
                     <button
                       type="button"
@@ -988,7 +1050,7 @@ export function Connections() {
               </div>
 
               {/* SSL Toggle */}
-              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+              <div className="flex items-center justify-between bg-muted/50 border border-border rounded-lg p-3">
                 <div className="flex items-center gap-2">
                   <Lock className="w-4 h-4 text-muted-foreground" />
                   <div>
@@ -1002,7 +1064,7 @@ export function Connections() {
                   onClick={() => setFormSsl(!formSsl)}
                   className={cn(
                     'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                    formSsl ? 'bg-aqua-500' : 'bg-slate-300 dark:bg-slate-600'
+                    formSsl ? 'bg-aqua-500' : 'bg-gray-300 dark:bg-gray-600'
                   )}
                 >
                   <span
@@ -1021,7 +1083,7 @@ export function Connections() {
                     setShowForm(false);
                     resetForm();
                   }}
-                  className="px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  className="px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -1037,7 +1099,7 @@ export function Connections() {
                     'inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-colors',
                     formName.trim() && formHost.trim() && formDatabase.trim()
                       ? 'text-white bg-aqua-600 hover:bg-aqua-700'
-                      : 'text-muted-foreground bg-slate-100 dark:bg-slate-800 cursor-not-allowed'
+                      : 'text-muted-foreground bg-muted cursor-not-allowed'
                   )}
                 >
                   {isMutating ? (

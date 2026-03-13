@@ -23,6 +23,21 @@ import { optimizeSqlForTokens } from '../services/ai/sql-token-optimizer.js';
 import { prisma } from '../config/prisma.js';
 import { logger } from '../config/logger.js';
 
+/**
+ * Safely parse AI response content as JSON.
+ * AI models often wrap JSON in markdown code fences (```json...```).
+ * This strips those fences before parsing.
+ */
+function parseAIJson(content: string): unknown {
+  // Strip markdown code fences: ```json ... ``` or ``` ... ```
+  let cleaned = content.trim();
+  const fenceMatch = cleaned.match(/^```(?:json)?\s*\n?([\s\S]*?)```\s*$/);
+  if (fenceMatch) {
+    cleaned = fenceMatch[1].trim();
+  }
+  return JSON.parse(cleaned);
+}
+
 // ---------- Chat (SSE Streaming) ----------
 
 export const chat = asyncHandler(async (req: Request, res: Response) => {
@@ -46,19 +61,23 @@ export const chat = asyncHandler(async (req: Request, res: Response) => {
   // If a projectId is provided, prepend schema context as a system message
   let contextMessages = [...messages];
   if (projectId) {
-    const schemaContext = await AIContextBuilder.buildSchemaContext(projectId);
-    const contextMsg = {
-      role: 'system' as const,
-      content: `Here is the database schema for reference:\n\n${schemaContext}`,
-    };
-    // Insert schema context after any existing system messages
-    const firstNonSystem = contextMessages.findIndex(
-      (m) => m.role !== 'system',
-    );
-    if (firstNonSystem === -1) {
-      contextMessages.push(contextMsg);
-    } else {
-      contextMessages.splice(firstNonSystem, 0, contextMsg);
+    try {
+      const schemaContext = await AIContextBuilder.buildSchemaContext(projectId);
+      const contextMsg = {
+        role: 'system' as const,
+        content: `Here is the database schema for reference:\n\n${schemaContext}`,
+      };
+      // Insert schema context after any existing system messages
+      const firstNonSystem = contextMessages.findIndex(
+        (m) => m.role !== 'system',
+      );
+      if (firstNonSystem === -1) {
+        contextMessages.push(contextMsg);
+      } else {
+        contextMessages.splice(firstNonSystem, 0, contextMsg);
+      }
+    } catch (err) {
+      logger.warn('Failed to load schema context for chat', { projectId, error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -176,7 +195,7 @@ export const suggestSchema = asyncHandler(
 
     let data: unknown;
     try {
-      data = JSON.parse(response.content);
+      data = parseAIJson(response.content);
     } catch {
       data = { rawResponse: response.content };
     }
@@ -214,15 +233,17 @@ export const optimizeQuery = asyncHandler(
       return;
     }
 
-    const schemaContext = await AIContextBuilder.buildQueryContext(
-      projectId,
-      sql,
-    );
+    let schemaContext: string | undefined;
+    try {
+      schemaContext = await AIContextBuilder.buildQueryContext(projectId, sql);
+    } catch (err) {
+      logger.warn('Failed to load schema context for optimize', { projectId, error: err instanceof Error ? err.message : String(err) });
+    }
 
     const messages = buildQueryOptimizationPrompt(
       sql,
       dialect,
-      schemaContext,
+      schemaContext ?? '',
       explainPlan,
     );
 
@@ -237,7 +258,7 @@ export const optimizeQuery = asyncHandler(
 
     let data: unknown;
     try {
-      data = JSON.parse(response.content);
+      data = parseAIJson(response.content);
     } catch {
       data = { rawResponse: response.content };
     }
@@ -274,9 +295,14 @@ export const generateSQL = asyncHandler(
       return;
     }
 
-    const schemaContext = await AIContextBuilder.buildSchemaContext(projectId, {
-      maxTokens: 2000,
-    });
+    let schemaContext = '';
+    try {
+      schemaContext = await AIContextBuilder.buildSchemaContext(projectId, {
+        maxTokens: 800,
+      });
+    } catch (err) {
+      logger.warn('Failed to load schema context for generate', { projectId, error: err instanceof Error ? err.message : String(err) });
+    }
 
     const messages = buildNLToSQLPrompt(
       naturalLanguage,
@@ -284,7 +310,7 @@ export const generateSQL = asyncHandler(
       schemaContext,
     );
 
-    const smartMax = calculateSmartMaxTokens(naturalLanguage, 2048, 1200);
+    const smartMax = calculateSmartMaxTokens(naturalLanguage, 1500, 800);
     const provider = await AIProviderFactory.getTracked({ module: 'query', endpoint: '/ai/query/generate', projectId });
     const response = await provider.chat({
       messages,
@@ -295,7 +321,7 @@ export const generateSQL = asyncHandler(
 
     let data: unknown;
     try {
-      data = JSON.parse(response.content);
+      data = parseAIJson(response.content);
     } catch {
       data = { rawResponse: response.content };
     }
@@ -334,7 +360,11 @@ export const explainQuery = asyncHandler(
 
     let schemaContext: string | undefined;
     if (projectId) {
-      schemaContext = await AIContextBuilder.buildQueryContext(projectId, sql);
+      try {
+        schemaContext = await AIContextBuilder.buildQueryContext(projectId, sql);
+      } catch (err) {
+        logger.warn('Failed to load schema context for explain', { projectId, error: err instanceof Error ? err.message : String(err) });
+      }
     }
 
     const messages = buildQueryExplanationPrompt(sql, dialect, schemaContext);
@@ -350,7 +380,7 @@ export const explainQuery = asyncHandler(
 
     let data: unknown;
     try {
-      data = JSON.parse(response.content);
+      data = parseAIJson(response.content);
     } catch {
       data = { rawResponse: response.content };
     }
@@ -412,7 +442,7 @@ export const reviewSchema = asyncHandler(
 
     let data: unknown;
     try {
-      data = JSON.parse(response.content);
+      data = parseAIJson(response.content);
     } catch {
       data = { rawResponse: response.content };
     }
@@ -495,7 +525,7 @@ export const recommendIndexes = asyncHandler(
 
     let data: unknown;
     try {
-      data = JSON.parse(response.content);
+      data = parseAIJson(response.content);
     } catch {
       data = { rawResponse: response.content };
     }
@@ -579,7 +609,7 @@ export const recommendPartitions = asyncHandler(
 
     let data: unknown;
     try {
-      data = JSON.parse(response.content);
+      data = parseAIJson(response.content);
     } catch {
       data = { rawResponse: response.content };
     }
@@ -1009,7 +1039,7 @@ export const assessMigration = asyncHandler(
 
     let assessment: unknown;
     try {
-      assessment = JSON.parse(response.content);
+      assessment = parseAIJson(response.content);
     } catch {
       assessment = { rawResponse: response.content };
     }
@@ -1078,7 +1108,7 @@ export const generateMigrationScripts = asyncHandler(
 
     let scripts: unknown;
     try {
-      scripts = JSON.parse(response.content);
+      scripts = parseAIJson(response.content);
     } catch {
       scripts = { rawResponse: response.content };
     }
@@ -1161,7 +1191,7 @@ export const suggestColumnMapping = asyncHandler(
 
     let result: unknown;
     try {
-      result = JSON.parse(response.content);
+      result = parseAIJson(response.content);
     } catch {
       result = { rawResponse: response.content };
     }

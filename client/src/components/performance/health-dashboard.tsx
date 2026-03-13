@@ -135,9 +135,9 @@ function getHealthLabel(score: number): string {
 }
 
 const SEVERITY_CONFIG = {
-  high: { label: 'High', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
-  medium: { label: 'Medium', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
-  low: { label: 'Low', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+  high: { label: 'High', color: 'text-red-700 dark:text-red-300', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800' },
+  medium: { label: 'Medium', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800' },
+  low: { label: 'Low', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800' },
 };
 
 export function HealthDashboard() {
@@ -226,7 +226,7 @@ export function HealthDashboard() {
                   {mockConnectionPool.active + mockConnectionPool.idle} / {mockConnectionPool.maxConnections}
                 </span>
               </div>
-              <div className="h-3 bg-slate-100 rounded-full overflow-hidden flex">
+              <div className="h-3 bg-muted rounded-full overflow-hidden flex">
                 <div
                   className="bg-gradient-to-r from-aqua-500 to-cyan-500 rounded-l-full"
                   style={{ width: `${(mockConnectionPool.active / mockConnectionPool.maxConnections) * 100}%` }}
@@ -240,21 +240,21 @@ export function HealthDashboard() {
 
             {/* Stats grid */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-aqua-50 rounded-lg p-3">
+              <div className="bg-aqua-50 dark:bg-aqua-950/30 rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Active</p>
-                <p className="text-lg font-bold text-aqua-700">{mockConnectionPool.active}</p>
+                <p className="text-lg font-bold text-aqua-700 dark:text-aqua-200">{mockConnectionPool.active}</p>
               </div>
-              <div className="bg-slate-50 rounded-lg p-3">
+              <div className="bg-muted/50 rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Idle</p>
-                <p className="text-lg font-bold text-slate-700">{mockConnectionPool.idle}</p>
+                <p className="text-lg font-bold text-foreground">{mockConnectionPool.idle}</p>
               </div>
-              <div className="bg-amber-50 rounded-lg p-3">
+              <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Waiting</p>
-                <p className="text-lg font-bold text-amber-700">{mockConnectionPool.waiting}</p>
+                <p className="text-lg font-bold text-amber-700 dark:text-amber-200">{mockConnectionPool.waiting}</p>
               </div>
-              <div className="bg-emerald-50 rounded-lg p-3">
+              <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Max</p>
-                <p className="text-lg font-bold text-emerald-700">{mockConnectionPool.maxConnections}</p>
+                <p className="text-lg font-bold text-emerald-700 dark:text-emerald-200">{mockConnectionPool.maxConnections}</p>
               </div>
             </div>
           </div>
@@ -425,11 +425,11 @@ export function HealthDashboard() {
               Top 5 Slow Queries
             </h3>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border/50">
             {mockSlowQueries.map((sq) => {
               const severity = SEVERITY_CONFIG[sq.severity];
               return (
-                <div key={sq.id} className="px-6 py-3.5 hover:bg-slate-50/50 transition-colors">
+                <div key={sq.id} className="px-6 py-3.5 hover:bg-muted/50 transition-colors">
                   <div className="flex items-start justify-between gap-3 mb-1.5">
                     <p className="text-xs font-mono text-foreground line-clamp-1 flex-1">
                       {sq.query}

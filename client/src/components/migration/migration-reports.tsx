@@ -56,7 +56,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_BADGE_CLASSES: Record<string, string> = {
-  draft: 'bg-slate-100 text-slate-700',
+  draft: 'bg-muted text-foreground',
   pending: 'bg-amber-100 text-amber-700',
   running: 'bg-blue-100 text-blue-700',
   completed: 'bg-green-100 text-green-700',
@@ -343,7 +343,7 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
   }) => (
     <button
       onClick={() => handleSort(field)}
-      className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 uppercase hover:text-slate-700 transition-colors"
+      className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground uppercase hover:text-foreground transition-colors"
     >
       {label}
       {sortField === field &&
@@ -368,11 +368,11 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
     return (
       <div className="space-y-6">
         {/* Skeleton tabs */}
-        <div className="flex gap-6 border-b border-slate-200 pb-0">
+        <div className="flex gap-6 border-b border-border pb-0">
           {TABS.map((t) => (
             <div
               key={t.id}
-              className="h-8 w-28 bg-slate-200 animate-pulse rounded-t-md"
+              className="h-8 w-28 bg-muted animate-pulse rounded-t-md"
             />
           ))}
         </div>
@@ -381,17 +381,17 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="bg-card border border-slate-200 rounded-xl p-4 space-y-2"
+              className="bg-card border border-border rounded-xl p-4 space-y-2"
             >
-              <div className="h-3 w-20 bg-slate-200 animate-pulse rounded" />
-              <div className="h-6 w-12 bg-slate-200 animate-pulse rounded" />
+              <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+              <div className="h-6 w-12 bg-muted animate-pulse rounded" />
             </div>
           ))}
         </div>
         {/* Skeleton chart areas */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-card border border-slate-200 rounded-xl p-4 h-64 animate-pulse" />
-          <div className="bg-card border border-slate-200 rounded-xl p-4 h-64 animate-pulse" />
+          <div className="bg-card border border-border rounded-xl p-4 h-64 animate-pulse" />
+          <div className="bg-card border border-border rounded-xl p-4 h-64 animate-pulse" />
         </div>
       </div>
     );
@@ -402,13 +402,13 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
   if (!migrations || migrations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-          <BarChart3 className="w-8 h-8 text-slate-400" />
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <BarChart3 className="w-8 h-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold text-slate-700 mb-1">
+        <h3 className="text-lg font-semibold text-foreground mb-1">
           No migration data yet
         </h3>
-        <p className="text-sm text-slate-500 max-w-md">
+        <p className="text-sm text-muted-foreground max-w-md">
           Create migrations in the Migration Studio to see reports, type mapping
           coverage, and execution logs here.
         </p>
@@ -421,7 +421,7 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
   return (
     <div className="space-y-6">
       {/* Tab bar */}
-      <div className="flex gap-6 border-b border-slate-200">
+      <div className="flex gap-6 border-b border-border">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -433,7 +433,7 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
                 'inline-flex items-center gap-2 pb-2.5 px-1 text-sm font-medium transition-colors border-b-2',
                 isActive
                   ? 'border-purple-500 text-purple-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               )}
             >
               <Icon className="w-4 h-4" />
@@ -448,20 +448,20 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
         <div className="space-y-6">
           {/* Stats row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-card border border-slate-200 rounded-xl p-4">
+            <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
-                <Activity className="w-4 h-4 text-slate-500" />
-                <p className="text-[10px] font-semibold text-slate-500 uppercase">
+                <Activity className="w-4 h-4 text-muted-foreground" />
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase">
                   Total Migrations
                 </p>
               </div>
-              <p className="text-2xl font-bold text-slate-800">{stats.total}</p>
+              <p className="text-2xl font-bold text-foreground">{stats.total}</p>
             </div>
 
-            <div className="bg-card border border-slate-200 rounded-xl p-4">
+            <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
-                <p className="text-[10px] font-semibold text-slate-500 uppercase">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase">
                   Completed
                 </p>
               </div>
@@ -470,20 +470,20 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
               </p>
             </div>
 
-            <div className="bg-card border border-slate-200 rounded-xl p-4">
+            <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <XCircle className="w-4 h-4 text-red-500" />
-                <p className="text-[10px] font-semibold text-slate-500 uppercase">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase">
                   Failed
                 </p>
               </div>
               <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
             </div>
 
-            <div className="bg-card border border-slate-200 rounded-xl p-4">
+            <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="w-4 h-4 text-purple-500" />
-                <p className="text-[10px] font-semibold text-slate-500 uppercase">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase">
                   Success Rate
                 </p>
               </div>
@@ -496,9 +496,9 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
           {/* Charts row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Status Distribution Donut */}
-            <div className="bg-card border border-slate-200 rounded-xl p-4">
-              <h5 className="text-xs font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
-                <PieChartIcon className="w-3.5 h-3.5 text-slate-500" />
+            <div className="bg-card border border-border rounded-xl p-4">
+              <h5 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                <PieChartIcon className="w-3.5 h-3.5 text-muted-foreground" />
                 Status Distribution
               </h5>
               <div className="h-52">
@@ -537,7 +537,7 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
                       className="w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: entry.fill }}
                     />
-                    <span className="text-xs text-slate-600">
+                    <span className="text-xs text-muted-foreground">
                       {entry.name} ({entry.value})
                     </span>
                   </div>
@@ -546,9 +546,9 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
             </div>
 
             {/* Migrations Over Time */}
-            <div className="bg-card border border-slate-200 rounded-xl p-4">
-              <h5 className="text-xs font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
-                <BarChart3 className="w-3.5 h-3.5 text-slate-500" />
+            <div className="bg-card border border-border rounded-xl p-4">
+              <h5 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                <BarChart3 className="w-3.5 h-3.5 text-muted-foreground" />
                 Migrations Over Time
               </h5>
               <div className="h-52">
@@ -602,13 +602,13 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
           {/* Dialect selectors */}
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-slate-600">
+              <label className="text-xs font-medium text-muted-foreground">
                 Source Dialect:
               </label>
               <select
                 value={sourceDialect}
                 onChange={(e) => setSourceDialect(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400"
+                className="px-3 py-1.5 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400"
               >
                 {DATABASE_DIALECTS.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -618,16 +618,16 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
               </select>
             </div>
 
-            <ArrowRight className="w-4 h-4 text-slate-400" />
+            <ArrowRight className="w-4 h-4 text-muted-foreground" />
 
             <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-slate-600">
+              <label className="text-xs font-medium text-muted-foreground">
                 Target Dialect:
               </label>
               <select
                 value={targetDialect}
                 onChange={(e) => setTargetDialect(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400"
+                className="px-3 py-1.5 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400"
               >
                 {DATABASE_DIALECTS.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -648,16 +648,16 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
 
           {/* Mapping table or empty */}
           {currentMapping ? (
-            <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-slate-500 uppercase">
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase">
                         Source Type ({getDialectLabel(sourceDialect)})
                       </th>
                       <th className="px-2 py-2.5 w-10" />
-                      <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-slate-500 uppercase">
+                      <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase">
                         Target Type ({getDialectLabel(targetDialect)})
                       </th>
                     </tr>
@@ -666,15 +666,15 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
                     {mappingEntries.map(([sourceType, targetType]) => (
                       <tr
                         key={sourceType}
-                        className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors"
+                        className="border-b border-border/50 last:border-b-0 hover:bg-muted/50/50 transition-colors"
                       >
                         <td className="px-4 py-2.5">
-                          <code className="text-sm font-mono text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
+                          <code className="text-sm font-mono text-foreground bg-muted px-2 py-0.5 rounded">
                             {sourceType}
                           </code>
                         </td>
                         <td className="px-2 py-2.5 text-center">
-                          <ArrowRight className="w-3.5 h-3.5 text-slate-400 inline-block" />
+                          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground inline-block" />
                         </td>
                         <td className="px-4 py-2.5">
                           {targetType ? (
@@ -694,14 +694,14 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-slate-200 rounded-xl">
-              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                <Table2 className="w-6 h-6 text-slate-400" />
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                <Table2 className="w-6 h-6 text-muted-foreground" />
               </div>
-              <p className="text-sm font-medium text-slate-600">
+              <p className="text-sm font-medium text-muted-foreground">
                 No mapping data available for this dialect pair
               </p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {getDialectLabel(sourceDialect)} to{' '}
                 {getDialectLabel(targetDialect)} mappings have not been
                 configured.
@@ -718,14 +718,14 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Status filter */}
             <div className="flex items-center gap-2">
-              <Filter className="w-3.5 h-3.5 text-slate-500" />
-              <label className="text-xs font-medium text-slate-600">
+              <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+              <label className="text-xs font-medium text-muted-foreground">
                 Status:
               </label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400"
+                className="px-3 py-1.5 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400"
               >
                 <option value="all">All Statuses</option>
                 {uniqueStatuses.map((s) => (
@@ -734,7 +734,7 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
                   </option>
                 ))}
               </select>
-              <span className="text-[10px] text-slate-400 ml-1">
+              <span className="text-[10px] text-muted-foreground ml-1">
                 {filteredSortedMigrations.length} result
                 {filteredSortedMigrations.length !== 1 ? 's' : ''}
               </span>
@@ -744,14 +744,14 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleExportJSON}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export JSON
               </button>
               <button
                 onClick={handleExportCSV}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export CSV
@@ -760,11 +760,11 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
           </div>
 
           {/* Table */}
-          <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                  <tr className="border-b border-border bg-muted/50">
                     <th className="text-left px-4 py-2.5">
                       <SortHeader field="version" label="Version" />
                     </th>
@@ -790,7 +790,7 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
                     <tr>
                       <td
                         colSpan={6}
-                        className="px-4 py-10 text-center text-sm text-slate-400"
+                        className="px-4 py-10 text-center text-sm text-muted-foreground"
                       >
                         No migrations match the selected filter.
                       </td>
@@ -799,15 +799,15 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
                     filteredSortedMigrations.map((m) => (
                       <tr
                         key={m.id}
-                        className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors"
+                        className="border-b border-border/50 last:border-b-0 hover:bg-muted/50/50 transition-colors"
                       >
                         <td className="px-4 py-2.5">
-                          <span className="text-sm font-mono font-medium text-slate-800">
+                          <span className="text-sm font-mono font-medium text-foreground">
                             {m.version}
                           </span>
                         </td>
                         <td className="px-4 py-2.5">
-                          <span className="text-sm text-slate-700 truncate block max-w-[220px]">
+                          <span className="text-sm text-foreground truncate block max-w-[220px]">
                             {m.title}
                           </span>
                         </td>
@@ -816,28 +816,28 @@ export function MigrationReports({ projectId }: MigrationReportsProps) {
                             className={cn(
                               'inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full uppercase',
                               STATUS_BADGE_CLASSES[m.status] ||
-                                'bg-slate-100 text-slate-600'
+                                'bg-muted text-muted-foreground'
                             )}
                           >
                             {m.status}
                           </span>
                         </td>
                         <td className="px-4 py-2.5">
-                          <span className="text-xs text-slate-600">
+                          <span className="text-xs text-muted-foreground">
                             {getDialectLabel(m.sourceDialect)}
-                            <ArrowRight className="w-3 h-3 inline-block mx-1 text-slate-400" />
+                            <ArrowRight className="w-3 h-3 inline-block mx-1 text-muted-foreground" />
                             {getDialectLabel(m.targetDialect)}
                           </span>
                         </td>
                         <td className="px-4 py-2.5">
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-muted-foreground">
                             {m.appliedAt
                               ? formatDate(m.appliedAt)
                               : '--'}
                           </span>
                         </td>
                         <td className="px-4 py-2.5">
-                          <code className="text-xs font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                          <code className="text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                             {m.checksum.slice(0, 8)}
                           </code>
                         </td>

@@ -479,19 +479,29 @@ function getTableHealth(table: Table): {
   color: string;
   bg: string;
   label: string;
+  tooltip: string;
 } {
   const hasPK = table.columns.some((c) => c.isPrimaryKey);
   const hasIndexes = table.indexes.length > 0;
+  const hasFKs = table.columns.some((c) => c.isForeignKey);
+  const colCount = table.columns.length;
+  const indexCount = table.indexes.length;
+  const nullablePKs = table.columns.filter((c) => c.isPrimaryKey && c.nullable).length;
 
+  // Critical: No primary key
   if (!hasPK)
-    return { color: 'text-red-600', bg: 'bg-red-100', label: 'No PK' };
+    return { color: 'text-red-600', bg: 'bg-red-100', label: 'No PK', tooltip: 'Missing primary key — every table should have one' };
+  // Critical: Nullable PK columns
+  if (nullablePKs > 0)
+    return { color: 'text-red-600', bg: 'bg-red-100', label: 'Nullable PK', tooltip: 'Primary key column(s) are nullable' };
+  // Warning: No indexes at all
   if (!hasIndexes)
-    return {
-      color: 'text-amber-600',
-      bg: 'bg-amber-100',
-      label: 'No Index',
-    };
-  return { color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Good' };
+    return { color: 'text-amber-600', bg: 'bg-amber-100', label: 'No Index', tooltip: 'No indexes defined — queries may be slow' };
+  // Excellent: Has PK, indexes, FKs, and good index coverage
+  if (hasPK && hasFKs && indexCount >= Math.ceil(colCount * 0.3))
+    return { color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Excellent', tooltip: 'Has PK, foreign keys, and good index coverage' };
+  // Good: Has PK and at least some indexes
+  return { color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Good', tooltip: 'Has primary key and indexes' };
 }
 
 // ── Score Ring ──────────────────────────────────────────────────────────────
@@ -536,7 +546,7 @@ function ScoreRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-slate-800">{score}</span>
+        <span className="text-2xl font-bold text-foreground">{score}</span>
         <span className="text-[10px] text-muted-foreground">/ 100</span>
       </div>
     </div>
@@ -973,7 +983,7 @@ export function SchemaIntelligence() {
   return (
     <div className="flex h-full min-h-[calc(100vh-180px)]">
       {/* ── Left Panel: Schema Explorer ───────────────────────────── */}
-      <div className="w-[300px] border-r border-border bg-slate-50/50 flex-shrink-0 flex flex-col">
+      <div className="w-[300px] border-r border-border bg-muted/30 flex-shrink-0 flex flex-col">
         <SchemaExplorer
           onSelectTable={handleSelectTable}
           selectedTableId={selectedTable?.id}
@@ -983,7 +993,7 @@ export function SchemaIntelligence() {
       {/* ── Right Panel: Content ──────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto flex flex-col">
         {/* ── Enhanced Toolbar ── */}
-        <div className="sticky top-0 z-10 flex items-center gap-2 px-6 py-3 bg-card/95 backdrop-blur border-b border-slate-200 flex-wrap">
+        <div className="sticky top-0 z-10 flex items-center gap-2 px-6 py-3 bg-card/95 backdrop-blur border-b border-border flex-wrap">
           <h2 className="text-sm font-semibold text-foreground mr-auto">
             Schema Intelligence
           </h2>
@@ -1003,7 +1013,7 @@ export function SchemaIntelligence() {
           {/* Upload SQL */}
           <button
             onClick={() => setShowUploadModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-card rounded-lg hover:bg-slate-50 transition-colors border border-slate-200"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-foreground bg-card rounded-lg hover:bg-muted/50 transition-colors border border-border"
           >
             <Upload className="w-3.5 h-3.5" />
             Upload SQL
@@ -1030,7 +1040,7 @@ export function SchemaIntelligence() {
               'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border',
               hasTables
                 ? 'text-aqua-700 bg-aqua-50 hover:bg-aqua-100 border-aqua-200'
-                : 'text-slate-400 bg-slate-50 border-slate-100 cursor-not-allowed'
+                : 'text-muted-foreground bg-muted/50 border-border/50 cursor-not-allowed'
             )}
           >
             {reviewSchema.isPending ? (
@@ -1048,8 +1058,8 @@ export function SchemaIntelligence() {
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border',
               hasTables
-                ? 'text-slate-700 bg-card hover:bg-slate-50 border-slate-200'
-                : 'text-slate-400 bg-slate-50 border-slate-100 cursor-not-allowed'
+                ? 'text-foreground bg-card hover:bg-muted/50 border-border'
+                : 'text-muted-foreground bg-muted/50 border-border/50 cursor-not-allowed'
             )}
           >
             <Download className="w-3.5 h-3.5" />
@@ -1063,8 +1073,8 @@ export function SchemaIntelligence() {
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border',
               hasTables
-                ? 'text-slate-700 bg-card hover:bg-slate-50 border-slate-200'
-                : 'text-slate-400 bg-slate-50 border-slate-100 cursor-not-allowed'
+                ? 'text-foreground bg-card hover:bg-muted/50 border-border'
+                : 'text-muted-foreground bg-muted/50 border-border/50 cursor-not-allowed'
             )}
           >
             <Camera className="w-3.5 h-3.5" />
@@ -1083,7 +1093,7 @@ export function SchemaIntelligence() {
 
         {/* ── Stats Bar ── */}
         {hasTables && (
-          <div className="flex items-center gap-3 px-6 py-2.5 bg-slate-50/80 border-b border-slate-100 flex-wrap">
+          <div className="flex items-center gap-3 px-6 py-2.5 bg-muted/50 border-b border-border/50 flex-wrap">
             <StatBadge
               icon={<Table2 className="w-3 h-3" />}
               label="Tables"
@@ -1169,13 +1179,13 @@ export function SchemaIntelligence() {
                     </p>
                   </div>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <input
                       type="text"
                       placeholder="Search tables..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all w-48"
+                      className="pl-9 pr-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all w-48"
                     />
                   </div>
                 </div>
@@ -1193,12 +1203,13 @@ export function SchemaIntelligence() {
                     return (
                       <div
                         key={table.id}
-                        className="bg-card border border-slate-200 rounded-xl p-4 hover:border-aqua-300 hover:shadow-md transition-all group relative"
+                        className="bg-card border border-border rounded-xl p-4 hover:border-aqua-300 hover:shadow-md transition-all group relative"
                       >
                         {/* Health indicator */}
                         <div
+                          title={health.tooltip}
                           className={cn(
-                            'absolute top-3 right-3 px-1.5 py-0.5 text-[10px] font-medium rounded-full',
+                            'absolute top-3 right-3 px-1.5 py-0.5 text-[10px] font-medium rounded-full cursor-help',
                             health.bg,
                             health.color
                           )}
@@ -1264,7 +1275,7 @@ export function SchemaIntelligence() {
                         )}
 
                         {/* Quick actions */}
-                        <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
                           <button
                             onClick={() => handleSelectTable(table)}
                             className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-aqua-700 bg-aqua-50 rounded-md hover:bg-aqua-100 transition-colors"
@@ -1290,7 +1301,7 @@ export function SchemaIntelligence() {
 
                 {filteredTables.length === 0 && searchQuery && (
                   <div className="flex flex-col items-center justify-center py-12">
-                    <Search className="w-8 h-8 text-slate-300 mb-3" />
+                    <Search className="w-8 h-8 text-muted-foreground mb-3" />
                     <p className="text-sm text-muted-foreground">
                       No tables matching "{searchQuery}"
                     </p>
@@ -1357,7 +1368,7 @@ export function SchemaIntelligence() {
               </h3>
               <button
                 onClick={() => setShowSnapshotDialog(false)}
-                className="p-1 rounded text-slate-400 hover:text-slate-600 transition-colors"
+                className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1376,7 +1387,7 @@ export function SchemaIntelligence() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowSnapshotDialog(false)}
-                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -1389,7 +1400,7 @@ export function SchemaIntelligence() {
                   'px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
                   snapshotName.trim()
                     ? 'text-white bg-aqua-600 hover:bg-aqua-700'
-                    : 'text-slate-400 bg-slate-100 cursor-not-allowed'
+                    : 'text-muted-foreground bg-muted cursor-not-allowed'
                 )}
               >
                 {createSnapshot.isPending ? 'Creating...' : 'Create'}
@@ -1404,7 +1415,7 @@ export function SchemaIntelligence() {
         <ModalBackdrop onClose={() => setShowCreateTableModal(false)}>
           <div className="relative bg-card rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <div>
                 <h3 className="text-base font-semibold text-foreground">
                   Create New Table
@@ -1415,14 +1426,14 @@ export function SchemaIntelligence() {
               </div>
               <button
                 onClick={() => setShowCreateTableModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Quick Templates */}
-            <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50">
+            <div className="px-6 py-3 border-b border-border/50 bg-muted/30">
               <span className="text-xs font-medium text-muted-foreground mr-3">
                 Quick Templates:
               </span>
@@ -1443,7 +1454,7 @@ export function SchemaIntelligence() {
               {/* Table Info */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
                     Table Name *
                   </label>
                   <input
@@ -1451,17 +1462,17 @@ export function SchemaIntelligence() {
                     placeholder="e.g. users"
                     value={ctName}
                     onChange={(e) => setCtName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
                     Schema
                   </label>
                   <select
                     value={ctSchema}
                     onChange={(e) => setCtSchema(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
                   >
                     {(schemasList ?? ['public']).map((s) => (
                       <option key={s} value={s}>{s}</option>
@@ -1469,7 +1480,7 @@ export function SchemaIntelligence() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
                     Description
                   </label>
                   <input
@@ -1477,19 +1488,19 @@ export function SchemaIntelligence() {
                     placeholder="Optional description"
                     value={ctDescription}
                     onChange={(e) => setCtDescription(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
                   />
                 </div>
               </div>
 
               {/* Column Builder */}
               <div>
-                <h4 className="text-xs font-semibold text-slate-700 mb-2">
+                <h4 className="text-xs font-semibold text-foreground mb-2">
                   Columns
                 </h4>
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="border border-border rounded-lg overflow-hidden">
                   {/* Column Header */}
-                  <div className="grid grid-cols-[1fr_140px_60px_50px_60px_100px_120px_40px] gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                  <div className="grid grid-cols-[1fr_140px_60px_50px_60px_100px_120px_40px] gap-2 px-3 py-2 bg-muted/50 border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
                     <span>Name</span>
                     <span>Data Type</span>
                     <span className="text-center">Null</span>
@@ -1504,7 +1515,7 @@ export function SchemaIntelligence() {
                   {ctColumns.map((column) => (
                     <div
                       key={column.id}
-                      className="grid grid-cols-[1fr_140px_60px_50px_60px_100px_120px_40px] gap-2 px-3 py-1.5 border-b border-slate-100 last:border-b-0 items-center"
+                      className="grid grid-cols-[1fr_140px_60px_50px_60px_100px_120px_40px] gap-2 px-3 py-1.5 border-b border-border/50 last:border-b-0 items-center"
                     >
                       <input
                         type="text"
@@ -1517,7 +1528,7 @@ export function SchemaIntelligence() {
                             e.target.value
                           )
                         }
-                        className="px-2 py-1 text-xs border border-slate-200 rounded bg-card focus:outline-none focus:ring-1 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
+                        className="px-2 py-1 text-xs border border-border rounded bg-card focus:outline-none focus:ring-1 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
                       />
                       <select
                         value={column.dataType}
@@ -1528,7 +1539,7 @@ export function SchemaIntelligence() {
                             e.target.value
                           )
                         }
-                        className="px-2 py-1 text-xs border border-slate-200 rounded bg-card focus:outline-none focus:ring-1 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
+                        className="px-2 py-1 text-xs border border-border rounded bg-card focus:outline-none focus:ring-1 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
                       >
                         {dialectDataTypes.map((dt) => (
                           <option key={dt} value={dt}>
@@ -1551,7 +1562,7 @@ export function SchemaIntelligence() {
                               e.target.checked
                             )
                           }
-                          className="w-3.5 h-3.5 rounded border-slate-300 text-aqua-600 focus:ring-aqua-500"
+                          className="w-3.5 h-3.5 rounded border-border text-aqua-600 focus:ring-aqua-500"
                         />
                       </div>
                       <div className="flex items-center justify-center">
@@ -1565,7 +1576,7 @@ export function SchemaIntelligence() {
                               e.target.checked
                             )
                           }
-                          className="w-3.5 h-3.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                          className="w-3.5 h-3.5 rounded border-border text-amber-600 focus:ring-amber-500"
                         />
                       </div>
                       <div className="flex items-center justify-center">
@@ -1579,7 +1590,7 @@ export function SchemaIntelligence() {
                               e.target.checked
                             )
                           }
-                          className="w-3.5 h-3.5 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                          className="w-3.5 h-3.5 rounded border-border text-violet-600 focus:ring-violet-500"
                         />
                       </div>
                       <input
@@ -1593,7 +1604,7 @@ export function SchemaIntelligence() {
                             e.target.value
                           )
                         }
-                        className="px-2 py-1 text-xs border border-slate-200 rounded bg-card focus:outline-none focus:ring-1 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
+                        className="px-2 py-1 text-xs border border-border rounded bg-card focus:outline-none focus:ring-1 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
                       />
                       <input
                         type="text"
@@ -1606,7 +1617,7 @@ export function SchemaIntelligence() {
                             e.target.value
                           )
                         }
-                        className="px-2 py-1 text-xs border border-slate-200 rounded bg-card focus:outline-none focus:ring-1 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
+                        className="px-2 py-1 text-xs border border-border rounded bg-card focus:outline-none focus:ring-1 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
                       />
                       <button
                         onClick={() => handleRemoveColumn(column.id)}
@@ -1615,7 +1626,7 @@ export function SchemaIntelligence() {
                           'p-1 rounded transition-colors',
                           ctColumns.length > 1
                             ? 'text-red-400 hover:text-red-600 hover:bg-red-50'
-                            : 'text-slate-200 cursor-not-allowed'
+                            : 'text-muted-foreground/50 cursor-not-allowed'
                         )}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1635,10 +1646,10 @@ export function SchemaIntelligence() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-slate-200 bg-slate-50/50">
+            <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-border bg-muted/30">
               <button
                 onClick={() => setShowCreateTableModal(false)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -1654,7 +1665,7 @@ export function SchemaIntelligence() {
                   ctName.trim() &&
                     ctColumns.some((c) => c.columnName.trim())
                     ? 'text-white bg-aqua-600 hover:bg-aqua-700'
-                    : 'text-slate-400 bg-slate-100 cursor-not-allowed'
+                    : 'text-muted-foreground bg-muted cursor-not-allowed'
                 )}
               >
                 {createTable.isPending ? (
@@ -1676,7 +1687,7 @@ export function SchemaIntelligence() {
         <ModalBackdrop onClose={() => setShowAIDesignModal(false)}>
           <div className="relative bg-card rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-aqua-400 to-cyan-600 flex items-center justify-center">
                   <Bot className="w-4.5 h-4.5 text-white" />
@@ -1692,7 +1703,7 @@ export function SchemaIntelligence() {
               </div>
               <button
                 onClick={() => setShowAIDesignModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1702,7 +1713,7 @@ export function SchemaIntelligence() {
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               {/* Prompt */}
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                   Describe your schema
                 </label>
                 <textarea
@@ -1710,7 +1721,7 @@ export function SchemaIntelligence() {
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                   rows={5}
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all resize-none"
+                  className="w-full px-3 py-2.5 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all resize-none"
                 />
               </div>
 
@@ -1721,7 +1732,7 @@ export function SchemaIntelligence() {
                   'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm',
                   aiPrompt.trim()
                     ? 'text-white bg-aqua-600 hover:bg-aqua-700'
-                    : 'text-slate-400 bg-slate-100 cursor-not-allowed'
+                    : 'text-muted-foreground bg-muted cursor-not-allowed'
                 )}
               >
                 {suggestSchema.isPending ? (
@@ -1764,9 +1775,9 @@ export function SchemaIntelligence() {
                   {aiSuggestion.tables.map((st) => (
                     <div
                       key={st.name}
-                      className="border border-slate-200 rounded-lg overflow-hidden"
+                      className="border border-border rounded-lg overflow-hidden"
                     >
-                      <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-b border-border">
                         <Table2 className="w-3.5 h-3.5 text-aqua-600" />
                         <span className="text-xs font-semibold text-foreground">
                           {st.name}
@@ -1786,7 +1797,7 @@ export function SchemaIntelligence() {
                                 'font-mono',
                                 sc.isPrimaryKey
                                   ? 'text-amber-700 font-semibold'
-                                  : 'text-slate-700'
+                                  : 'text-foreground'
                               )}
                             >
                               {sc.name}
@@ -1800,7 +1811,7 @@ export function SchemaIntelligence() {
                               </span>
                             )}
                             {sc.nullable && (
-                              <span className="px-1 py-0.5 text-[9px] font-medium bg-slate-100 text-slate-500 rounded">
+                              <span className="px-1 py-0.5 text-[9px] font-medium bg-muted text-muted-foreground rounded">
                                 NULL
                               </span>
                             )}
@@ -1808,7 +1819,7 @@ export function SchemaIntelligence() {
                         ))}
                       </div>
                       {st.description && (
-                        <div className="px-3 py-1.5 border-t border-slate-100">
+                        <div className="px-3 py-1.5 border-t border-border/50">
                           <p className="text-[10px] text-muted-foreground">
                             {st.description}
                           </p>
@@ -1819,8 +1830,8 @@ export function SchemaIntelligence() {
 
                   {/* Relationships */}
                   {aiSuggestion.relationships.length > 0 && (
-                    <div className="border border-slate-200 rounded-lg p-3">
-                      <h5 className="text-xs font-semibold text-slate-700 mb-2">
+                    <div className="border border-border rounded-lg p-3">
+                      <h5 className="text-xs font-semibold text-foreground mb-2">
                         Relationships
                       </h5>
                       {aiSuggestion.relationships.map((rel, i) => (
@@ -1828,11 +1839,11 @@ export function SchemaIntelligence() {
                           key={i}
                           className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1"
                         >
-                          <span className="font-mono text-slate-700">
+                          <span className="font-mono text-foreground">
                             {rel.sourceTable}.{rel.sourceColumn}
                           </span>
                           <ChevronRight className="w-3 h-3" />
-                          <span className="font-mono text-slate-700">
+                          <span className="font-mono text-foreground">
                             {rel.targetTable}.{rel.targetColumn}
                           </span>
                           <span className="ml-auto text-[10px] text-aqua-600 bg-aqua-50 px-1.5 py-0.5 rounded">
@@ -1847,10 +1858,10 @@ export function SchemaIntelligence() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-slate-200 bg-slate-50/50">
+            <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-border bg-muted/30">
               <button
                 onClick={() => setShowAIDesignModal(false)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
               >
                 Close
               </button>
@@ -1884,7 +1895,7 @@ export function SchemaIntelligence() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setTableToDelete(null)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -1942,7 +1953,7 @@ function StatBadge({
   gradient: string;
 }) {
   return (
-    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-card border border-slate-200 rounded-lg shadow-sm">
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-card border border-border rounded-lg shadow-sm">
       <div
         className={cn(
           'w-5 h-5 rounded flex items-center justify-center text-white bg-gradient-to-br',
@@ -2002,9 +2013,9 @@ function ReviewPanel({
   }
 
   return (
-    <div className="bg-card border border-slate-200 rounded-xl shadow-sm">
+    <div className="bg-card border border-border rounded-xl shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-aqua-600" />
           <h3 className="text-sm font-semibold text-foreground">
@@ -2013,14 +2024,14 @@ function ReviewPanel({
         </div>
         <button
           onClick={onClose}
-          className="p-1 rounded text-slate-400 hover:text-slate-600 transition-colors"
+          className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Score */}
-      <div className="flex flex-col items-center py-4 border-b border-slate-100">
+      <div className="flex flex-col items-center py-4 border-b border-border/50">
         <ScoreRing score={review.score} />
         <div className="flex items-center gap-3 mt-3 text-xs">
           {errorCount > 0 && (
@@ -2045,7 +2056,7 @@ function ReviewPanel({
       </div>
 
       {/* Summary */}
-      <div className="px-4 py-3 border-b border-slate-100">
+      <div className="px-4 py-3 border-b border-border/50">
         <p className="text-xs text-muted-foreground leading-relaxed">
           {review.summary}
         </p>
@@ -2059,10 +2070,10 @@ function ReviewPanel({
           const isExpanded = expandedCategories.has(sev);
 
           return (
-            <div key={sev} className="border-b border-slate-100 last:border-b-0">
+            <div key={sev} className="border-b border-border/50 last:border-b-0">
               <button
                 onClick={() => toggleCategory(sev)}
-                className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
               >
                 {isExpanded ? (
                   <ChevronDown className="w-3 h-3" />
@@ -2100,7 +2111,7 @@ function ReviewPanel({
                               {issue.category}
                             </span>
                             {issue.table && (
-                              <span className="text-[10px] font-mono text-slate-500">
+                              <span className="text-[10px] font-mono text-muted-foreground">
                                 {issue.table}
                                 {issue.column ? `.${issue.column}` : ''}
                               </span>
@@ -2114,7 +2125,7 @@ function ReviewPanel({
                           >
                             {issue.message}
                           </p>
-                          <p className="text-[11px] text-slate-500 mt-1 italic">
+                          <p className="text-[11px] text-muted-foreground mt-1 italic">
                             Suggestion: {issue.suggestion}
                           </p>
                         </div>
@@ -2129,7 +2140,7 @@ function ReviewPanel({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-center px-4 py-3 border-t border-slate-200">
+      <div className="flex items-center justify-center px-4 py-3 border-t border-border">
         <button
           onClick={onReanalyze}
           disabled={isLoading}

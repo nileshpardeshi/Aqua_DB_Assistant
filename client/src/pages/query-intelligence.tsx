@@ -417,7 +417,7 @@ export function QueryIntelligence() {
                 className={cn(
                   'inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white rounded-md transition-all shadow-sm',
                   isRunning || !activeTab?.sql.trim()
-                    ? 'bg-slate-300 cursor-not-allowed'
+                    ? 'bg-slate-300 dark:bg-slate-700 cursor-not-allowed'
                     : 'bg-emerald-600 hover:bg-emerald-700 hover:shadow-md',
                 )}
                 title="Run Query (Ctrl+Enter)"
@@ -463,7 +463,7 @@ export function QueryIntelligence() {
           style={{ flex: '0 0 40%' }}
         >
           {/* Bottom Tab Bar */}
-          <div className="flex items-center justify-between border-b border-border px-2 bg-slate-50">
+          <div className="flex items-center justify-between border-b border-border px-2 bg-muted/50">
             <div className="flex items-center gap-0.5 overflow-x-auto">
               {BOTTOM_TABS.map((tab) => {
                 const Icon = tab.icon;
@@ -490,7 +490,7 @@ export function QueryIntelligence() {
             {hasResults && bottomTab === 'results' && (
               <div className="flex items-center gap-2 mr-2 flex-shrink-0">
                 {errorMessage && (
-                  <span className="text-[10px] text-red-600 px-2 py-1 bg-red-50 rounded border border-red-200">
+                  <span className="text-[10px] text-red-600 dark:text-red-400 px-2 py-1 bg-red-50 dark:bg-red-950/30 rounded border border-red-200 dark:border-red-800">
                     Error
                   </span>
                 )}

@@ -362,7 +362,7 @@ function ModeButton({
         'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
         active
           ? 'bg-purple-600 text-white border-purple-600'
-          : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+          : 'bg-card text-muted-foreground border-border hover:bg-muted/50'
       )}
     >
       <Icon className="w-3.5 h-3.5" />
@@ -1248,12 +1248,12 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
     <div className="flex gap-4">
       {/* ── Saved Mappings Sidebar ── */}
       <aside
-        className="w-72 shrink-0 bg-card border border-slate-200 rounded-xl overflow-y-auto"
+        className="w-72 shrink-0 bg-card border border-border rounded-xl overflow-y-auto"
         style={{ maxHeight: 'calc(100vh - 200px)' }}
       >
-        <div className="p-4 border-b border-slate-200">
+        <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="text-sm font-bold text-slate-700">
+            <h3 className="text-sm font-bold text-foreground">
               Saved Mappings
             </h3>
             <button
@@ -1264,7 +1264,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               New
             </button>
           </div>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-muted-foreground">
             Save and manage multiple table-pair mappings
           </p>
         </div>
@@ -1272,13 +1272,13 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
         <div className="p-3 space-y-2">
           {savedLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+              <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
             </div>
           ) : !savedMappings || savedMappings.length === 0 ? (
             <div className="text-center py-8 px-2">
-              <Columns3 className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <p className="text-xs text-slate-400">No saved mappings yet</p>
-              <p className="text-[10px] text-slate-400 mt-1">
+              <Columns3 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">No saved mappings yet</p>
+              <p className="text-[10px] text-muted-foreground mt-1">
                 Create a mapping and save it to see it here
               </p>
             </div>
@@ -1291,11 +1291,11 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                   'p-3 rounded-lg border cursor-pointer transition-colors group',
                   activeMappingId === sm.id
                     ? 'border-purple-400 bg-purple-50'
-                    : 'border-slate-200 hover:bg-slate-50'
+                    : 'border-border hover:bg-muted/50'
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-sm font-medium text-slate-800 truncate">
+                  <span className="text-sm font-medium text-foreground truncate">
                     {sm.name}
                   </span>
                   <button
@@ -1308,28 +1308,28 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                     <Trash2 className="w-3 h-3 text-red-500" />
                   </button>
                 </div>
-                <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
                   <span className="truncate max-w-[80px]">
                     {sm.sourceTableName}
                   </span>
-                  <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
+                  <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
                   <span className="truncate max-w-[80px]">
                     {sm.targetTableName}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">
+                  <span className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground rounded">
                     {sm.sourceDialect}
                   </span>
-                  <ArrowRight className="w-2.5 h-2.5 text-slate-300" />
-                  <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">
+                  <ArrowRight className="w-2.5 h-2.5 text-muted-foreground" />
+                  <span className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground rounded">
                     {sm.targetDialect}
                   </span>
-                  <span className="text-[10px] text-slate-400 ml-auto">
+                  <span className="text-[10px] text-muted-foreground ml-auto">
                     {getSavedMappingCount(sm)} cols
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400 mt-1">
+                <div className="text-[10px] text-muted-foreground mt-1">
                   {new Date(sm.updatedAt).toLocaleDateString()}
                 </div>
               </div>
@@ -1344,7 +1344,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Columns3 className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-bold text-slate-800">
+            <h2 className="text-lg font-bold text-foreground">
               Column Mapping
             </h2>
             {activeMappingId && mappingName && (
@@ -1353,7 +1353,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Visually map columns between source and target tables with
             drag-to-connect. Upload SQL files, use project tables, or paste
             DDL. Save mappings for reuse.
@@ -1361,11 +1361,11 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
         </div>
 
         {/* Table Selection Section */}
-        <div className="bg-card border border-slate-200 rounded-xl p-4 space-y-4">
+        <div className="bg-card border border-border rounded-xl p-4 space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* ── Source Side ── */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 Source
               </h4>
               <div className="flex items-center gap-1 flex-wrap">
@@ -1390,13 +1390,13 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                   Source Dialect
                 </label>
                 <select
                   value={sourceDialect}
                   onChange={(e) => setSourceDialect(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   {DATABASE_DIALECTS.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -1408,14 +1408,14 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
 
               {sourceMode === 'project' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                     Source Table
                   </label>
                   <select
                     value={sourceTableId}
                     onChange={(e) => setSourceTableId(e.target.value)}
                     disabled={tablesLoading}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
                   >
                     <option value="">
                       {tablesLoading
@@ -1434,14 +1434,14 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
 
               {sourceMode === 'paste' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                     Source DDL
                   </label>
                   <textarea
                     value={sourcePasteDDL}
                     onChange={(e) => setSourcePasteDDL(e.target.value)}
                     placeholder={`CREATE TABLE users (\n  id INT NOT NULL PRIMARY KEY,\n  name VARCHAR(255) NOT NULL,\n  email VARCHAR(255)\n);`}
-                    className="w-full h-32 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y placeholder:text-slate-500"
+                    className="w-full h-32 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y placeholder:text-muted-foreground"
                     spellCheck={false}
                   />
                 </div>
@@ -1458,7 +1458,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                   />
                   <button
                     onClick={() => sourceFileRef.current?.click()}
-                    className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-slate-300 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors w-full justify-center"
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-border rounded-lg hover:bg-muted/50 text-muted-foreground transition-colors w-full justify-center"
                   >
                     <Upload className="w-4 h-4" />
                     {sourceFileTables.length > 0
@@ -1471,7 +1471,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                       onChange={(e) =>
                         setSourceFileTableName(e.target.value)
                       }
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="">Select table from file...</option>
                       {sourceFileTables.map((t) => (
@@ -1487,7 +1487,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
 
             {/* ── Target Side ── */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 Target
               </h4>
               <div className="flex items-center gap-1 flex-wrap">
@@ -1512,13 +1512,13 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                   Target Dialect
                 </label>
                 <select
                   value={targetDialect}
                   onChange={(e) => setTargetDialect(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   {DATABASE_DIALECTS.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -1530,14 +1530,14 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
 
               {targetMode === 'project' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                     Target Table
                   </label>
                   <select
                     value={targetTableId}
                     onChange={(e) => setTargetTableId(e.target.value)}
                     disabled={tablesLoading}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
                   >
                     <option value="">
                       {tablesLoading
@@ -1556,14 +1556,14 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
 
               {targetMode === 'paste' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                     Target DDL
                   </label>
                   <textarea
                     value={targetPasteDDL}
                     onChange={(e) => setTargetPasteDDL(e.target.value)}
                     placeholder={`CREATE TABLE customers (\n  customer_id BIGINT NOT NULL PRIMARY KEY,\n  full_name VARCHAR(500) NOT NULL,\n  email_address VARCHAR(320)\n);`}
-                    className="w-full h-32 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y placeholder:text-slate-500"
+                    className="w-full h-32 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y placeholder:text-muted-foreground"
                     spellCheck={false}
                   />
                 </div>
@@ -1580,7 +1580,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                   />
                   <button
                     onClick={() => targetFileRef.current?.click()}
-                    className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-slate-300 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors w-full justify-center"
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-border rounded-lg hover:bg-muted/50 text-muted-foreground transition-colors w-full justify-center"
                   >
                     <Upload className="w-4 h-4" />
                     {targetFileTables.length > 0
@@ -1593,7 +1593,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                       onChange={(e) =>
                         setTargetFileTableName(e.target.value)
                       }
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="">Select table from file...</option>
                       {targetFileTables.map((t) => (
@@ -1616,7 +1616,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
               canLoad
                 ? 'bg-purple-600 text-white hover:bg-purple-700'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                : 'bg-muted text-muted-foreground cursor-not-allowed'
             )}
           >
             <Zap className="w-4 h-4" />
@@ -1629,7 +1629,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={handleAutoMap}
-              className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 border border-border hover:bg-muted/50 text-foreground px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
             >
               <Wand2 className="w-3.5 h-3.5" />
               Auto-Map
@@ -1640,7 +1640,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               className={cn(
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 aiProgress >= 0
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white'
               )}
             >
@@ -1648,7 +1648,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               AI Suggest
             </button>
 
-            <div className="w-px h-6 bg-slate-200" />
+            <div className="w-px h-6 bg-border" />
 
             <button
               onClick={generateMigrationSQL}
@@ -1657,7 +1657,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 mappings.length > 0
                   ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
               )}
             >
               <Play className="w-3.5 h-3.5" />
@@ -1675,7 +1675,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 mappings.length > 0
                   ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
               )}
             >
               {createMapping.isPending || updateMapping.isPending ? (
@@ -1686,7 +1686,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               {activeMappingId ? 'Update' : 'Save'}
             </button>
 
-            <div className="w-px h-6 bg-slate-200" />
+            <div className="w-px h-6 bg-border" />
 
             <button
               onClick={handleExport}
@@ -1694,8 +1694,8 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               className={cn(
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 mappings.length > 0
-                  ? 'border border-slate-200 hover:bg-slate-50 text-slate-700'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  ? 'border border-border hover:bg-muted/50 text-foreground'
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
               )}
             >
               <Download className="w-3.5 h-3.5" />
@@ -1703,7 +1703,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
             </button>
             <button
               onClick={() => configFileRef.current?.click()}
-              className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 border border-border hover:bg-muted/50 text-foreground px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
             >
               <Upload className="w-3.5 h-3.5" />
               Import
@@ -1716,7 +1716,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               className="hidden"
             />
 
-            <div className="w-px h-6 bg-slate-200" />
+            <div className="w-px h-6 bg-border" />
 
             <button
               onClick={handleClearAll}
@@ -1725,7 +1725,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 mappings.length > 0
                   ? 'border border-red-200 hover:bg-red-50 text-red-600'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
               )}
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -1733,7 +1733,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
             </button>
 
             <div className="ml-auto">
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-muted-foreground">
                 Mapped: {mappings.length} /{' '}
                 {targetTable?.columns.length ?? 0}
               </span>
@@ -1743,7 +1743,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
 
         {/* AI Progress Stepper */}
         {aiProgress >= 0 && (
-          <div className="bg-card border border-slate-200 rounded-xl p-4">
+          <div className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center gap-3 mb-3">
               <Loader2 className="w-4 h-4 text-purple-600 animate-spin" />
               <span className="text-sm font-medium">AI Column Mapping</span>
@@ -1758,7 +1758,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                         ? 'bg-purple-100 text-purple-700'
                         : i === aiProgress
                           ? 'bg-purple-600 text-white animate-pulse'
-                          : 'bg-slate-100 text-slate-400'
+                          : 'bg-muted text-muted-foreground'
                     )}
                   >
                     {i < aiProgress ? (
@@ -1772,13 +1772,13 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                       'text-xs',
                       i === aiProgress
                         ? 'text-purple-700 font-medium'
-                        : 'text-slate-400'
+                        : 'text-muted-foreground'
                     )}
                   >
                     {step}
                   </span>
                   {i < AI_STEPS.length - 1 && (
-                    <div className="w-6 h-px bg-slate-200" />
+                    <div className="w-6 h-px bg-border" />
                   )}
                 </div>
               ))}
@@ -1789,7 +1789,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
         {/* Canvas */}
         {canvasReady && (
           <div
-            className="relative border border-slate-200 rounded-xl overflow-hidden"
+            className="relative border border-border rounded-xl overflow-hidden"
             style={{ height: 'calc(100vh - 420px)', minHeight: '500px' }}
           >
             <ReactFlow
@@ -1826,7 +1826,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               />
               <Controls
                 showInteractive={false}
-                className="!shadow-md !rounded-lg !border !border-slate-200"
+                className="!shadow-md !rounded-lg !border !border-border"
               />
             </ReactFlow>
 
@@ -1859,7 +1859,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
             )}
 
             {/* Unmapped columns summary */}
-            <div className="absolute bottom-3 left-3 bg-card/90 backdrop-blur-sm border border-slate-200 rounded-lg px-3 py-2 shadow-sm">
+            <div className="absolute bottom-3 left-3 bg-card/90 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-sm">
               <div className="flex items-center gap-3 text-xs">
                 {unmappedSourceCount > 0 && (
                   <span className="flex items-center gap-1 text-amber-600">
@@ -1886,12 +1886,12 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
 
         {/* Not loaded state */}
         {!canvasReady && (
-          <div className="border border-dashed border-slate-300 rounded-xl p-12 text-center">
-            <Columns3 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500 font-medium">
+          <div className="border border-dashed border-border rounded-xl p-12 text-center">
+            <Columns3 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">
               Select source and target tables to start mapping columns
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Choose tables from your project schema, paste DDL, or upload
               SQL files, then click "Load Tables"
             </p>
@@ -1900,17 +1900,17 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
 
         {/* SQL Output Panel */}
         {showSQLPanel && generatedSQL && (
-          <div className="bg-card border border-slate-200 rounded-xl p-4 space-y-3">
+          <div className="bg-card border border-border rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <FileCode2 className="w-4 h-4 text-purple-600" />
                 Generated Migration SQL
               </h3>
               <button
                 onClick={() => setShowSQLPanel(false)}
-                className="p-1 rounded hover:bg-slate-100 transition-colors"
+                className="p-1 rounded hover:bg-muted transition-colors"
               >
-                <X className="w-4 h-4 text-slate-500" />
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
@@ -1921,7 +1921,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleCopy(generatedSQL, 'sql')}
-                className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 border border-border hover:bg-muted/50 text-foreground px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
               >
                 {copiedField === 'sql' ? (
                   <>
@@ -1949,7 +1949,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
               </button>
               <button
                 onClick={() => setShowSQLPanel(false)}
-                className="inline-flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 border border-border hover:bg-muted/50 text-foreground px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
               >
                 Close
               </button>
@@ -1962,11 +1962,11 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
       {showSaveDialog && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-96 shadow-xl space-y-4">
-            <h3 className="text-sm font-bold text-slate-800">
+            <h3 className="text-sm font-bold text-foreground">
               Save Column Mapping
             </h3>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                 Mapping Name
               </label>
               <input
@@ -1974,7 +1974,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                 value={mappingName}
                 onChange={(e) => setMappingName(e.target.value)}
                 placeholder={`e.g., ${sourceTable?.name ?? 'source'} → ${targetTable?.name ?? 'target'} migration`}
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && mappingName.trim()) {
@@ -1986,7 +1986,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
             <div className="flex items-center gap-2 justify-end">
               <button
                 onClick={() => setShowSaveDialog(false)}
-                className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 transition-colors"
+                className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted/50 text-foreground transition-colors"
               >
                 Cancel
               </button>
@@ -1999,7 +1999,7 @@ function ColumnMappingInner({ projectId }: { projectId: string }) {
                   'inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg font-medium transition-colors',
                   mappingName.trim()
                     ? 'bg-purple-600 text-white hover:bg-purple-700'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
                 )}
               >
                 {createMapping.isPending ? (
@@ -2088,20 +2088,20 @@ function TransformPanel({
   };
 
   return (
-    <div className="absolute top-0 right-0 h-full w-80 bg-card border-l border-slate-200 shadow-xl z-10 overflow-y-auto">
+    <div className="absolute top-0 right-0 h-full w-80 bg-card border-l border-border shadow-xl z-10 overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Settings2 className="w-4 h-4 text-purple-600" />
-          <span className="text-sm font-semibold text-slate-800">
+          <span className="text-sm font-semibold text-foreground">
             Configure Mapping
           </span>
         </div>
         <button
           onClick={onClose}
-          className="p-1 rounded hover:bg-slate-100 transition-colors"
+          className="p-1 rounded hover:bg-muted transition-colors"
         >
-          <X className="w-4 h-4 text-slate-500" />
+          <X className="w-4 h-4 text-muted-foreground" />
         </button>
       </div>
 
@@ -2114,7 +2114,7 @@ function TransformPanel({
               {srcCol?.dataType ?? ''}
             </span>
           </span>
-          <ArrowRight className="w-4 h-4 text-slate-400" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground" />
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-cyan-100 text-cyan-700 rounded-full">
             {mapping.targetColumn}
             <span className="text-cyan-500 font-mono text-[10px]">
@@ -2123,11 +2123,11 @@ function TransformPanel({
           </span>
         </div>
 
-        <hr className="border-slate-200" />
+        <hr className="border-border" />
 
         {/* Transformation Type */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">
+          <label className="block text-xs font-semibold text-muted-foreground mb-2">
             Transformation Type
           </label>
           <div className="flex flex-wrap gap-1">
@@ -2144,7 +2144,7 @@ function TransformPanel({
                   'px-2.5 py-1.5 text-[11px] font-medium rounded-lg transition-colors',
                   localMapping.transformationType === tt.value
                     ? 'bg-purple-600 text-white'
-                    : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                    : 'border border-border text-muted-foreground hover:bg-muted/50'
                 )}
               >
                 {tt.label}
@@ -2156,7 +2156,7 @@ function TransformPanel({
         {/* Conditional fields based on transformationType */}
         {localMapping.transformationType === 'cast' && (
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
               Cast To
             </label>
             <select
@@ -2167,7 +2167,7 @@ function TransformPanel({
                   castTo: e.target.value,
                 }))
               }
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="">Select data type</option>
               {targetDataTypes.map((dt) => (
@@ -2181,7 +2181,7 @@ function TransformPanel({
 
         {localMapping.transformationType === 'expression' && (
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
               SQL Expression
             </label>
             <textarea
@@ -2193,7 +2193,7 @@ function TransformPanel({
                 }))
               }
               placeholder={`e.g., UPPER(${mapping.sourceColumn})`}
-              className="w-full h-24 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y placeholder:text-slate-500"
+              className="w-full h-24 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y placeholder:text-muted-foreground"
               spellCheck={false}
             />
           </div>
@@ -2201,7 +2201,7 @@ function TransformPanel({
 
         {localMapping.transformationType === 'default' && (
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
               Default Value
             </label>
             <input
@@ -2214,7 +2214,7 @@ function TransformPanel({
                 }))
               }
               placeholder="e.g., 'unknown' or 0"
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
         )}
@@ -2235,11 +2235,11 @@ function TransformPanel({
           </div>
         )}
 
-        <hr className="border-slate-200" />
+        <hr className="border-border" />
 
         {/* Null Handling */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">
+          <label className="block text-xs font-semibold text-muted-foreground mb-2">
             Null Handling
           </label>
           <div className="space-y-2">
@@ -2267,7 +2267,7 @@ function TransformPanel({
                   }
                   className="w-3.5 h-3.5 text-purple-600 focus:ring-purple-500"
                 />
-                <span className="text-xs text-slate-700">{opt.label}</span>
+                <span className="text-xs text-foreground">{opt.label}</span>
               </label>
             ))}
           </div>
@@ -2284,17 +2284,17 @@ function TransformPanel({
                   }))
                 }
                 placeholder="Default value for NULLs"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
           )}
         </div>
 
-        <hr className="border-slate-200" />
+        <hr className="border-border" />
 
         {/* Validation indicator */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">
+          <label className="block text-xs font-semibold text-muted-foreground mb-2">
             Validation
           </label>
           {checkTypeCompatibility(
@@ -2315,7 +2315,7 @@ function TransformPanel({
           )}
         </div>
 
-        <hr className="border-slate-200" />
+        <hr className="border-border" />
 
         {/* Footer buttons */}
         <div className="flex items-center gap-2">

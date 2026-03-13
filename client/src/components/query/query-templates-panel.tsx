@@ -315,7 +315,7 @@ export function QueryTemplatesPanel({
                       className={cn(
                         'flex items-center justify-center h-7 w-7 rounded-lg border transition-colors',
                         isCopied
-                          ? 'border-green-400 bg-green-50 text-green-600'
+                          ? 'border-green-400 dark:border-green-700 bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400'
                           : 'border-border bg-card text-muted-foreground hover:bg-secondary'
                       )}
                       title="Copy SQL to clipboard"

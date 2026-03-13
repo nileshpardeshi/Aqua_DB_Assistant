@@ -87,10 +87,16 @@ export async function executeSandbox(data: {
           `CREATE TABLE ${SANDBOX_SCHEMA}.${tableName} (\n${colDefs}\n)`
         );
       } else {
-        // Fallback: try mirroring from public schema
-        await prisma.$executeRawUnsafe(
-          `CREATE TABLE ${SANDBOX_SCHEMA}.${tableName} (LIKE public.${tableName} INCLUDING ALL)`
-        );
+        // Fallback: try mirroring from aqua_db schema (or public as last resort)
+        try {
+          await prisma.$executeRawUnsafe(
+            `CREATE TABLE ${SANDBOX_SCHEMA}.${tableName} (LIKE aqua_db."${tableName}" INCLUDING ALL)`
+          );
+        } catch {
+          await prisma.$executeRawUnsafe(
+            `CREATE TABLE ${SANDBOX_SCHEMA}.${tableName} (LIKE public."${tableName}" INCLUDING ALL)`
+          );
+        }
 
         // Remove FK constraints from sandbox table
         const fks: Array<{ constraint_name: string }> = await prisma.$queryRawUnsafe(`
@@ -349,27 +355,101 @@ export async function cleanupSandbox(): Promise<{ dropped: boolean }> {
 // ---------- Promote Sandbox to Real Tables ----------
 
 export async function promoteSandbox(data: {
+  projectId: string;
   tableNames: string[];
 }): Promise<{ tables: Array<{ tableName: string; rowCount: number; status: string; error?: string }> }> {
   const results: Array<{ tableName: string; rowCount: number; status: string; error?: string }> = [];
+
+  // Look up the project's dedicated PostgreSQL schema
+  const project = await prisma.project.findUnique({
+    where: { id: data.projectId },
+    select: { dbSchema: true },
+  });
+  const targetSchema = project?.dbSchema || 'public';
+
+  // Ensure target schema exists
+  await prisma.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS "${targetSchema}"`);
 
   for (const tableName of data.tableNames) {
     try {
       // Get sandbox row count
       const countResult: Array<{ count: bigint }> = await prisma.$queryRawUnsafe(
-        `SELECT COUNT(*)::bigint as count FROM ${SANDBOX_SCHEMA}.${tableName}`
+        `SELECT COUNT(*)::bigint as count FROM ${SANDBOX_SCHEMA}."${tableName}"`
       );
       const count = Number(countResult[0]?.count ?? 0);
 
-      // Insert sandbox data into real table
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO public.${tableName} SELECT * FROM ${SANDBOX_SCHEMA}.${tableName}`
-      );
+      // Check if the target table already exists
+      const existsResult: Array<{ exists: boolean }> = await prisma.$queryRawUnsafe(`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables
+          WHERE table_schema = '${targetSchema}' AND table_name = '${tableName}'
+        ) as exists
+      `);
+      const tableExists = existsResult[0]?.exists ?? false;
+
+      if (tableExists) {
+        // Insert sandbox data into existing table
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "${targetSchema}"."${tableName}" SELECT * FROM ${SANDBOX_SCHEMA}."${tableName}"`
+        );
+      } else {
+        // Create the table in target schema from sandbox structure, then copy data
+        await prisma.$executeRawUnsafe(
+          `CREATE TABLE "${targetSchema}"."${tableName}" (LIKE ${SANDBOX_SCHEMA}."${tableName}" INCLUDING ALL)`
+        );
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "${targetSchema}"."${tableName}" SELECT * FROM ${SANDBOX_SCHEMA}."${tableName}"`
+        );
+      }
 
       results.push({ tableName, rowCount: count, status: 'promoted' });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       results.push({ tableName, rowCount: 0, status: 'error', error: message });
+    }
+  }
+
+  return { tables: results };
+}
+
+// ---------- Cleanup Promoted (Real) Tables ----------
+
+export async function cleanupPromotedTables(data: {
+  projectId: string;
+  tableNames: string[];
+}): Promise<{ tables: Array<{ tableName: string; status: string; error?: string }> }> {
+  const results: Array<{ tableName: string; status: string; error?: string }> = [];
+
+  // Look up the project's dedicated PostgreSQL schema
+  const project = await prisma.project.findUnique({
+    where: { id: data.projectId },
+    select: { dbSchema: true },
+  });
+  const targetSchema = project?.dbSchema || 'public';
+
+  for (const tableName of data.tableNames) {
+    try {
+      // Check if table exists in the target schema
+      const existsResult: Array<{ exists: boolean }> = await prisma.$queryRawUnsafe(`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables
+          WHERE table_schema = '${targetSchema}' AND table_name = '${tableName}'
+        ) as exists
+      `);
+      const tableExists = existsResult[0]?.exists ?? false;
+
+      if (!tableExists) {
+        results.push({ tableName, status: 'skipped', error: 'Table does not exist' });
+        continue;
+      }
+
+      await prisma.$executeRawUnsafe(
+        `DROP TABLE IF EXISTS "${targetSchema}"."${tableName}" CASCADE`
+      );
+      results.push({ tableName, status: 'dropped' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      results.push({ tableName, status: 'error', error: message });
     }
   }
 

@@ -67,15 +67,15 @@ function SkeletonCard() {
   return (
     <div className="px-4 py-3 animate-pulse">
       <div className="flex items-start gap-3">
-        <div className="w-4 h-4 rounded bg-slate-200 mt-0.5 flex-shrink-0" />
+        <div className="w-4 h-4 rounded bg-muted mt-0.5 flex-shrink-0" />
         <div className="flex-1 min-w-0 space-y-2">
-          <div className="h-4 bg-slate-200 rounded w-3/5" />
-          <div className="h-3 bg-slate-100 rounded w-full" />
-          <div className="h-3 bg-slate-100 rounded w-4/5" />
+          <div className="h-4 bg-muted rounded w-3/5" />
+          <div className="h-3 bg-muted/50 rounded w-full" />
+          <div className="h-3 bg-muted/50 rounded w-4/5" />
           <div className="flex gap-2 pt-1">
-            <div className="h-4 w-16 bg-slate-100 rounded" />
-            <div className="h-4 w-14 bg-slate-100 rounded" />
-            <div className="h-4 w-20 bg-slate-100 rounded ml-auto" />
+            <div className="h-4 w-16 bg-muted/50 rounded" />
+            <div className="h-4 w-14 bg-muted/50 rounded" />
+            <div className="h-4 w-20 bg-muted/50 rounded ml-auto" />
           </div>
         </div>
       </div>
@@ -192,8 +192,8 @@ export function SavedQueriesPanel({
           className,
         )}
       >
-        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-          <Bookmark className="w-7 h-7 text-slate-400" />
+        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+          <Bookmark className="w-7 h-7 text-muted-foreground" />
         </div>
         <p className="text-sm font-medium text-foreground mb-1">
           No saved queries
@@ -257,7 +257,7 @@ export function SavedQueriesPanel({
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md border transition-colors flex-shrink-0',
               showFavoritesOnly
-                ? 'bg-amber-50 text-amber-600 border-amber-300'
+                ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700'
                 : 'bg-card border-border text-muted-foreground hover:text-amber-400',
             )}
           >
@@ -287,8 +287,8 @@ export function SavedQueriesPanel({
         {filteredQueries.length === 0 ? (
           /* Empty after filtering */
           <div className="flex flex-col items-center justify-center py-14 px-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
-              <FolderOpen className="w-6 h-6 text-slate-400" />
+            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-3">
+              <FolderOpen className="w-6 h-6 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-foreground mb-1">
               No queries match your filters
@@ -316,7 +316,7 @@ export function SavedQueriesPanel({
                     }
                   }}
                   className={cn(
-                    'px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer group relative',
+                    'px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group relative',
                     isDeleting && 'opacity-50 pointer-events-none',
                   )}
                 >
@@ -328,14 +328,14 @@ export function SavedQueriesPanel({
                         handleToggleFavorite(query);
                       }}
                       title={query.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                      className="flex-shrink-0 mt-0.5 p-0.5 rounded hover:bg-slate-100 transition-colors"
+                      className="flex-shrink-0 mt-0.5 p-0.5 rounded hover:bg-muted transition-colors"
                     >
                       <Star
                         className={cn(
                           'w-4 h-4 transition-colors',
                           query.isFavorite
                             ? 'text-amber-500 fill-amber-500'
-                            : 'text-slate-300 hover:text-amber-400',
+                            : 'text-muted-foreground/50 hover:text-amber-400',
                         )}
                       />
                     </button>
@@ -364,7 +364,7 @@ export function SavedQueriesPanel({
 
                         {/* Category badge */}
                         {query.category && (
-                          <span className="inline-flex items-center bg-violet-50 text-violet-700 border border-violet-200 text-[10px] px-1.5 py-0.5 rounded font-medium">
+                          <span className="inline-flex items-center bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-800 text-[10px] px-1.5 py-0.5 rounded font-medium">
                             {query.category}
                           </span>
                         )}
@@ -386,12 +386,12 @@ export function SavedQueriesPanel({
                           handleCopy(query);
                         }}
                         title="Copy SQL to clipboard"
-                        className="p-1.5 rounded-md hover:bg-slate-100 transition-colors"
+                        className="p-1.5 rounded-md hover:bg-muted transition-colors"
                       >
                         {isCopied ? (
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                         ) : (
-                          <Copy className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600" />
+                          <Copy className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
                         )}
                       </button>
 
@@ -402,12 +402,12 @@ export function SavedQueriesPanel({
                           handleDelete(query);
                         }}
                         title="Delete query"
-                        className="p-1.5 rounded-md hover:bg-red-50 transition-colors"
+                        className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                       >
                         {isDeleting ? (
-                          <Loader2 className="w-3.5 h-3.5 text-slate-400 animate-spin" />
+                          <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
                         ) : (
-                          <Trash2 className="w-3.5 h-3.5 text-slate-400 hover:text-red-500" />
+                          <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-red-500" />
                         )}
                       </button>
                     </div>

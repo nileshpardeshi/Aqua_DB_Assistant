@@ -496,8 +496,8 @@ export async function getERDiagramData(
       name: table.tableName,
       schema: table.schemaName,
       type: table.tableType,
-      description: null,
-      estimatedRows: null,
+      description: table.description ?? null,
+      estimatedRows: table.estimatedRows != null ? Number(table.estimatedRows) : null,
       columns: table.columns.map((col) => ({
         id: col.id,
         name: col.columnName,

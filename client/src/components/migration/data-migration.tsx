@@ -98,7 +98,7 @@ function fuzzyMatch(csvHeader: string, dbColumn: string): boolean {
 }
 
 const TRANSFORM_COLORS: Record<string, { bg: string; text: string }> = {
-  direct: { bg: 'bg-slate-100', text: 'text-slate-600' },
+  direct: { bg: 'bg-muted', text: 'text-muted-foreground' },
   cast: { bg: 'bg-blue-100', text: 'text-blue-700' },
   expression: { bg: 'bg-purple-100', text: 'text-purple-700' },
   default: { bg: 'bg-amber-100', text: 'text-amber-700' },
@@ -138,7 +138,7 @@ function StepIndicator({
                     ? 'bg-purple-600 text-white ring-2 ring-purple-200'
                     : isDone
                       ? 'bg-green-500 text-white'
-                      : 'bg-slate-200 text-slate-500',
+                      : 'bg-muted text-muted-foreground',
                 )}
               >
                 {isDone && !isActive ? (
@@ -154,7 +154,7 @@ function StepIndicator({
                     ? 'text-purple-700'
                     : isDone
                       ? 'text-green-600'
-                      : 'text-slate-400',
+                      : 'text-muted-foreground',
                 )}
               >
                 {step.label}
@@ -164,7 +164,7 @@ function StepIndicator({
               <div
                 className={cn(
                   'w-10 h-0.5 mx-0.5 mt-[-12px]',
-                  completed.has(step.num) ? 'bg-green-400' : 'bg-slate-200',
+                  completed.has(step.num) ? 'bg-green-400' : 'bg-muted',
                 )}
               />
             )}
@@ -497,7 +497,7 @@ export function DataMigration({ projectId }: { projectId: string }) {
       <StepIndicator current={currentStep} completed={completedSteps} />
 
       {/* Step Content */}
-      <div className="bg-card border border-slate-200 rounded-xl p-6 min-h-[400px]">
+      <div className="bg-card border border-border rounded-xl p-6 min-h-[400px]">
         {currentStep === 1 && (
           <Step1SelectMappings
             savedMappings={savedMappings || []}
@@ -584,7 +584,7 @@ export function DataMigration({ projectId }: { projectId: string }) {
         <button
           onClick={() => setCurrentStep((s) => Math.max(1, s - 1))}
           disabled={currentStep === 1}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-muted-foreground bg-muted hover:bg-muted/80 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           Back
@@ -644,11 +644,11 @@ function Step1SelectMappings({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <List className="w-4.5 h-4.5 text-purple-600" />
           Select Column Mappings
         </h3>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Choose which saved column mappings to include in the data migration.
           Each mapping represents a source-target table pair.
         </p>
@@ -659,7 +659,7 @@ function Step1SelectMappings({
           <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
         </div>
       ) : savedMappings.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 text-sm">
+        <div className="text-center py-12 text-muted-foreground text-sm">
           No saved column mappings found. Create mappings in the Column Mapping tab first.
         </div>
       ) : (
@@ -675,7 +675,7 @@ function Step1SelectMappings({
                   'flex items-center gap-3 p-3 rounded-lg border text-left transition-all',
                   selected
                     ? 'border-purple-400 bg-purple-50 ring-1 ring-purple-200'
-                    : 'border-slate-200 bg-white hover:border-slate-300',
+                    : 'border-border bg-card hover:border-border',
                 )}
               >
                 <div
@@ -683,28 +683,28 @@ function Step1SelectMappings({
                     'w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
                     selected
                       ? 'border-purple-500 bg-purple-500'
-                      : 'border-slate-300',
+                      : 'border-border',
                   )}
                 >
                   {selected && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {m.name}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {m.sourceTableName} &rarr; {m.targetTableName}{' '}
-                    <span className="text-slate-400">
+                    <span className="text-muted-foreground">
                       ({parsed.length} column{parsed.length !== 1 ? 's' : ''})
                     </span>
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
                     {m.sourceDialect}
                   </span>
-                  <ArrowDown className="w-3 h-3 text-slate-400 rotate-[-90deg]" />
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium">
+                  <ArrowDown className="w-3 h-3 text-muted-foreground rotate-[-90deg]" />
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
                     {m.targetDialect}
                   </span>
                 </div>
@@ -716,9 +716,9 @@ function Step1SelectMappings({
 
       {/* Dependency Resolution */}
       {selectedIds.size > 0 && (
-        <div className="border-t border-slate-200 pt-4 space-y-3">
+        <div className="border-t border-border pt-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
               <Link2 className="w-4 h-4 text-purple-500" />
               Table Dependencies
             </h4>
@@ -755,16 +755,16 @@ function Step1SelectMappings({
                   return (
                     <div
                       key={table}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100"
+                      className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50"
                     >
                       <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
                         {idx + 1}
                       </span>
-                      <span className="text-sm font-medium text-slate-700 flex-1">
+                      <span className="text-sm font-medium text-foreground flex-1">
                         {table}
                       </span>
                       {deps.length > 0 && (
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-[10px] text-muted-foreground">
                           depends on: {deps.join(', ')}
                         </span>
                       )}
@@ -820,11 +820,11 @@ function Step2UploadCSV({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Upload className="w-4.5 h-4.5 text-purple-600" />
           Upload CSV Data Files
         </h3>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Upload a CSV file for each source table. The file should contain the
           exported data with column headers in the first row.
         </p>
@@ -842,7 +842,7 @@ function Step2UploadCSV({
                 'p-4 rounded-lg border transition-colors',
                 hasCSV
                   ? 'border-green-200 bg-green-50/50'
-                  : 'border-slate-200 bg-white',
+                  : 'border-border bg-card',
               )}
             >
               <div className="flex items-center justify-between">
@@ -850,14 +850,14 @@ function Step2UploadCSV({
                   <FileSpreadsheet
                     className={cn(
                       'w-5 h-5',
-                      hasCSV ? 'text-green-600' : 'text-slate-400',
+                      hasCSV ? 'text-green-600' : 'text-muted-foreground',
                     )}
                   />
                   <div>
-                    <p className="text-sm font-medium text-slate-800">
+                    <p className="text-sm font-medium text-foreground">
                       {m.sourceTableName}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-muted-foreground">
                       &rarr; {m.targetTableName}
                     </p>
                   </div>
@@ -888,7 +888,7 @@ function Step2UploadCSV({
                     className={cn(
                       'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
                       hasCSV
-                        ? 'text-slate-600 bg-white border border-slate-200 hover:bg-slate-50'
+                        ? 'text-muted-foreground bg-white border border-border hover:bg-muted/50'
                         : 'text-white bg-purple-600 hover:bg-purple-700',
                     )}
                   >
@@ -911,13 +911,13 @@ function Step2UploadCSV({
                         {csv.headers.slice(0, 8).map((h) => (
                           <th
                             key={h}
-                            className="px-2 py-1 text-left font-medium text-slate-600 bg-slate-100 border border-slate-200"
+                            className="px-2 py-1 text-left font-medium text-muted-foreground bg-muted border border-border"
                           >
                             {h}
                           </th>
                         ))}
                         {csv.headers.length > 8 && (
-                          <th className="px-2 py-1 text-left font-medium text-slate-400 bg-slate-100 border border-slate-200">
+                          <th className="px-2 py-1 text-left font-medium text-muted-foreground bg-muted border border-border">
                             +{csv.headers.length - 8}
                           </th>
                         )}
@@ -929,13 +929,13 @@ function Step2UploadCSV({
                           {csv.headers.slice(0, 8).map((h) => (
                             <td
                               key={h}
-                              className="px-2 py-1 text-slate-500 border border-slate-200 max-w-[120px] truncate"
+                              className="px-2 py-1 text-muted-foreground border border-border max-w-[120px] truncate"
                             >
                               {row[h] || ''}
                             </td>
                           ))}
                           {csv.headers.length > 8 && (
-                            <td className="px-2 py-1 text-slate-300 border border-slate-200">
+                            <td className="px-2 py-1 text-muted-foreground border border-border">
                               ...
                             </td>
                           )}
@@ -943,7 +943,7 @@ function Step2UploadCSV({
                       ))}
                     </tbody>
                   </table>
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-muted-foreground mt-1">
                     Delimiter: {csv.detectedDelimiter === '\t' ? 'TAB' : `"${csv.detectedDelimiter}"`}
                     {' | '}
                     Size: {(csv.fileSize / 1024 / 1024).toFixed(1)}MB
@@ -1016,11 +1016,11 @@ function Step3MapHeaders({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Settings2 className="w-4.5 h-4.5 text-purple-600" />
           Map CSV Headers to Source Columns
         </h3>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           For each table, map the CSV column headers to the corresponding source
           database columns. You can save mappings for reuse.
         </p>
@@ -1048,20 +1048,20 @@ function Step3MapHeaders({
           return (
             <div
               key={m.id}
-              className="border border-slate-200 rounded-lg overflow-hidden"
+              className="border border-border rounded-lg overflow-hidden"
             >
               {/* Table header */}
               <button
                 onClick={() => onToggleExpanded(m.sourceTableName)}
-                className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+                className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted transition-colors"
               >
                 <div className="flex items-center gap-2">
                   {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   )}
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm font-medium text-foreground">
                     {m.sourceTableName}
                   </span>
                   <span
@@ -1095,11 +1095,11 @@ function Step3MapHeaders({
 
               {/* Save/Load Toolbar */}
               {isExpanded && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50/50 border-b border-slate-100">
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50/50 border-b border-border/50">
                   {/* Load Saved */}
                   {tableSavedDSMs.length > 0 && (
                     <div className="flex items-center gap-1">
-                      <FolderOpen className="w-3.5 h-3.5 text-slate-500" />
+                      <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
                       <select
                         value={loadedId || ''}
                         onChange={(e) => {
@@ -1107,7 +1107,7 @@ function Step3MapHeaders({
                             onLoadDSM(m.sourceTableName, e.target.value);
                           }
                         }}
-                        className="text-xs px-2 py-1 rounded border border-slate-200 bg-white text-slate-600"
+                        className="text-xs px-2 py-1 rounded border border-border bg-card text-muted-foreground"
                       >
                         <option value="">Load saved...</option>
                         {tableSavedDSMs.map((s) => (
@@ -1162,7 +1162,7 @@ function Step3MapHeaders({
                               e.stopPropagation();
                               setConfirmDelete(null);
                             }}
-                            className="text-[10px] text-slate-500 font-bold px-1.5 py-0.5 rounded bg-slate-50 hover:bg-slate-100"
+                            className="text-[10px] text-muted-foreground font-bold px-1.5 py-0.5 rounded bg-muted/50 hover:bg-muted"
                           >
                             No
                           </button>
@@ -1246,7 +1246,7 @@ function Step3MapHeaders({
                             return next;
                           });
                         }}
-                        className="text-xs text-slate-400 hover:text-slate-600 px-1"
+                        className="text-xs text-muted-foreground hover:text-muted-foreground px-1"
                       >
                         <XCircle className="w-3.5 h-3.5" />
                       </button>
@@ -1257,7 +1257,7 @@ function Step3MapHeaders({
 
               {/* Mapping rows */}
               {isExpanded && (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-border/50">
                   {csv.headers.map((header) => {
                     const mapped = tableMappings.find(
                       (tm) => tm.csvHeader === header,
@@ -1271,16 +1271,16 @@ function Step3MapHeaders({
                       >
                         {/* CSV Header */}
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-slate-700 truncate">
+                          <p className="text-xs font-medium text-foreground truncate">
                             {header}
                           </p>
-                          <p className="text-[10px] text-slate-400 truncate">
+                          <p className="text-[10px] text-muted-foreground truncate">
                             e.g. {sampleValue || '(empty)'}
                           </p>
                         </div>
 
                         {/* Arrow */}
-                        <ArrowDown className="w-3.5 h-3.5 text-slate-300 rotate-[-90deg] flex-shrink-0" />
+                        <ArrowDown className="w-3.5 h-3.5 text-muted-foreground rotate-[-90deg] flex-shrink-0" />
 
                         {/* Source column dropdown */}
                         <div className="flex-1">
@@ -1297,7 +1297,7 @@ function Step3MapHeaders({
                               'w-full text-xs px-2 py-1.5 rounded border bg-white transition-colors',
                               mapped
                                 ? 'border-green-300 text-green-800'
-                                : 'border-slate-200 text-slate-500',
+                                : 'border-border text-muted-foreground',
                             )}
                           >
                             <option value="">-- Skip --</option>
@@ -1314,7 +1314,7 @@ function Step3MapHeaders({
                           {mapped ? (
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                           ) : (
-                            <XCircle className="w-4 h-4 text-slate-300" />
+                            <XCircle className="w-4 h-4 text-muted-foreground" />
                           )}
                         </div>
                       </div>
@@ -1430,11 +1430,11 @@ function Step4VerifyChain({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Table2 className="w-4.5 h-4.5 text-purple-600" />
           Verify Mapping Chain
         </h3>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Review the complete 3-level mapping: CSV Header &rarr; Source Column &rarr; Target Column.
           Ensure all columns are correctly mapped before generating scripts.
         </p>
@@ -1452,12 +1452,12 @@ function Step4VerifyChain({
         </div>
         <div className={cn(
           'p-3 rounded-lg border text-center',
-          totalWarnings > 0 ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100',
+          totalWarnings > 0 ? 'bg-amber-50 border-amber-100' : 'bg-muted/50 border-slate-100',
         )}>
-          <p className={cn('text-lg font-bold', totalWarnings > 0 ? 'text-amber-700' : 'text-slate-500')}>
+          <p className={cn('text-lg font-bold', totalWarnings > 0 ? 'text-amber-700' : 'text-muted-foreground')}>
             {totalWarnings}
           </p>
-          <p className={cn('text-[10px] uppercase font-medium', totalWarnings > 0 ? 'text-amber-500' : 'text-slate-400')}>
+          <p className={cn('text-[10px] uppercase font-medium', totalWarnings > 0 ? 'text-amber-500' : 'text-muted-foreground')}>
             Warnings
           </p>
         </div>
@@ -1471,27 +1471,27 @@ function Step4VerifyChain({
           return (
             <div
               key={data.mapping.id}
-              className="border border-slate-200 rounded-lg overflow-hidden"
+              className="border border-border rounded-lg overflow-hidden"
             >
               {/* Table header */}
               <button
                 onClick={() => onToggleExpanded(`chain-${data.mapping.sourceTableName}`)}
-                className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+                className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted transition-colors"
               >
                 <div className="flex items-center gap-2">
                   {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   )}
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm font-medium text-foreground">
                     {data.mapping.sourceTableName}
                   </span>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-sm font-medium text-slate-700">
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">
                     {data.mapping.targetTableName}
                   </span>
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[10px] text-muted-foreground">
                     ({data.csvFileName}, {data.rowCount.toLocaleString()} rows)
                   </span>
                 </div>
@@ -1513,27 +1513,27 @@ function Step4VerifyChain({
                   <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr className="bg-gradient-to-r from-blue-50 via-purple-50 to-green-50">
-                        <th className="px-3 py-2 text-left font-semibold text-slate-600 border-b border-slate-200 w-8">
+                        <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border w-8">
                           #
                         </th>
-                        <th className="px-3 py-2 text-left font-semibold text-blue-700 border-b border-slate-200">
+                        <th className="px-3 py-2 text-left font-semibold text-blue-700 border-b border-border">
                           CSV Header
                         </th>
-                        <th className="px-3 py-2 text-left font-semibold text-slate-500 border-b border-slate-200">
+                        <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                           Sample
                         </th>
-                        <th className="px-3 py-2 text-center font-semibold text-slate-400 border-b border-slate-200 w-8">
+                        <th className="px-3 py-2 text-center font-semibold text-muted-foreground border-b border-border w-8">
                         </th>
-                        <th className="px-3 py-2 text-left font-semibold text-purple-700 border-b border-slate-200">
+                        <th className="px-3 py-2 text-left font-semibold text-purple-700 border-b border-border">
                           Source Column
                         </th>
-                        <th className="px-3 py-2 text-center font-semibold text-slate-400 border-b border-slate-200 w-24">
+                        <th className="px-3 py-2 text-center font-semibold text-muted-foreground border-b border-border w-24">
                           Transform
                         </th>
-                        <th className="px-3 py-2 text-left font-semibold text-green-700 border-b border-slate-200">
+                        <th className="px-3 py-2 text-left font-semibold text-green-700 border-b border-border">
                           Target Column
                         </th>
-                        <th className="px-3 py-2 text-left font-semibold text-slate-500 border-b border-slate-200">
+                        <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                           Type
                         </th>
                       </tr>
@@ -1551,28 +1551,28 @@ function Step4VerifyChain({
                                 ? 'bg-amber-50/50'
                                 : row.status === 'partial'
                                   ? 'bg-yellow-50/30'
-                                  : 'hover:bg-slate-50/50',
+                                  : 'hover:bg-muted/50/50',
                             )}
                           >
-                            <td className="px-3 py-2 text-slate-400 border-b border-slate-100">
+                            <td className="px-3 py-2 text-muted-foreground border-b border-border/50">
                               {idx + 1}
                             </td>
-                            <td className="px-3 py-2 border-b border-slate-100">
+                            <td className="px-3 py-2 border-b border-border/50">
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-medium text-[11px]">
                                 {row.csvHeader}
                               </span>
                             </td>
-                            <td className="px-3 py-2 text-slate-400 border-b border-slate-100 max-w-[100px] truncate">
+                            <td className="px-3 py-2 text-muted-foreground border-b border-border/50 max-w-[100px] truncate">
                               {row.sampleValue || '-'}
                             </td>
-                            <td className="px-3 py-2 text-center border-b border-slate-100">
+                            <td className="px-3 py-2 text-center border-b border-border/50">
                               {row.sourceColumn ? (
                                 <ArrowRight className="w-3.5 h-3.5 text-purple-400 mx-auto" />
                               ) : (
                                 <XCircle className="w-3.5 h-3.5 text-amber-300 mx-auto" />
                               )}
                             </td>
-                            <td className="px-3 py-2 border-b border-slate-100">
+                            <td className="px-3 py-2 border-b border-border/50">
                               {row.sourceColumn ? (
                                 <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-medium text-[11px]">
                                   {row.sourceColumn}
@@ -1581,7 +1581,7 @@ function Step4VerifyChain({
                                 <span className="text-amber-500 italic">unmapped</span>
                               )}
                             </td>
-                            <td className="px-3 py-2 text-center border-b border-slate-100">
+                            <td className="px-3 py-2 text-center border-b border-border/50">
                               {row.transformation && (
                                 <span className={cn(
                                   'inline-flex items-center px-1.5 py-0.5 rounded font-medium text-[10px]',
@@ -1592,7 +1592,7 @@ function Step4VerifyChain({
                                 </span>
                               )}
                             </td>
-                            <td className="px-3 py-2 border-b border-slate-100">
+                            <td className="px-3 py-2 border-b border-border/50">
                               {row.targetColumn ? (
                                 <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-medium text-[11px]">
                                   {row.targetColumn}
@@ -1601,7 +1601,7 @@ function Step4VerifyChain({
                                 <span className="text-amber-500 italic">no DB mapping</span>
                               ) : null}
                             </td>
-                            <td className="px-3 py-2 text-slate-400 border-b border-slate-100 text-[10px] uppercase">
+                            <td className="px-3 py-2 text-muted-foreground border-b border-border/50 text-[10px] uppercase">
                               {row.targetType}
                             </td>
                           </tr>
@@ -1611,22 +1611,22 @@ function Step4VerifyChain({
                       {/* Orphaned source columns (mapped in DB but not linked from CSV) */}
                       {data.orphanedSourceCols.map((oc, idx) => (
                         <tr key={`orphan-${idx}`} className="bg-red-50/30">
-                          <td className="px-3 py-2 text-slate-400 border-b border-slate-100">
+                          <td className="px-3 py-2 text-muted-foreground border-b border-border/50">
                             -
                           </td>
-                          <td className="px-3 py-2 border-b border-slate-100">
+                          <td className="px-3 py-2 border-b border-border/50">
                             <span className="text-red-400 italic text-[11px]">no CSV header</span>
                           </td>
-                          <td className="px-3 py-2 border-b border-slate-100" />
-                          <td className="px-3 py-2 text-center border-b border-slate-100">
+                          <td className="px-3 py-2 border-b border-border/50" />
+                          <td className="px-3 py-2 text-center border-b border-border/50">
                             <AlertTriangle className="w-3.5 h-3.5 text-red-300 mx-auto" />
                           </td>
-                          <td className="px-3 py-2 border-b border-slate-100">
+                          <td className="px-3 py-2 border-b border-border/50">
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-medium text-[11px]">
                               {oc.sourceColumn}
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-center border-b border-slate-100">
+                          <td className="px-3 py-2 text-center border-b border-border/50">
                             <span className={cn(
                               'inline-flex items-center px-1.5 py-0.5 rounded font-medium text-[10px]',
                               TRANSFORM_COLORS[oc.transformationType]?.bg || TRANSFORM_COLORS.direct.bg,
@@ -1635,12 +1635,12 @@ function Step4VerifyChain({
                               {oc.transformationType || 'direct'}
                             </span>
                           </td>
-                          <td className="px-3 py-2 border-b border-slate-100">
+                          <td className="px-3 py-2 border-b border-border/50">
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-medium text-[11px]">
                               {oc.targetColumn}
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-slate-400 border-b border-slate-100 text-[10px] uppercase">
+                          <td className="px-3 py-2 text-muted-foreground border-b border-border/50 text-[10px] uppercase">
                             {oc.targetDataType}
                           </td>
                         </tr>
@@ -1717,11 +1717,11 @@ function Step5Configure({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Settings2 className="w-4.5 h-4.5 text-purple-600" />
           Configure Script Generation
         </h3>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Set batch size, target dialect, and other options before generating
           the migration script.
         </p>
@@ -1730,13 +1730,13 @@ function Step5Configure({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Target Dialect */}
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground mb-1.5">
             Target Dialect
           </label>
           <select
             value={targetDialect}
             onChange={(e) => setTargetDialect(e.target.value)}
-            className="w-full text-sm px-3 py-2 rounded-lg border border-slate-200 bg-white"
+            className="w-full text-sm px-3 py-2 rounded-lg border border-border bg-card"
           >
             {DATABASE_DIALECTS.filter((d) =>
               ['postgresql', 'mysql', 'oracle', 'sqlserver', 'mariadb'].includes(
@@ -1752,7 +1752,7 @@ function Step5Configure({
 
         {/* Batch Size */}
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground mb-1.5">
             Batch Size
           </label>
           <div className="flex items-center gap-3">
@@ -1771,7 +1771,7 @@ function Step5Configure({
               max={100000}
               value={batchSize}
               onChange={(e) => setBatchSize(Math.max(100, Number(e.target.value)))}
-              className="w-24 text-sm px-2 py-1.5 rounded border border-slate-200 text-center"
+              className="w-24 text-sm px-2 py-1.5 rounded border border-border text-center"
             />
           </div>
         </div>
@@ -1782,13 +1782,13 @@ function Step5Configure({
             type="checkbox"
             checked={disableFK}
             onChange={(e) => setDisableFK(e.target.checked)}
-            className="w-4 h-4 rounded border-slate-300 text-purple-600 accent-purple-600"
+            className="w-4 h-4 rounded border-border text-purple-600 accent-purple-600"
           />
           <div>
-            <p className="text-sm font-medium text-slate-700">
+            <p className="text-sm font-medium text-foreground">
               Disable FK Constraints
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Wraps script with FK disable/enable statements for faster inserts
             </p>
           </div>
@@ -1800,13 +1800,13 @@ function Step5Configure({
             type="checkbox"
             checked={includeTransaction}
             onChange={(e) => setIncludeTransaction(e.target.checked)}
-            className="w-4 h-4 rounded border-slate-300 text-purple-600 accent-purple-600"
+            className="w-4 h-4 rounded border-border text-purple-600 accent-purple-600"
           />
           <div>
-            <p className="text-sm font-medium text-slate-700">
+            <p className="text-sm font-medium text-foreground">
               Wrap Batches in Transactions
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Each batch will be wrapped in BEGIN/COMMIT for atomicity
             </p>
           </div>
@@ -1814,8 +1814,8 @@ function Step5Configure({
       </div>
 
       {/* Summary */}
-      <div className="border-t border-slate-200 pt-4">
-        <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
+      <div className="border-t border-border pt-4">
+        <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
           <Eye className="w-4 h-4 text-purple-500" />
           Migration Summary
         </h4>
@@ -1846,12 +1846,12 @@ function Step5Configure({
           ].map((item) => (
             <div
               key={item.label}
-              className="p-3 rounded-lg bg-slate-50 border border-slate-100"
+              className="p-3 rounded-lg bg-muted/50 border border-border/50"
             >
               <p className={cn('text-lg font-bold', item.color)}>
                 {item.value}
               </p>
-              <p className="text-[10px] text-slate-500 uppercase font-medium tracking-wide">
+              <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-wide">
                 {item.label}
               </p>
             </div>
@@ -1866,15 +1866,15 @@ function Step5Configure({
             return (
               <div
                 key={m.id}
-                className="flex items-center gap-2 text-xs text-slate-600 py-1"
+                className="flex items-center gap-2 text-xs text-muted-foreground py-1"
               >
-                <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-muted text-muted-foreground text-[10px] font-bold flex items-center justify-center">
                   {idx + 1}
                 </span>
                 <span className="font-medium">
                   {m.sourceTableName} &rarr; {m.targetTableName}
                 </span>
-                <span className="text-slate-400">
+                <span className="text-muted-foreground">
                   {csv?.rowCount.toLocaleString() || '?'} rows,{' '}
                   {dsm.length} header mappings
                 </span>
@@ -1918,11 +1918,11 @@ function Step6Generate({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Play className="w-4.5 h-4.5 text-purple-600" />
           Generate Migration Script
         </h3>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Generate the batched INSERT script from your CSV data files.
         </p>
       </div>
@@ -2002,13 +2002,13 @@ function Step6Generate({
                 <p className="text-lg font-bold text-green-700">
                   {genStatus.totalTables}
                 </p>
-                <p className="text-[10px] text-slate-500 uppercase">Tables</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Tables</p>
               </div>
               <div className="p-2 bg-white rounded-lg text-center">
                 <p className="text-lg font-bold text-green-700">
                   {genStatus.rowsProcessed.toLocaleString()}
                 </p>
-                <p className="text-[10px] text-slate-500 uppercase">Rows</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Rows</p>
               </div>
               <div className="p-2 bg-white rounded-lg text-center">
                 <p className="text-lg font-bold text-green-700">
@@ -2016,7 +2016,7 @@ function Step6Generate({
                     ? `${(genStatus.fileSize / 1024 / 1024).toFixed(1)}MB`
                     : '--'}
                 </p>
-                <p className="text-[10px] text-slate-500 uppercase">
+                <p className="text-[10px] text-muted-foreground uppercase">
                   File Size
                 </p>
               </div>
@@ -2030,10 +2030,10 @@ function Step6Generate({
                     key={ts.tableName}
                     className="flex items-center justify-between text-xs py-1 px-2 bg-white rounded"
                   >
-                    <span className="font-medium text-slate-700">
+                    <span className="font-medium text-foreground">
                       {ts.tableName}
                     </span>
-                    <span className="text-slate-500">
+                    <span className="text-muted-foreground">
                       {ts.rowCount.toLocaleString()} rows ({ts.batchCount}{' '}
                       batch{ts.batchCount !== 1 ? 'es' : ''})
                     </span>

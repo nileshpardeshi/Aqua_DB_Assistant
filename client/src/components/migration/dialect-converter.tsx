@@ -433,13 +433,13 @@ export function DialectConverter() {
       {/* Dialect Selectors */}
       <div className="flex items-center gap-4">
         <div className="flex-1">
-          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground mb-1.5">
             Source Dialect
           </label>
           <select
             value={sourceDialect}
             onChange={(e) => setSourceDialect(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+            className="w-full px-3 py-2.5 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
           >
             {DIALECTS.map((d) => (
               <option key={d.value} value={d.value}>
@@ -451,20 +451,20 @@ export function DialectConverter() {
 
         <button
           onClick={handleSwapDialects}
-          className="mt-5 p-2.5 rounded-lg border border-slate-200 bg-card hover:bg-slate-50 text-slate-500 hover:text-aqua-600 transition-all"
+          className="mt-5 p-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 text-muted-foreground hover:text-aqua-600 transition-all"
           title="Swap dialects"
         >
           <ArrowRightLeft className="w-4 h-4" />
         </button>
 
         <div className="flex-1">
-          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground mb-1.5">
             Target Dialect
           </label>
           <select
             value={targetDialect}
             onChange={(e) => setTargetDialect(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+            className="w-full px-3 py-2.5 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
           >
             {DIALECTS.map((d) => (
               <option key={d.value} value={d.value}>
@@ -480,7 +480,7 @@ export function DialectConverter() {
         {/* Source SQL */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
+            <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
               Source SQL
               {sourceDialectInfo && (
                 <span
@@ -503,7 +503,7 @@ export function DialectConverter() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-aqua-600 transition-colors"
+                className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-aqua-600 transition-colors"
               >
                 <Upload className="w-3 h-3" />
                 Upload .sql
@@ -511,7 +511,7 @@ export function DialectConverter() {
               {sourceSql && (
                 <button
                   onClick={handleDownloadSource}
-                  className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                  className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Download className="w-3 h-3" />
                   Download
@@ -519,7 +519,7 @@ export function DialectConverter() {
               )}
               <button
                 onClick={handleLoadSample}
-                className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-aqua-600 transition-colors"
+                className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-aqua-600 transition-colors"
               >
                 <Sparkles className="w-3 h-3" />
                 Load Sample
@@ -563,12 +563,12 @@ export function DialectConverter() {
               placeholder={`-- Paste your ${sourceDialectInfo?.label || 'source'} SQL here, or upload a .sql file using the button above\n\nCREATE TABLE users (\n  id SERIAL PRIMARY KEY,\n  name VARCHAR(255) NOT NULL,\n  email VARCHAR(255) UNIQUE,\n  active BOOLEAN DEFAULT true,\n  created_at TIMESTAMP DEFAULT NOW()\n);`}
               rows={12}
               spellCheck={false}
-              className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
+              className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
             />
           </div>
           {sourceSql && (
             <div className="flex items-center gap-3 mt-1">
-              <span className="text-[10px] text-slate-500">
+              <span className="text-[10px] text-muted-foreground">
                 {sourceSql.split('\n').length} lines · {sourceSql.length.toLocaleString()} chars
               </span>
             </div>
@@ -578,7 +578,7 @@ export function DialectConverter() {
         {/* Target SQL */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
+            <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
               Converted SQL
               {targetDialectInfo && (
                 <span
@@ -597,7 +597,7 @@ export function DialectConverter() {
                 <>
                   <button
                     onClick={handleDownloadConverted}
-                    className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                    className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
                     title="Download as .sql file"
                   >
                     <Download className="w-3 h-3" />
@@ -605,7 +605,7 @@ export function DialectConverter() {
                   </button>
                   <button
                     onClick={handleCopy}
-                    className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                    className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {copied ? (
                       <>
@@ -629,11 +629,11 @@ export function DialectConverter() {
             placeholder="Converted SQL will appear here..."
             rows={12}
             spellCheck={false}
-            className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
+            className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
           />
           {targetSql && (
             <div className="flex items-center gap-3 mt-1">
-              <span className="text-[10px] text-slate-500">
+              <span className="text-[10px] text-muted-foreground">
                 {targetSql.split('\n').length} lines · {targetSql.length.toLocaleString()} chars
               </span>
             </div>
@@ -649,7 +649,7 @@ export function DialectConverter() {
           className={cn(
             'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
             isConverting || !sourceSql.trim()
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              ? 'bg-muted text-muted-foreground cursor-not-allowed'
               : 'bg-aqua-600 text-white hover:bg-aqua-700'
           )}
         >
@@ -667,7 +667,7 @@ export function DialectConverter() {
         </button>
 
         {sourceDialectInfo && targetDialectInfo && (
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-muted-foreground">
             {sourceDialectInfo.label} <ArrowRight className="w-3 h-3 inline" /> {targetDialectInfo.label}
           </span>
         )}
@@ -693,7 +693,7 @@ export function DialectConverter() {
                   <div
                     className={cn(
                       'w-8 h-px',
-                      isCompleted || progressStep > idx ? 'bg-aqua-500' : 'bg-slate-200'
+                      isCompleted || progressStep > idx ? 'bg-aqua-500' : 'bg-muted'
                     )}
                   />
                 )}
@@ -705,7 +705,7 @@ export function DialectConverter() {
                         ? 'bg-aqua-600 text-white'
                         : isActive
                           ? 'bg-aqua-100 text-aqua-700 animate-pulse'
-                          : 'bg-slate-100 text-slate-400'
+                          : 'bg-muted text-muted-foreground'
                     )}
                   >
                     {isCompleted ? (
@@ -721,7 +721,7 @@ export function DialectConverter() {
                         ? 'text-aqua-700'
                         : isActive
                           ? 'text-aqua-600 animate-pulse'
-                          : 'text-slate-400'
+                          : 'text-muted-foreground'
                     )}
                   >
                     {step}
@@ -735,21 +735,21 @@ export function DialectConverter() {
 
       {/* Changes Log */}
       {changes.length > 0 && (
-        <div className="bg-card border border-slate-200 rounded-lg overflow-hidden">
-          <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
-            <FileText className="w-3.5 h-3.5 text-slate-500" />
-            <h4 className="text-xs font-semibold text-slate-700">
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-4 py-2.5 bg-muted/50 border-b border-border flex items-center gap-2">
+            <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+            <h4 className="text-xs font-semibold text-foreground">
               Conversion Changes
             </h4>
             <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-aqua-100 text-aqua-700">
               {changes.length}
             </span>
           </div>
-          <ul className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto">
+          <ul className="divide-y divide-border/50 max-h-[300px] overflow-y-auto">
             {changes.map((change, idx) => (
               <li
                 key={idx}
-                className="px-4 py-2.5 text-sm text-slate-700"
+                className="px-4 py-2.5 text-sm text-foreground"
               >
                 <div className="flex items-start gap-2">
                   <span className="text-aqua-500 mt-0.5 flex-shrink-0">
@@ -760,12 +760,12 @@ export function DialectConverter() {
                       <code className="px-1.5 py-0.5 text-xs font-mono bg-red-50 text-red-700 rounded">
                         {change.original}
                       </code>
-                      <ArrowRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                      <ArrowRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                       <code className="px-1.5 py-0.5 text-xs font-mono bg-green-50 text-green-700 rounded">
                         {change.converted}
                       </code>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-1">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       {change.reason}
                     </p>
                   </div>
@@ -778,10 +778,10 @@ export function DialectConverter() {
 
       {/* ════════════════════ VALIDATION PANEL ════════════════════ */}
       {targetSql && ruleValidation && ruleValidation.issues.length > 0 && (
-        <div className="bg-card border border-slate-200 rounded-lg overflow-hidden">
-          <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
-            <h4 className="text-xs font-semibold text-slate-700">
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-4 py-2.5 bg-muted/50 border-b border-border flex items-center gap-2">
+            <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
+            <h4 className="text-xs font-semibold text-foreground">
               Compatibility Validation
             </h4>
             {ruleValidation.summary.errors > 0 && (
@@ -811,7 +811,7 @@ export function DialectConverter() {
               )}
             </div>
           </div>
-          <ul className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto">
+          <ul className="divide-y divide-border/50 max-h-[300px] overflow-y-auto">
             {ruleValidation.issues.map((issue, idx) => (
               <li key={idx} className="px-4 py-2.5">
                 <div className="flex items-start gap-2">
@@ -835,12 +835,12 @@ export function DialectConverter() {
                         {issue.category.replace('_', ' ')}
                       </span>
                       {issue.line && (
-                        <span className="text-[10px] text-slate-400 font-mono">Line {issue.line}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">Line {issue.line}</span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-700 mt-1">{issue.message}</p>
+                    <p className="text-xs text-foreground mt-1">{issue.message}</p>
                     {issue.suggestion && (
-                      <p className="text-[11px] text-slate-500 mt-0.5 italic">
+                      <p className="text-[11px] text-muted-foreground mt-0.5 italic">
                         Fix: {issue.suggestion}
                       </p>
                     )}
@@ -873,7 +873,7 @@ export function DialectConverter() {
             className={cn(
               'inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all shadow-sm',
               aiValidate.isPending
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
                 : 'bg-violet-600 text-white hover:bg-violet-700'
             )}
           >
@@ -940,7 +940,7 @@ export function DialectConverter() {
             </div>
           )}
           {aiValidation.issues && aiValidation.issues.length > 0 ? (
-            <ul className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto">
+            <ul className="divide-y divide-border/50 max-h-[300px] overflow-y-auto">
               {aiValidation.issues.map((issue, idx) => (
                 <li key={idx} className="px-4 py-2.5">
                   <div className="flex items-start gap-2">
@@ -964,12 +964,12 @@ export function DialectConverter() {
                           {issue.category.replace('_', ' ')}
                         </span>
                         {issue.line && (
-                          <span className="text-[10px] text-slate-400 font-mono">Line {issue.line}</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">Line {issue.line}</span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-700 mt-1">{issue.message}</p>
+                      <p className="text-xs text-foreground mt-1">{issue.message}</p>
                       {issue.suggestion && (
-                        <p className="text-[11px] text-slate-500 mt-0.5 italic">
+                        <p className="text-[11px] text-muted-foreground mt-0.5 italic">
                           Fix: {issue.suggestion}
                         </p>
                       )}
@@ -981,7 +981,7 @@ export function DialectConverter() {
           ) : (
             <div className="px-4 py-4 text-center">
               <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-              <p className="text-xs text-slate-600">No issues found — conversion looks clean!</p>
+              <p className="text-xs text-muted-foreground">No issues found — conversion looks clean!</p>
             </div>
           )}
 
@@ -1026,7 +1026,7 @@ export function DialectConverter() {
                 </div>
               </div>
               <div className="max-h-[300px] overflow-auto">
-                <pre className="px-4 py-3 text-xs font-mono text-slate-700 whitespace-pre-wrap leading-relaxed bg-white">
+                <pre className="px-4 py-3 text-xs font-mono text-foreground whitespace-pre-wrap leading-relaxed bg-white">
                   {aiValidation.correctedSql}
                 </pre>
               </div>
@@ -1037,16 +1037,16 @@ export function DialectConverter() {
 
       {/* ════════════════════ TEST & PREVIEW PANEL ════════════════════ */}
       {targetSql && (
-        <div className="border border-slate-200 rounded-lg overflow-hidden bg-card">
+        <div className="border border-border rounded-lg overflow-hidden bg-card">
           {/* Tab Header */}
-          <div className="flex items-center border-b border-slate-200 bg-slate-50">
+          <div className="flex items-center border-b border-border bg-muted/50">
             <button
               onClick={() => setTestTab('preview')}
               className={cn(
                 'flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2',
                 testTab === 'preview'
                   ? 'border-aqua-500 text-aqua-700 bg-white'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               )}
             >
               <Play className="w-4 h-4" />
@@ -1061,7 +1061,7 @@ export function DialectConverter() {
                 'flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2',
                 testTab === 'sandbox'
                   ? 'border-aqua-500 text-aqua-700 bg-white'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               )}
             >
               <PlayCircle className="w-4 h-4" />
@@ -1098,7 +1098,7 @@ export function DialectConverter() {
                   className={cn(
                     'inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all shadow-sm',
                     inMemoryDB.isExecuting || !targetSql
-                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      ? 'bg-muted text-muted-foreground cursor-not-allowed'
                       : 'bg-aqua-600 text-white hover:bg-aqua-700'
                   )}
                 >
@@ -1118,23 +1118,23 @@ export function DialectConverter() {
                   </button>
                 )}
 
-                <span className="text-[10px] text-slate-500 italic">
+                <span className="text-[10px] text-muted-foreground italic">
                   Runs in SQLite (WASM) in your browser — no server needed
                 </span>
               </div>
 
               {/* Statement Stats */}
               {previewStatements.length > 0 && !inMemoryDB.result && !inMemoryDB.isExecuting && (
-                <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <div className="flex items-center gap-4 px-4 py-3 bg-muted/50 rounded-lg border border-border">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Table2 className="w-3.5 h-3.5" />
                     <span>{extractTableNames(targetSql).length} table{extractTableNames(targetSql).length !== 1 ? 's' : ''}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <FileText className="w-3.5 h-3.5" />
                     <span>{previewStatements.length} statement{previewStatements.length !== 1 ? 's' : ''}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Code2 className="w-3.5 h-3.5" />
                     <span>Click "Run in Browser" to execute and test</span>
                   </div>
@@ -1156,9 +1156,9 @@ export function DialectConverter() {
               {inMemoryDB.result && (
                 <div className="space-y-3">
                   {/* Summary Bar */}
-                  <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <Clock className="w-4 h-4 text-slate-500" />
-                    <span className="text-sm font-medium text-slate-700">
+                  <div className="flex items-center gap-4 px-4 py-3 bg-muted/50 rounded-lg border border-border">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">
                       Completed in {inMemoryDB.result.totalDurationMs}ms
                     </span>
                     <span className="text-xs text-emerald-600 font-medium">
@@ -1185,17 +1185,17 @@ export function DialectConverter() {
                         )}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-slate-700">{table.tableName}</span>
+                          <span className="text-sm font-semibold text-foreground">{table.tableName}</span>
                           <Check className="w-4 h-4 text-emerald-600" />
                         </div>
                         <div className="mt-1 flex items-center gap-3">
                           <span className="text-xs font-medium text-emerald-700">
                             {table.rowCount.toLocaleString()} rows
                           </span>
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-[10px] text-muted-foreground">
                             {table.columns.length} cols
                           </span>
-                          <span className="text-[10px] text-slate-500">{table.durationMs}ms</span>
+                          <span className="text-[10px] text-muted-foreground">{table.durationMs}ms</span>
                         </div>
                         <p className="mt-1 text-[10px] text-aqua-600">Click to browse data</p>
                       </div>
@@ -1203,7 +1203,7 @@ export function DialectConverter() {
                     {inMemoryDB.result.tables.filter(t => t.status === 'failed' && t.tableName !== '⚠ Failed Statements').map((table) => (
                       <div key={table.tableName} className="px-4 py-3 rounded-lg border bg-red-50 border-red-200">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-slate-700">{table.tableName}</span>
+                          <span className="text-sm font-semibold text-foreground">{table.tableName}</span>
                           <X className="w-4 h-4 text-red-600" />
                         </div>
                         <p className="text-[11px] text-red-700 mt-1">{table.error}</p>
@@ -1244,10 +1244,10 @@ export function DialectConverter() {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-semibold text-slate-700">
+                            <h4 className="text-xs font-semibold text-foreground">
                               Data: <span className="text-aqua-600">{inMemoryBrowseTable}</span>
                             </h4>
-                            <span className="text-[10px] text-slate-500">
+                            <span className="text-[10px] text-muted-foreground">
                               {tableData.rowCount.toLocaleString()} rows · {tableData.columns.length} columns
                             </span>
                           </div>
@@ -1261,7 +1261,7 @@ export function DialectConverter() {
                                     'px-2 py-0.5 text-[10px] font-medium rounded border transition-colors',
                                     inMemoryBrowseTable === t.tableName
                                       ? 'bg-aqua-50 border-aqua-300 text-aqua-700'
-                                      : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                                      : 'bg-card border-border text-muted-foreground hover:bg-muted/50'
                                   )}
                                 >
                                   {t.tableName} ({t.rowCount})
@@ -1272,13 +1272,13 @@ export function DialectConverter() {
                         </div>
 
                         {tableData.rows.length > 0 ? (
-                          <div className="border border-slate-200 rounded-lg overflow-x-auto">
+                          <div className="border border-border rounded-lg overflow-x-auto">
                             <table className="w-full text-xs">
                               <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200">
-                                  <th className="px-3 py-2 text-left font-semibold text-slate-500 w-12">#</th>
+                                <tr className="bg-muted/50 border-b border-border">
+                                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground w-12">#</th>
                                   {tableData.columns.map((col, i) => (
-                                    <th key={i} className="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">
+                                    <th key={i} className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">
                                       {col}
                                     </th>
                                   ))}
@@ -1286,8 +1286,8 @@ export function DialectConverter() {
                               </thead>
                               <tbody>
                                 {tableData.rows.map((row, rowIdx) => (
-                                  <tr key={rowIdx} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50">
-                                    <td className="px-3 py-1.5 text-slate-400 font-mono">{rowIdx + 1}</td>
+                                  <tr key={rowIdx} className="border-b border-border/50 last:border-b-0 hover:bg-muted/50/50">
+                                    <td className="px-3 py-1.5 text-muted-foreground font-mono">{rowIdx + 1}</td>
                                     {tableData.columns.map((col, colIdx) => {
                                       const val = row[col];
                                       const displayVal = val === null ? 'NULL'
@@ -1298,7 +1298,7 @@ export function DialectConverter() {
                                           key={colIdx}
                                           className={cn(
                                             'px-3 py-1.5 font-mono whitespace-nowrap max-w-[200px] truncate',
-                                            val === null ? 'text-slate-400 italic' : 'text-slate-700'
+                                            val === null ? 'text-muted-foreground italic' : 'text-foreground'
                                           )}
                                           title={displayVal}
                                         >
@@ -1312,9 +1312,9 @@ export function DialectConverter() {
                             </table>
                           </div>
                         ) : (
-                          <div className="border border-dashed border-slate-300 rounded-lg p-6 text-center">
-                            <Database className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-                            <p className="text-sm text-slate-500">Table created successfully but has no data</p>
+                          <div className="border border-dashed border-border rounded-lg p-6 text-center">
+                            <Database className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">Table created successfully but has no data</p>
                           </div>
                         )}
                       </div>
@@ -1325,12 +1325,12 @@ export function DialectConverter() {
 
               {/* Empty State */}
               {!inMemoryDB.result && !inMemoryDB.isExecuting && !inMemoryDB.error && (
-                <div className="border border-dashed border-slate-300 rounded-lg p-6 text-center">
-                  <Play className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-                  <p className="text-sm text-slate-500">
+                <div className="border border-dashed border-border rounded-lg p-6 text-center">
+                  <Play className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
                     Click "Run in Browser" to execute the converted SQL in an in-memory SQLite database
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-2">
+                  <p className="text-[10px] text-muted-foreground mt-2">
                     Uses SQLite WASM — runs entirely in your browser · No server connection needed · Validates table creation & INSERT statements
                   </p>
                 </div>
@@ -1364,7 +1364,7 @@ export function DialectConverter() {
                   className={cn(
                     'inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all shadow-sm',
                     !canTestInSandbox || executeSandbox.isPending
-                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      ? 'bg-muted text-muted-foreground cursor-not-allowed'
                       : 'bg-emerald-600 text-white hover:bg-emerald-700'
                   )}
                 >
@@ -1382,7 +1382,7 @@ export function DialectConverter() {
                     className={cn(
                       'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
                       cleanupSandbox.isPending
-                        ? 'bg-slate-100 text-slate-400 border-slate-200'
+                        ? 'bg-muted text-muted-foreground border-border'
                         : 'text-red-600 bg-red-50 border-red-200 hover:bg-red-100'
                     )}
                   >
@@ -1392,8 +1392,8 @@ export function DialectConverter() {
                 )}
 
                 {canTestInSandbox && (
-                  <span className="text-xs text-slate-500 italic">
-                    Converted SQL will be executed in <code className="bg-slate-100 px-1 rounded text-[10px]">_datagen_sandbox</code> schema
+                  <span className="text-xs text-muted-foreground italic">
+                    Converted SQL will be executed in <code className="bg-muted px-1 rounded text-[10px]">_datagen_sandbox</code> schema
                   </span>
                 )}
               </div>
@@ -1401,12 +1401,12 @@ export function DialectConverter() {
               {/* Execution Results */}
               {executeSandbox.data && (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <Clock className="w-4 h-4 text-slate-500" />
-                    <span className="text-sm font-medium text-slate-700">
+                  <div className="flex items-center gap-4 px-4 py-3 bg-muted/50 rounded-lg border border-border">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">
                       Execution completed in {executeSandbox.data.totalDurationMs.toLocaleString()}ms
                     </span>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-muted-foreground">
                       {executeSandbox.data.tables.filter((t: { status: string }) => t.status === 'success').length}/{executeSandbox.data.tables.length} tables succeeded
                     </span>
                   </div>
@@ -1429,7 +1429,7 @@ export function DialectConverter() {
                         )}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-slate-700">{result.tableName}</span>
+                          <span className="text-sm font-semibold text-foreground">{result.tableName}</span>
                           {result.status === 'success' ? (
                             <Check className="w-4 h-4 text-emerald-600" />
                           ) : (
@@ -1446,7 +1446,7 @@ export function DialectConverter() {
                               : 'Failed'}
                           </span>
                           {result.durationMs > 0 && (
-                            <span className="text-[10px] text-slate-500">{result.durationMs}ms</span>
+                            <span className="text-[10px] text-muted-foreground">{result.durationMs}ms</span>
                           )}
                         </div>
                         {result.error && (
@@ -1484,11 +1484,11 @@ export function DialectConverter() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-semibold text-slate-700">
+                      <h4 className="text-xs font-semibold text-foreground">
                         Sandbox Data: <span className="text-aqua-600">{sandboxBrowseTable}</span>
                       </h4>
                       {sandboxTableData && (
-                        <span className="text-[10px] text-slate-500">
+                        <span className="text-[10px] text-muted-foreground">
                           {sandboxTableData.totalCount.toLocaleString()} rows · {sandboxTableData.columns.length} columns
                         </span>
                       )}
@@ -1504,7 +1504,7 @@ export function DialectConverter() {
                               'px-2 py-0.5 text-[10px] font-medium rounded border transition-colors',
                               sandboxBrowseTable === t.tableName
                                 ? 'bg-aqua-50 border-aqua-300 text-aqua-700'
-                                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                                : 'bg-card border-border text-muted-foreground hover:bg-muted/50'
                             )}
                           >
                             {t.tableName} ({t.rowCount})
@@ -1516,18 +1516,18 @@ export function DialectConverter() {
 
                   {tableDataLoading ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
-                      <span className="ml-2 text-sm text-slate-500">Loading data...</span>
+                      <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                      <span className="ml-2 text-sm text-muted-foreground">Loading data...</span>
                     </div>
                   ) : sandboxTableData && sandboxTableData.rows.length > 0 ? (
                     <>
-                      <div className="border border-slate-200 rounded-lg overflow-x-auto">
+                      <div className="border border-border rounded-lg overflow-x-auto">
                         <table className="w-full text-xs">
                           <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200">
-                              <th className="px-3 py-2 text-left font-semibold text-slate-500 w-12">#</th>
+                            <tr className="bg-muted/50 border-b border-border">
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground w-12">#</th>
                               {sandboxTableData.columns.map((col, i) => (
-                                <th key={i} className="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">
+                                <th key={i} className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">
                                   {col}
                                 </th>
                               ))}
@@ -1535,8 +1535,8 @@ export function DialectConverter() {
                           </thead>
                           <tbody>
                             {sandboxTableData.rows.map((row, rowIdx) => (
-                              <tr key={rowIdx} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50">
-                                <td className="px-3 py-1.5 text-slate-400 font-mono">
+                              <tr key={rowIdx} className="border-b border-border/50 last:border-b-0 hover:bg-muted/50/50">
+                                <td className="px-3 py-1.5 text-muted-foreground font-mono">
                                   {(sandboxPage - 1) * sandboxPageSize + rowIdx + 1}
                                 </td>
                                 {sandboxTableData.columns.map((col, colIdx) => {
@@ -1549,7 +1549,7 @@ export function DialectConverter() {
                                       key={colIdx}
                                       className={cn(
                                         'px-3 py-1.5 font-mono whitespace-nowrap max-w-[200px] truncate',
-                                        val === null ? 'text-slate-400 italic' : 'text-slate-700'
+                                        val === null ? 'text-muted-foreground italic' : 'text-foreground'
                                       )}
                                       title={displayVal}
                                     >
@@ -1565,21 +1565,21 @@ export function DialectConverter() {
 
                       {sandboxTableData.totalCount > sandboxPageSize && (
                         <div className="flex items-center justify-between mt-3">
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-muted-foreground">
                             Page {sandboxPage} of {Math.ceil(sandboxTableData.totalCount / sandboxPageSize)} · {sandboxTableData.totalCount.toLocaleString()} total rows
                           </span>
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => setSandboxPage(p => Math.max(1, p - 1))}
                               disabled={sandboxPage <= 1}
-                              className="p-1 rounded hover:bg-slate-100 disabled:opacity-30"
+                              className="p-1 rounded hover:bg-muted disabled:opacity-30"
                             >
                               <ChevronLeft className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setSandboxPage(p => p + 1)}
                               disabled={sandboxPage * sandboxPageSize >= sandboxTableData.totalCount}
-                              className="p-1 rounded hover:bg-slate-100 disabled:opacity-30"
+                              className="p-1 rounded hover:bg-muted disabled:opacity-30"
                             >
                               <ChevronRight className="w-4 h-4" />
                             </button>
@@ -1588,9 +1588,9 @@ export function DialectConverter() {
                       )}
                     </>
                   ) : (
-                    <div className="border border-dashed border-slate-300 rounded-lg p-6 text-center">
-                      <Database className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-                      <p className="text-sm text-slate-500">No data in sandbox table (structure created successfully)</p>
+                    <div className="border border-dashed border-border rounded-lg p-6 text-center">
+                      <Database className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No data in sandbox table (structure created successfully)</p>
                     </div>
                   )}
                 </div>
@@ -1598,23 +1598,23 @@ export function DialectConverter() {
 
               {/* Sandbox Status (when no execution yet) */}
               {!executeSandbox.data && !executeSandbox.isPending && canTestInSandbox && (
-                <div className="border border-dashed border-slate-300 rounded-lg p-6 text-center">
+                <div className="border border-dashed border-border rounded-lg p-6 text-center">
                   {sandboxStatus?.exists ? (
                     <>
                       <Database className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
-                      <p className="text-sm text-slate-600 font-medium">Sandbox schema exists</p>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-sm text-muted-foreground font-medium">Sandbox schema exists</p>
+                      <p className="text-xs text-muted-foreground mt-1">
                         {sandboxStatus.tables.length} table(s): {sandboxStatus.tables.map(t => `${t.tableName} (${t.rowCount})`).join(', ')}
                       </p>
                     </>
                   ) : (
                     <>
-                      <PlayCircle className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-                      <p className="text-sm text-slate-500">
+                      <PlayCircle className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">
                         Click "Execute in Sandbox" to test the converted SQL in a safe sandbox schema
                       </p>
-                      <p className="text-[10px] text-slate-400 mt-2">
-                        Creates <code className="bg-slate-100 px-1 rounded">_datagen_sandbox</code> schema · Real PostgreSQL execution · No impact on production data
+                      <p className="text-[10px] text-muted-foreground mt-2">
+                        Creates <code className="bg-muted px-1 rounded">_datagen_sandbox</code> schema · Real PostgreSQL execution · No impact on production data
                       </p>
                     </>
                   )}

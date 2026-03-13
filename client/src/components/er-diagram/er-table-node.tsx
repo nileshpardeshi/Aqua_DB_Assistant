@@ -75,7 +75,7 @@ function ERTableNodeComponent({ data, selected }: NodeProps<ERTableNodeData>) {
           'hover:shadow-lg hover:scale-[1.03]',
           selected
             ? 'border-aqua-500 shadow-aqua-200/50'
-            : 'border-slate-200 hover:border-aqua-300'
+            : 'border-border hover:border-aqua-300'
         )}
         style={{ borderLeftColor: schemaColor.accent, borderLeftWidth: 4 }}
       >
@@ -86,9 +86,9 @@ function ERTableNodeComponent({ data, selected }: NodeProps<ERTableNodeData>) {
 
         <div className="flex items-center gap-2">
           <Table2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: schemaColor.accent }} />
-          <span className="text-xs font-semibold text-slate-800 truncate">{data.tableName}</span>
+          <span className="text-xs font-semibold text-foreground truncate">{data.tableName}</span>
         </div>
-        <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-400">
+        <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
           <span>{data.columns.length} cols</span>
           {pkColumns.length > 0 && <span className="text-amber-500">{pkColumns.length} PK</span>}
           {fkColumns.length > 0 && <span className="text-blue-500">{fkColumns.length} FK</span>}
@@ -105,7 +105,7 @@ function ERTableNodeComponent({ data, selected }: NodeProps<ERTableNodeData>) {
         'hover:shadow-lg hover:scale-[1.02]',
         selected
           ? 'border-aqua-500 shadow-aqua-200/50'
-          : 'border-slate-200 hover:border-aqua-300'
+          : 'border-border hover:border-aqua-300'
       )}
     >
       {/* ── Handles (all 4 sides) ─────────────────────────────────────── */}
@@ -140,7 +140,7 @@ function ERTableNodeComponent({ data, selected }: NodeProps<ERTableNodeData>) {
               key={col.id || col.name}
               className={cn(
                 'flex items-center gap-2 px-3 py-1.5 text-xs',
-                idx % 2 === 0 ? 'bg-card' : 'bg-slate-50/70'
+                idx % 2 === 0 ? 'bg-card' : 'bg-muted/50'
               )}
             >
               <span className="w-4 flex-shrink-0 flex items-center justify-center">
@@ -155,7 +155,7 @@ function ERTableNodeComponent({ data, selected }: NodeProps<ERTableNodeData>) {
               <span
                 className={cn(
                   'flex-1 truncate',
-                  col.isPrimaryKey ? 'font-bold text-slate-800' : 'text-slate-700'
+                  col.isPrimaryKey ? 'font-bold text-foreground' : 'text-foreground'
                 )}
               >
                 {col.name}
@@ -163,7 +163,7 @@ function ERTableNodeComponent({ data, selected }: NodeProps<ERTableNodeData>) {
               {!col.nullable && (
                 <span className="text-red-400 text-[10px] font-bold flex-shrink-0">*</span>
               )}
-              <span className="text-[11px] text-slate-400 font-mono flex-shrink-0">
+              <span className="text-[11px] text-muted-foreground font-mono flex-shrink-0">
                 {col.dataType}
               </span>
             </div>
@@ -173,17 +173,17 @@ function ERTableNodeComponent({ data, selected }: NodeProps<ERTableNodeData>) {
 
       {/* ── Collapsed column indicator ────────────────────────────────── */}
       {!showColumns && sortedColumns.length > 0 && (
-        <div className="px-3 py-2 text-xs text-slate-400 flex items-center justify-center gap-1.5">
+        <div className="px-3 py-2 text-xs text-muted-foreground flex items-center justify-center gap-1.5">
           <Rows3 className="w-3 h-3" />
           {sortedColumns.length} column{sortedColumns.length !== 1 ? 's' : ''}
         </div>
       )}
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
-      <div className="px-3 py-1.5 border-t border-slate-100 rounded-b-[10px] flex items-center gap-3 bg-slate-50/50">
+      <div className="px-3 py-1.5 border-t border-border/50 rounded-b-[10px] flex items-center gap-3 bg-muted/30">
         <div className="flex items-center gap-1">
-          <Hash className="w-3 h-3 text-slate-400" />
-          <span className="text-[10px] text-slate-400">
+          <Hash className="w-3 h-3 text-muted-foreground" />
+          <span className="text-[10px] text-muted-foreground">
             {data.indexCount} index{data.indexCount !== 1 ? 'es' : ''}
           </span>
         </div>

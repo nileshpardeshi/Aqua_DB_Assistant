@@ -65,16 +65,16 @@ const EXPLAIN_STEPS = [
 // ── Impact Config ───────────────────────────────────────────────────────────
 
 const IMPACT_CONFIG: Record<string, { bg: string; border: string; text: string }> = {
-  HIGH: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
-  MEDIUM: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-  LOW: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+  HIGH: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', text: 'text-red-700 dark:text-red-400' },
+  MEDIUM: { bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-800', text: 'text-amber-700 dark:text-amber-400' },
+  LOW: { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800', text: 'text-blue-700 dark:text-blue-400' },
 };
 
 const COMPLEXITY_CONFIG: Record<string, string> = {
-  SIMPLE: 'bg-emerald-100 text-emerald-700',
-  MODERATE: 'bg-blue-100 text-blue-700',
-  COMPLEX: 'bg-amber-100 text-amber-700',
-  VERY_COMPLEX: 'bg-red-100 text-red-700',
+  SIMPLE: 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400',
+  MODERATE: 'bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400',
+  COMPLEX: 'bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400',
+  VERY_COMPLEX: 'bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400',
 };
 
 // ── Demo Data ───────────────────────────────────────────────────────────────
@@ -205,7 +205,7 @@ function ProgressStepper({
   currentStep: number;
 }) {
   return (
-    <div className="bg-card border border-slate-200 rounded-xl p-4 space-y-3">
+    <div className="bg-card border border-border rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
         {steps.map((step, i) => {
           const StepIcon = step.icon;
@@ -221,7 +221,7 @@ function ProgressStepper({
                       ? 'bg-aqua-500 text-white'
                       : isActive
                         ? 'bg-aqua-100 text-aqua-700 animate-pulse ring-2 ring-aqua-500'
-                        : 'bg-slate-100 text-slate-400'
+                        : 'bg-muted text-muted-foreground'
                   )}
                 >
                   {isCompleted ? (
@@ -237,7 +237,7 @@ function ProgressStepper({
                       ? 'text-aqua-700 font-medium'
                       : isCompleted
                         ? 'text-aqua-600'
-                        : 'text-slate-400'
+                        : 'text-muted-foreground'
                   )}
                 >
                   {step.label}
@@ -247,7 +247,7 @@ function ProgressStepper({
                 <div
                   className={cn(
                     'flex-1 h-0.5 min-w-[20px]',
-                    isCompleted ? 'bg-aqua-500' : 'bg-slate-200'
+                    isCompleted ? 'bg-aqua-500' : 'bg-muted'
                   )}
                 />
               )}
@@ -255,7 +255,7 @@ function ProgressStepper({
           );
         })}
       </div>
-      <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+      <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
         <div
           className="bg-gradient-to-r from-aqua-500 to-cyan-500 h-1.5 rounded-full transition-all duration-500"
           style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
@@ -467,7 +467,7 @@ export function QueryAIPanel({
           e.stopPropagation();
           handleCopy(text, id);
         }}
-        className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-700 transition-colors"
+        className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
       >
         {copiedId === id ? (
           <>
@@ -502,18 +502,18 @@ export function QueryAIPanel({
     }) => (
       <button
         onClick={() => toggleSection(id)}
-        className="w-full flex items-center gap-3 p-4 text-left hover:bg-slate-50/50 transition-colors"
+        className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors"
       >
         <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0', iconBg)}>
           <Icon className="w-4.5 h-4.5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-slate-800">{title}</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">{subtitle}</p>
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>
         </div>
         <ChevronDown
           className={cn(
-            'w-4 h-4 text-slate-400 transition-transform duration-200',
+            'w-4 h-4 text-muted-foreground transition-transform duration-200',
             expandedSections.has(id) && 'rotate-180'
           )}
         />
@@ -548,7 +548,7 @@ export function QueryAIPanel({
     <div>
       {(label || action) && (
         <div className="flex items-center justify-between mb-1">
-          {label && <p className="text-xs font-medium text-slate-600">{label}</p>}
+          {label && <p className="text-xs font-medium text-muted-foreground">{label}</p>}
           <div className="flex items-center gap-2">
             <CopyButton text={sql} id={copyId} />
             {action && (
@@ -576,7 +576,7 @@ export function QueryAIPanel({
   return (
     <div className={cn('space-y-3', className)}>
       {/* ── Section 1: NL-to-SQL Generator ──────────────────────────────── */}
-      <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <SectionHeader
           id="generate"
           icon={Sparkles}
@@ -586,7 +586,7 @@ export function QueryAIPanel({
         />
 
         {expandedSections.has('generate') && (
-          <div className="border-t border-slate-100 px-4 py-4 space-y-4">
+          <div className="border-t border-border/50 px-4 py-4 space-y-4">
             {/* Input */}
             <textarea
               value={nlInput}
@@ -605,7 +605,7 @@ export function QueryAIPanel({
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
                   generateMutation.isPending || !nlInput.trim()
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
                     : 'bg-aqua-600 text-white hover:bg-aqua-700'
                 )}
               >
@@ -623,7 +623,7 @@ export function QueryAIPanel({
               </button>
               <button
                 onClick={handleLoadGenerateDemo}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <Database className="w-4 h-4" />
                 Load Demo
@@ -651,8 +651,8 @@ export function QueryAIPanel({
 
                 {/* Explanation */}
                 <div>
-                  <p className="text-xs font-medium text-slate-600 mb-1">Explanation</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Explanation</p>
+                  <p className="text-sm text-foreground leading-relaxed">
                     {generateResult.explanation}
                   </p>
                 </div>
@@ -662,7 +662,7 @@ export function QueryAIPanel({
                   <div>
                     <button
                       onClick={() => toggleGenSub('assumptions')}
-                      className="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                      className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <ChevronDown
                         className={cn(
@@ -675,7 +675,7 @@ export function QueryAIPanel({
                     {expandedGenSubs.has('assumptions') && (
                       <ul className="mt-2 space-y-1.5 pl-5 list-disc">
                         {generateResult.assumptions.map((a, i) => (
-                          <li key={i} className="text-xs text-slate-600 leading-relaxed">
+                          <li key={i} className="text-xs text-muted-foreground leading-relaxed">
                             {a}
                           </li>
                         ))}
@@ -689,7 +689,7 @@ export function QueryAIPanel({
                   <div>
                     <button
                       onClick={() => toggleGenSub('alternatives')}
-                      className="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                      className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <ChevronDown
                         className={cn(
@@ -702,8 +702,8 @@ export function QueryAIPanel({
                     {expandedGenSubs.has('alternatives') && (
                       <div className="mt-2 space-y-3">
                         {generateResult.alternativeApproaches.map((alt, i) => (
-                          <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-2">
-                            <p className="text-xs text-slate-600">{alt.description}</p>
+                          <div key={i} className="border border-border rounded-lg p-3 space-y-2">
+                            <p className="text-xs text-muted-foreground">{alt.description}</p>
                             <div className="bg-[#1e293b] text-slate-100 text-sm font-mono px-4 py-3 rounded-lg overflow-x-auto whitespace-pre-wrap leading-relaxed">
                               {alt.sql}
                             </div>
@@ -739,7 +739,7 @@ export function QueryAIPanel({
       </div>
 
       {/* ── Section 2: Query Optimizer ──────────────────────────────────── */}
-      <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <SectionHeader
           id="optimize"
           icon={Zap}
@@ -749,7 +749,7 @@ export function QueryAIPanel({
         />
 
         {expandedSections.has('optimize') && (
-          <div className="border-t border-slate-100 px-4 py-4 space-y-4">
+          <div className="border-t border-border/50 px-4 py-4 space-y-4">
             {/* Buttons */}
             <div className="flex items-center gap-3">
               <button
@@ -758,7 +758,7 @@ export function QueryAIPanel({
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
                   optimizeMutation.isPending || !currentSQL.trim()
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
                     : 'bg-amber-500 text-white hover:bg-amber-600'
                 )}
               >
@@ -776,13 +776,13 @@ export function QueryAIPanel({
               </button>
               <button
                 onClick={handleLoadOptimizeDemo}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <Database className="w-4 h-4" />
                 Load Demo
               </button>
               {!currentSQL.trim() && (
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   Write or paste SQL in the editor first
                 </span>
               )}
@@ -811,7 +811,7 @@ export function QueryAIPanel({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-slate-600">Original</p>
+                      <p className="text-xs font-medium text-muted-foreground">Original</p>
                     </div>
                     <div className="bg-[#1e293b] text-slate-100 text-sm font-mono px-4 py-3 rounded-lg overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
                       {currentSQL}
@@ -819,7 +819,7 @@ export function QueryAIPanel({
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-slate-600">Optimized</p>
+                      <p className="text-xs font-medium text-muted-foreground">Optimized</p>
                       <CopyButton text={optimizeResult.optimizedSQL} id="opt-sql" />
                     </div>
                     <div className="bg-[#1e293b] text-slate-100 text-sm font-mono px-4 py-3 rounded-lg overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
@@ -831,7 +831,7 @@ export function QueryAIPanel({
                 {/* Changes */}
                 {optimizeResult.changes && optimizeResult.changes.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-slate-600">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Changes ({optimizeResult.changes.length})
                     </p>
                     {optimizeResult.changes.map((change, i) => {
@@ -851,7 +851,7 @@ export function QueryAIPanel({
                             </p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                               {change.category}
                             </span>
                             <span
@@ -873,13 +873,13 @@ export function QueryAIPanel({
                 {/* Index Recommendations */}
                 {optimizeResult.indexRecommendations && optimizeResult.indexRecommendations.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-slate-600">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Index Recommendations ({optimizeResult.indexRecommendations.length})
                     </p>
                     {optimizeResult.indexRecommendations.map((idx, i) => (
-                      <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-2">
+                      <div key={i} className="border border-border rounded-lg p-3 space-y-2">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs text-slate-600">{idx.reason}</p>
+                          <p className="text-xs text-muted-foreground">{idx.reason}</p>
                           <CopyButton text={idx.createStatement} id={`opt-idx-${i}`} />
                         </div>
                         <div className="bg-[#1e293b] text-slate-100 text-sm font-mono px-4 py-3 rounded-lg overflow-x-auto whitespace-pre-wrap">
@@ -922,7 +922,7 @@ export function QueryAIPanel({
       </div>
 
       {/* ── Section 3: Query Explainer ──────────────────────────────────── */}
-      <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <SectionHeader
           id="explain"
           icon={BookOpen}
@@ -932,7 +932,7 @@ export function QueryAIPanel({
         />
 
         {expandedSections.has('explain') && (
-          <div className="border-t border-slate-100 px-4 py-4 space-y-4">
+          <div className="border-t border-border/50 px-4 py-4 space-y-4">
             {/* Buttons */}
             <div className="flex items-center gap-3">
               <button
@@ -941,7 +941,7 @@ export function QueryAIPanel({
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
                   explainMutation.isPending || !currentSQL.trim()
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
                     : 'bg-violet-500 text-white hover:bg-violet-600'
                 )}
               >
@@ -959,13 +959,13 @@ export function QueryAIPanel({
               </button>
               <button
                 onClick={handleLoadExplainDemo}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <Database className="w-4 h-4" />
                 Load Demo
               </button>
               {!currentSQL.trim() && (
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   Write or paste SQL in the editor first
                 </span>
               )}
@@ -985,7 +985,7 @@ export function QueryAIPanel({
                 {/* Summary + Complexity */}
                 <div className="flex items-start gap-3">
                   <div className="flex-1">
-                    <p className="text-sm text-slate-700 leading-relaxed">
+                    <p className="text-sm text-foreground leading-relaxed">
                       {explainResult.summary}
                     </p>
                   </div>
@@ -1004,31 +1004,31 @@ export function QueryAIPanel({
                 {/* Step-by-step breakdown */}
                 {explainResult.stepByStep && explainResult.stepByStep.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-slate-600">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Step-by-Step Breakdown
                     </p>
                     {explainResult.stepByStep.map((step, i) => (
-                      <div key={i} className="border border-slate-200 rounded-lg overflow-hidden">
+                      <div key={i} className="border border-border rounded-lg overflow-hidden">
                         <button
                           onClick={() => toggleExplainStep(i)}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-50/50 transition-colors"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors"
                         >
-                          <span className="text-xs font-bold text-slate-800 flex-shrink-0">
+                          <span className="text-xs font-bold text-foreground flex-shrink-0">
                             {step.clause}
                           </span>
-                          <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-xs text-slate-600 truncate">
+                          <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs text-muted-foreground truncate">
                             {step.sql}
                           </span>
                           <ChevronDown
                             className={cn(
-                              'w-3.5 h-3.5 text-slate-400 ml-auto flex-shrink-0 transition-transform duration-200',
+                              'w-3.5 h-3.5 text-muted-foreground ml-auto flex-shrink-0 transition-transform duration-200',
                               expandedExplainSteps.has(i) && 'rotate-180'
                             )}
                           />
                         </button>
                         {expandedExplainSteps.has(i) && (
-                          <div className="border-t border-slate-100 px-3 py-2.5">
-                            <p className="text-xs text-slate-600 leading-relaxed">
+                          <div className="border-t border-border/50 px-3 py-2.5">
+                            <p className="text-xs text-muted-foreground leading-relaxed">
                               {step.explanation}
                             </p>
                           </div>
@@ -1041,27 +1041,27 @@ export function QueryAIPanel({
                 {/* Tables Used */}
                 {explainResult.tablesUsed && explainResult.tablesUsed.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-slate-600 mb-2">Tables Used</p>
-                    <div className="border border-slate-200 rounded-lg overflow-hidden">
-                      <div className="grid grid-cols-3 gap-px bg-slate-200">
-                        <div className="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Tables Used</p>
+                    <div className="border border-border rounded-lg overflow-hidden">
+                      <div className="grid grid-cols-3 gap-px bg-border">
+                        <div className="bg-muted/50 px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase">
                           Name
                         </div>
-                        <div className="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase">
+                        <div className="bg-muted/50 px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase">
                           Alias
                         </div>
-                        <div className="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase">
+                        <div className="bg-muted/50 px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase">
                           Role
                         </div>
                         {explainResult.tablesUsed.map((t, i) => (
                           <React.Fragment key={i}>
-                            <div className="bg-card px-3 py-2 text-xs font-mono text-slate-700">
+                            <div className="bg-card px-3 py-2 text-xs font-mono text-foreground">
                               {t.name}
                             </div>
-                            <div className="bg-card px-3 py-2 text-xs font-mono text-slate-500">
+                            <div className="bg-card px-3 py-2 text-xs font-mono text-muted-foreground">
                               {t.alias}
                             </div>
-                            <div className="bg-card px-3 py-2 text-xs text-slate-600">
+                            <div className="bg-card px-3 py-2 text-xs text-muted-foreground">
                               {t.role}
                             </div>
                           </React.Fragment>
@@ -1074,27 +1074,27 @@ export function QueryAIPanel({
                 {/* Output Columns */}
                 {explainResult.outputColumns && explainResult.outputColumns.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-slate-600 mb-2">Output Columns</p>
-                    <div className="border border-slate-200 rounded-lg overflow-hidden">
-                      <div className="grid grid-cols-3 gap-px bg-slate-200">
-                        <div className="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Output Columns</p>
+                    <div className="border border-border rounded-lg overflow-hidden">
+                      <div className="grid grid-cols-3 gap-px bg-border">
+                        <div className="bg-muted/50 px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase">
                           Expression
                         </div>
-                        <div className="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase">
+                        <div className="bg-muted/50 px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase">
                           Alias
                         </div>
-                        <div className="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase">
+                        <div className="bg-muted/50 px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase">
                           Description
                         </div>
                         {explainResult.outputColumns.map((col, i) => (
                           <React.Fragment key={i}>
-                            <div className="bg-card px-3 py-2 text-xs font-mono text-slate-700">
+                            <div className="bg-card px-3 py-2 text-xs font-mono text-foreground">
                               {col.expression}
                             </div>
-                            <div className="bg-card px-3 py-2 text-xs font-mono text-slate-500">
+                            <div className="bg-card px-3 py-2 text-xs font-mono text-muted-foreground">
                               {col.alias}
                             </div>
-                            <div className="bg-card px-3 py-2 text-xs text-slate-600">
+                            <div className="bg-card px-3 py-2 text-xs text-muted-foreground">
                               {col.description}
                             </div>
                           </React.Fragment>
@@ -1107,10 +1107,10 @@ export function QueryAIPanel({
                 {/* Filters */}
                 {explainResult.filters && explainResult.filters.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-slate-600 mb-1.5">Filters</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">Filters</p>
                     <ul className="space-y-1 pl-5 list-disc">
                       {explainResult.filters.map((f, i) => (
-                        <li key={i} className="text-xs text-slate-600 font-mono leading-relaxed">
+                        <li key={i} className="text-xs text-muted-foreground font-mono leading-relaxed">
                           {f}
                         </li>
                       ))}
@@ -1121,7 +1121,7 @@ export function QueryAIPanel({
                 {/* Performance Notes */}
                 {explainResult.performanceNotes && explainResult.performanceNotes.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-slate-600">Performance Notes</p>
+                    <p className="text-xs font-medium text-muted-foreground">Performance Notes</p>
                     {explainResult.performanceNotes.map((note, i) => (
                       <div
                         key={i}

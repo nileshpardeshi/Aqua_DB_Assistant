@@ -210,6 +210,6 @@ export function calculateSmartMaxTokens(
   const estimatedNeeded = inputTokenEstimate + overhead;
   // Use the smaller of: requested max, or estimated need with 30% buffer
   const smart = Math.min(requestedMax, Math.ceil(estimatedNeeded * 1.3));
-  // But never go below 2048 (minimum for useful responses)
-  return Math.max(2048, smart);
+  // But never go below 1024 (minimum for useful responses)
+  return Math.max(1024, smart);
 }

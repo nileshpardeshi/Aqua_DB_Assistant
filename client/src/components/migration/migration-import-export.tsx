@@ -286,10 +286,10 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
   return (
     <div className="space-y-6">
       {/* ── Import Section ─────────────────────────────────────────────────── */}
-      <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-3 bg-muted/50 border-b border-border flex items-center gap-2">
           <Upload className="w-4 h-4 text-purple-600" />
-          <h4 className="text-sm font-semibold text-slate-800">Import</h4>
+          <h4 className="text-sm font-semibold text-foreground">Import</h4>
         </div>
 
         {/* Import mode tabs */}
@@ -308,7 +308,7 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
                   'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
                   importMode === tab.id
                     ? 'bg-purple-100 text-purple-700'
-                    : 'text-slate-500 hover:bg-slate-100'
+                    : 'text-muted-foreground hover:bg-muted'
                 )}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -324,13 +324,13 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
             <>
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-colors"
+                className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-colors"
               >
-                <FileUp className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-slate-600">
+                <FileUp className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm font-medium text-muted-foreground">
                   {importedFile ? importedFile.name : 'Click to upload or drag .sql file'}
                 </p>
-                <p className="text-xs text-slate-400 mt-1">Supports .sql and .txt files</p>
+                <p className="text-xs text-muted-foreground mt-1">Supports .sql and .txt files</p>
               </div>
               <input
                 ref={fileInputRef}
@@ -351,7 +351,7 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
                 placeholder="Paste your SQL statements here..."
                 rows={8}
                 spellCheck={false}
-                className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 resize-y"
+                className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/30 resize-y"
               />
               <button
                 onClick={handleClipboardAnalyze}
@@ -360,7 +360,7 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
                   'inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-colors',
                   clipboardSql.trim()
                     ? 'bg-purple-600 text-white hover:bg-purple-700'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
                 )}
               >
                 <Database className="w-3.5 h-3.5" />
@@ -374,13 +374,13 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
             <>
               <div
                 onClick={() => bundleInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-colors"
+                className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-colors"
               >
-                <Package className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-slate-600">
+                <Package className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm font-medium text-muted-foreground">
                   Click to upload migration bundle (.json)
                 </p>
-                <p className="text-xs text-slate-400 mt-1">Aqua migration bundle format</p>
+                <p className="text-xs text-muted-foreground mt-1">Aqua migration bundle format</p>
               </div>
               <input
                 ref={bundleInputRef}
@@ -391,22 +391,22 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
               />
 
               {bundlePreview && (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h5 className="text-sm font-semibold text-slate-800">
+                    <h5 className="text-sm font-semibold text-foreground">
                       Bundle Preview
                     </h5>
-                    <button onClick={() => setBundlePreview(null)} className="p-1 text-slate-400 hover:text-slate-600">
+                    <button onClick={() => setBundlePreview(null)} className="p-1 text-muted-foreground hover:text-muted-foreground">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-600">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span>{bundlePreview.migrations.length} migrations</span>
                     <span>{bundlePreview.sourceDialect} → {bundlePreview.targetDialect}</span>
                   </div>
                   <div className="space-y-1 max-h-40 overflow-y-auto">
                     {bundlePreview.migrations.map((m, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs text-slate-600 py-1 px-2 bg-card rounded">
+                      <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground py-1 px-2 bg-card rounded">
                         <span className="font-mono font-medium text-purple-600">v{m.version}</span>
                         <span>{m.title}</span>
                       </div>
@@ -427,9 +427,9 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
 
           {/* Detection Results (for SQL file and clipboard modes) */}
           {detectedDialect && importMode !== 'bundle' && (
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+            <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-xs font-medium text-slate-600">Detected Dialect:</span>
+                <span className="text-xs font-medium text-muted-foreground">Detected Dialect:</span>
                 <span className={cn(
                   'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full',
                   detectedDialect.confidence === 'high' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
@@ -437,34 +437,34 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
                   {detectedDialect.label}
                   {detectedDialect.confidence === 'low' && ' (guessed)'}
                 </span>
-                <span className="text-xs text-slate-500">{stmtCount} statement{stmtCount !== 1 ? 's' : ''} found</span>
+                <span className="text-xs text-muted-foreground">{stmtCount} statement{stmtCount !== 1 ? 's' : ''} found</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Version</label>
+                  <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Version</label>
                   <input
                     value={importVersion}
                     onChange={(e) => setImportVersion(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card focus:outline-none focus:ring-1 focus:ring-purple-500/30"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-1 focus:ring-purple-500/30"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Title</label>
+                  <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Title</label>
                   <input
                     value={importTitle}
                     onChange={(e) => setImportTitle(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card focus:outline-none focus:ring-1 focus:ring-purple-500/30"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-1 focus:ring-purple-500/30"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">Target Dialect</label>
+                <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">Target Dialect</label>
                 <select
                   value={importTargetDialect}
                   onChange={(e) => setImportTargetDialect(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card focus:outline-none focus:ring-1 focus:ring-purple-500/30"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-1 focus:ring-purple-500/30"
                 >
                   {DIALECTS.map((d) => (
                     <option key={d.value} value={d.value}>{d.label}</option>
@@ -479,7 +479,7 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
                   'inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-colors',
                   !isImporting && importTitle.trim() && importVersion.trim()
                     ? 'bg-purple-600 text-white hover:bg-purple-700'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
                 )}
               >
                 {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
@@ -502,12 +502,12 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
       </div>
 
       {/* ── Export Section ─────────────────────────────────────────────────── */}
-      <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-3 bg-muted/50 border-b border-border flex items-center gap-2">
           <Download className="w-4 h-4 text-purple-600" />
-          <h4 className="text-sm font-semibold text-slate-800">Export</h4>
+          <h4 className="text-sm font-semibold text-foreground">Export</h4>
           {migrations && (
-            <span className="text-[10px] font-medium text-slate-400 ml-auto">
+            <span className="text-[10px] font-medium text-muted-foreground ml-auto">
               {migrations.length} migration{migrations.length !== 1 ? 's' : ''} available
             </span>
           )}
@@ -516,35 +516,35 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
         <div className="p-5">
           {!migrations || migrations.length === 0 ? (
             <div className="text-center py-8">
-              <FolderInput className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">No migrations to export</p>
-              <p className="text-xs text-slate-400 mt-1">Create migrations first, then export them here</p>
+              <FolderInput className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No migrations to export</p>
+              <p className="text-xs text-muted-foreground mt-1">Create migrations first, then export them here</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 onClick={handleExportBundle}
-                className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:border-purple-300 hover:bg-purple-50/30 transition-all text-left group"
+                className="flex items-center gap-3 p-4 bg-muted/50 border border-border rounded-lg hover:border-purple-300 hover:bg-purple-50/30 transition-all text-left group"
               >
                 <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition-colors">
                   <Package className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-700">Migration Bundle</p>
-                  <p className="text-[10px] text-slate-500">Complete JSON bundle (re-importable)</p>
+                  <p className="text-sm font-medium text-foreground">Migration Bundle</p>
+                  <p className="text-[10px] text-muted-foreground">Complete JSON bundle (re-importable)</p>
                 </div>
               </button>
 
               <button
                 onClick={handleExportUpScripts}
-                className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:border-purple-300 hover:bg-purple-50/30 transition-all text-left group"
+                className="flex items-center gap-3 p-4 bg-muted/50 border border-border rounded-lg hover:border-purple-300 hover:bg-purple-50/30 transition-all text-left group"
               >
                 <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0 group-hover:bg-green-200 transition-colors">
                   <FileCode2 className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-700">UP Scripts (.sql)</p>
-                  <p className="text-[10px] text-slate-500">All forward migrations in order</p>
+                  <p className="text-sm font-medium text-foreground">UP Scripts (.sql)</p>
+                  <p className="text-[10px] text-muted-foreground">All forward migrations in order</p>
                 </div>
               </button>
 
@@ -552,7 +552,7 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
                 onClick={handleExportDownScripts}
                 disabled={!hasDownScripts}
                 className={cn(
-                  'flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg transition-all text-left group',
+                  'flex items-center gap-3 p-4 bg-muted/50 border border-border rounded-lg transition-all text-left group',
                   hasDownScripts
                     ? 'hover:border-purple-300 hover:bg-purple-50/30'
                     : 'opacity-50 cursor-not-allowed'
@@ -562,8 +562,8 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
                   <FileDown className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-700">Rollback Scripts (.sql)</p>
-                  <p className="text-[10px] text-slate-500">
+                  <p className="text-sm font-medium text-foreground">Rollback Scripts (.sql)</p>
+                  <p className="text-[10px] text-muted-foreground">
                     {hasDownScripts ? 'All DOWN migrations in reverse order' : 'No rollback scripts available'}
                   </p>
                 </div>
@@ -571,14 +571,14 @@ export function MigrationImportExport({ projectId }: MigrationImportExportProps)
 
               <button
                 onClick={handleExportJSON}
-                className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:border-purple-300 hover:bg-purple-50/30 transition-all text-left group"
+                className="flex items-center gap-3 p-4 bg-muted/50 border border-border rounded-lg hover:border-purple-300 hover:bg-purple-50/30 transition-all text-left group"
               >
                 <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
                   <FileJson className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-700">Full Data (JSON)</p>
-                  <p className="text-[10px] text-slate-500">Complete migration records with metadata</p>
+                  <p className="text-sm font-medium text-foreground">Full Data (JSON)</p>
+                  <p className="text-[10px] text-muted-foreground">Complete migration records with metadata</p>
                 </div>
               </button>
             </div>

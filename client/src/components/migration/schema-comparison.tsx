@@ -318,7 +318,7 @@ const STATUS_STYLES: Record<DiffStatus, { bg: string; text: string; badge: strin
   added: { bg: 'bg-green-50', text: 'text-green-700', badge: 'bg-green-100 text-green-700' },
   removed: { bg: 'bg-red-50', text: 'text-red-700', badge: 'bg-red-100 text-red-700' },
   modified: { bg: 'bg-amber-50', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700' },
-  unchanged: { bg: 'bg-card', text: 'text-slate-700', badge: 'bg-slate-100 text-slate-500' },
+  unchanged: { bg: 'bg-card', text: 'text-foreground', badge: 'bg-muted text-muted-foreground' },
 };
 
 const STATUS_ICONS: Record<DiffStatus, React.ComponentType<{ className?: string }>> = {
@@ -476,13 +476,13 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
     return (
       <div className="space-y-4 animate-pulse">
         <div className="flex gap-3">
-          <div className="h-9 w-36 bg-slate-200 rounded-lg" />
-          <div className="h-9 w-36 bg-slate-200 rounded-lg" />
+          <div className="h-9 w-36 bg-muted rounded-lg" />
+          <div className="h-9 w-36 bg-muted rounded-lg" />
         </div>
-        <div className="h-32 bg-slate-100 rounded-lg" />
+        <div className="h-32 bg-muted rounded-lg" />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-14 bg-slate-100 rounded-lg" />
+            <div key={i} className="h-14 bg-muted rounded-lg" />
           ))}
         </div>
       </div>
@@ -503,7 +503,7 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
               'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
               sourceMode === 'project'
                 ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                : 'bg-card text-foreground border-border hover:bg-muted/50'
             )}
           >
             <Database className="w-4 h-4" />
@@ -519,7 +519,7 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
             'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
             sourceMode === 'paste'
               ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+              : 'bg-card text-foreground border-border hover:bg-muted/50'
           )}
         >
           <Upload className="w-4 h-4" />
@@ -540,14 +540,14 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
 
           {/* Target DDL input */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
               Target DDL (paste the schema you want to migrate to)
             </label>
             <textarea
               value={targetDDL}
               onChange={(e) => setTargetDDL(e.target.value)}
               placeholder={`CREATE TABLE users (\n  id BIGINT NOT NULL PRIMARY KEY,\n  name VARCHAR(255) NOT NULL,\n  email VARCHAR(320) NOT NULL,\n  created_at TIMESTAMP DEFAULT NOW()\n);`}
-              className="w-full h-44 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y placeholder:text-slate-500"
+              className="w-full h-44 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y placeholder:text-muted-foreground"
               spellCheck={false}
             />
           </div>
@@ -559,7 +559,7 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
               'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
               targetDDL.trim()
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                : 'bg-muted text-muted-foreground cursor-not-allowed'
             )}
           >
             <RefreshCw className="w-4 h-4" />
@@ -571,28 +571,28 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Source DDL */}
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                 Source DDL (current schema)
               </label>
               <textarea
                 value={sourceDDL}
                 onChange={(e) => setSourceDDL(e.target.value)}
                 placeholder={`CREATE TABLE users (\n  id INT NOT NULL PRIMARY KEY,\n  name VARCHAR(255) NOT NULL,\n  email VARCHAR(255) NOT NULL\n);`}
-                className="w-full h-44 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y placeholder:text-slate-500"
+                className="w-full h-44 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y placeholder:text-muted-foreground"
                 spellCheck={false}
               />
             </div>
 
             {/* Target DDL */}
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                 Target DDL (desired schema)
               </label>
               <textarea
                 value={targetDDL}
                 onChange={(e) => setTargetDDL(e.target.value)}
                 placeholder={`CREATE TABLE users (\n  id BIGINT NOT NULL PRIMARY KEY,\n  name VARCHAR(255) NOT NULL,\n  email VARCHAR(320) NOT NULL,\n  phone VARCHAR(20)\n);`}
-                className="w-full h-44 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y placeholder:text-slate-500"
+                className="w-full h-44 px-3 py-2.5 bg-[#1e293b] text-slate-100 font-mono text-sm rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y placeholder:text-muted-foreground"
                 spellCheck={false}
               />
             </div>
@@ -605,7 +605,7 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
               'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
               sourceDDL.trim() || targetDDL.trim()
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                : 'bg-muted text-muted-foreground cursor-not-allowed'
             )}
           >
             <RefreshCw className="w-4 h-4" />
@@ -618,10 +618,10 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
       {tableDiffs.length > 0 && (
         <>
           {/* Summary + Actions bar */}
-          <div className="flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-slate-200">
+          <div className="flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-border">
             {/* Summary badges */}
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-xs font-medium text-slate-600">
+              <span className="text-xs font-medium text-muted-foreground">
                 {tableDiffs.length} tables compared:
               </span>
               {stats.added > 0 && (
@@ -643,7 +643,7 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
                 </span>
               )}
               {stats.unchanged > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-500">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-muted text-muted-foreground">
                   {stats.unchanged} unchanged
                 </span>
               )}
@@ -656,20 +656,20 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
                 <select
                   value={filterOption}
                   onChange={(e) => setFilterOption(e.target.value as FilterOption)}
-                  className="appearance-none pl-7 pr-8 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  className="appearance-none pl-7 pr-8 py-1.5 text-xs font-medium border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
                   <option value="all">All</option>
                   <option value="added">Added</option>
                   <option value="modified">Modified</option>
                   <option value="removed">Removed</option>
                 </select>
-                <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Filter className="w-3.5 h-3.5 text-muted-foreground absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
 
               {/* Export diff JSON */}
               <button
                 onClick={handleExportJson}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white text-slate-700 hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg bg-card text-foreground hover:bg-muted/50 transition-colors"
                 title="Export diff as JSON"
               >
                 {copiedJson ? (
@@ -687,7 +687,7 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
 
               <button
                 onClick={handleCopyJson}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white text-slate-700 hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg bg-card text-foreground hover:bg-muted/50 transition-colors"
                 title="Copy diff JSON to clipboard"
               >
                 <Copy className="w-3.5 h-3.5" />
@@ -711,7 +711,7 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
                     table.status === 'added' && 'border-green-200',
                     table.status === 'removed' && 'border-red-200',
                     table.status === 'modified' && 'border-amber-200',
-                    table.status === 'unchanged' && 'border-slate-200'
+                    table.status === 'unchanged' && 'border-border'
                   )}
                 >
                   {/* Table header */}
@@ -724,9 +724,9 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
                     )}
                   >
                     {isExpanded ? (
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                     ) : (
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                     )}
 
                     <DiffIcon className={cn('w-4 h-4 flex-shrink-0', style.text)} />
@@ -744,16 +744,16 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
                       {table.status}
                     </span>
 
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-muted-foreground">
                       {table.columns.length} cols
                     </span>
                   </button>
 
                   {/* Column diffs */}
                   {isExpanded && (
-                    <div className="border-t border-slate-100">
+                    <div className="border-t border-border/50">
                       {/* Column header */}
-                      <div className="grid grid-cols-12 gap-2 px-4 py-1.5 bg-slate-50 text-[10px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100">
+                      <div className="grid grid-cols-12 gap-2 px-4 py-1.5 bg-muted/50 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/50">
                         <div className="col-span-1" />
                         <div className="col-span-3">Column</div>
                         <div className="col-span-3">Source Type</div>
@@ -768,7 +768,7 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
                           <div
                             key={col.name}
                             className={cn(
-                              'grid grid-cols-12 gap-2 px-4 py-2 items-center border-b border-slate-50 last:border-b-0',
+                              'grid grid-cols-12 gap-2 px-4 py-2 items-center border-b border-border/50 last:border-b-0',
                               col.status === 'added' && 'bg-green-50/50',
                               col.status === 'removed' && 'bg-red-50/50',
                               col.status === 'modified' && 'bg-amber-50/30'
@@ -801,14 +801,14 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
                                       ? 'bg-red-100 text-red-700 line-through'
                                       : col.status === 'modified'
                                       ? 'bg-red-100 text-red-600'
-                                      : 'bg-slate-100 text-slate-600'
+                                      : 'bg-muted text-muted-foreground'
                                   )}
                                 >
                                   {col.sourceType}
                                   {col.sourceNullable === false ? ' NOT NULL' : ''}
                                 </span>
                               ) : (
-                                <span className="text-xs text-slate-300">--</span>
+                                <span className="text-xs text-muted-foreground/50">--</span>
                               )}
                             </div>
 
@@ -821,14 +821,14 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
                                       ? 'bg-green-100 text-green-700'
                                       : col.status === 'modified'
                                       ? 'bg-green-100 text-green-600'
-                                      : 'bg-slate-100 text-slate-600'
+                                      : 'bg-muted text-muted-foreground'
                                   )}
                                 >
                                   {col.targetType}
                                   {col.targetNullable === false ? ' NOT NULL' : ''}
                                 </span>
                               ) : (
-                                <span className="text-xs text-slate-300">--</span>
+                                <span className="text-xs text-muted-foreground/50">--</span>
                               )}
                             </div>
 
@@ -854,7 +854,7 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
             })}
 
             {filteredDiffs.length === 0 && tableDiffs.length > 0 && (
-              <div className="text-center py-8 text-sm text-slate-400">
+              <div className="text-center py-8 text-sm text-muted-foreground">
                 No tables match the selected filter.
               </div>
             )}
@@ -862,16 +862,16 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
 
           {/* ALTER Statements Output */}
           {alterStatements && (
-            <div className="space-y-2 pt-2 border-t border-slate-200">
+            <div className="space-y-2 pt-2 border-t border-border">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <FileCode2 className="w-4 h-4" />
                   Generated ALTER Statements
                 </h3>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleCopyAlter}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white text-slate-700 hover:bg-slate-50 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg bg-card text-foreground hover:bg-muted/50 transition-colors"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     {copiedAlter ? 'Copied!' : 'Copy'}
@@ -895,10 +895,10 @@ export function SchemaComparison({ projectId }: SchemaComparisonProps) {
 
       {/* Empty state when no comparison has been done */}
       {tableDiffs.length === 0 && (
-        <div className="text-center py-12 border border-dashed border-slate-300 rounded-lg">
-          <Columns3 className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm text-slate-500 font-medium">No schema comparison yet</p>
-          <p className="text-xs text-slate-400 mt-1">
+        <div className="text-center py-12 border border-dashed border-border rounded-lg">
+          <Columns3 className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground font-medium">No schema comparison yet</p>
+          <p className="text-xs text-muted-foreground mt-1">
             {sourceMode === 'project'
               ? 'Paste your target DDL above and click "Compare Schemas" to see differences.'
               : 'Paste your source and target DDL above and click "Compare Schemas" to see differences.'}

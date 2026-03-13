@@ -6,6 +6,15 @@ const router = Router();
 // POST /tools/jpa-analyze - Analyze JPA/JPQL/HQL query with AI
 router.post('/jpa-analyze', toolsController.analyzeJPA);
 
+// POST /tools/jpa-parse - Parse Java files and extract JPA queries
+router.post('/jpa-parse', toolsController.parseJPAFiles);
+
+// GET  /tools/jpa-samples - Load built-in sample JPA files
+router.get('/jpa-samples', toolsController.getSampleJPAFiles);
+
+// POST /tools/jpa-batch-analyze - Batch analyze multiple JPA queries
+router.post('/jpa-batch-analyze', toolsController.batchAnalyzeJPA);
+
 // POST /tools/convert-sql - Convert SQL between dialects
 router.post('/convert-sql', toolsController.convertSQL);
 

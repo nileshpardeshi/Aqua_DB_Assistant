@@ -286,16 +286,16 @@ export function ErDiagram() {
     <div className="h-[calc(100vh-140px)] flex">
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       {sidebarOpen && (
-        <div className="w-72 flex-shrink-0 border-r border-slate-200 bg-card flex flex-col overflow-hidden">
+        <div className="w-72 flex-shrink-0 border-r border-border bg-card flex flex-col overflow-hidden">
           {/* Sidebar header */}
-          <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <GitFork className="w-4 h-4 text-aqua-600" />
               Diagram Studio
             </h2>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -303,10 +303,10 @@ export function ErDiagram() {
 
           <div className="flex-1 overflow-y-auto">
             {/* ── Saved Diagrams Section ─────────────────────────────────── */}
-            <div className="border-b border-slate-100">
+            <div className="border-b border-border/50">
               <button
                 onClick={() => setDiagramsExpanded(!diagramsExpanded)}
-                className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider hover:bg-slate-50"
+                className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-muted/50"
               >
                 <span className="flex items-center gap-1.5">
                   <FolderOpen className="w-3.5 h-3.5" />
@@ -332,14 +332,14 @@ export function ErDiagram() {
 
                   {/* New diagram inline form */}
                   {showNewDialog && (
-                    <div className="mb-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                    <div className="mb-2 p-2.5 bg-muted/50 border border-border rounded-lg space-y-2">
                       <input
                         autoFocus
                         type="text"
                         value={newDiagramName}
                         onChange={(e) => setNewDiagramName(e.target.value)}
                         placeholder="Diagram name..."
-                        className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md bg-card focus:outline-none focus:border-aqua-400"
+                        className="w-full px-2.5 py-1.5 text-xs border border-border rounded-md bg-card focus:outline-none focus:border-aqua-400"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleCreateDiagram();
                           if (e.key === 'Escape') setShowNewDialog(false);
@@ -350,7 +350,7 @@ export function ErDiagram() {
                         onChange={(e) =>
                           setNewDiagramType(e.target.value as DiagramType)
                         }
-                        className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md bg-card focus:outline-none focus:border-aqua-400"
+                        className="w-full px-2.5 py-1.5 text-xs border border-border rounded-md bg-card focus:outline-none focus:border-aqua-400"
                       >
                         {DIAGRAM_TYPES.map((dt) => (
                           <option key={dt.type} value={dt.type}>
@@ -368,7 +368,7 @@ export function ErDiagram() {
                         </button>
                         <button
                           onClick={() => setShowNewDialog(false)}
-                          className="px-2 py-1.5 text-xs text-slate-500 bg-slate-100 rounded-md hover:bg-slate-200"
+                          className="px-2 py-1.5 text-xs text-muted-foreground bg-muted rounded-md hover:bg-muted/80"
                         >
                           Cancel
                         </button>
@@ -379,10 +379,10 @@ export function ErDiagram() {
                   {/* Diagram list */}
                   {diagramsLoading ? (
                     <div className="flex items-center justify-center py-4">
-                      <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                      <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
                     </div>
                   ) : !savedDiagrams || savedDiagrams.length === 0 ? (
-                    <p className="px-3 py-3 text-xs text-slate-400 text-center">
+                    <p className="px-3 py-3 text-xs text-muted-foreground text-center">
                       No saved diagrams yet
                     </p>
                   ) : (
@@ -401,14 +401,14 @@ export function ErDiagram() {
                               'group flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-colors',
                               isActive
                                 ? 'bg-aqua-50 border border-aqua-200'
-                                : 'hover:bg-slate-50 border border-transparent'
+                                : 'hover:bg-muted/50 border border-transparent'
                             )}
                             onClick={() => handleLoadDiagram(d)}
                           >
                             <TypeIcon
                               className={cn(
                                 'w-3.5 h-3.5 flex-shrink-0',
-                                isActive ? 'text-aqua-600' : 'text-slate-400'
+                                isActive ? 'text-aqua-600' : 'text-muted-foreground'
                               )}
                             />
                             {renamingId === d.id ? (
@@ -443,7 +443,7 @@ export function ErDiagram() {
                                     e.stopPropagation();
                                     setRenamingId(null);
                                   }}
-                                  className="text-slate-400 hover:text-slate-600"
+                                  className="text-muted-foreground hover:text-foreground"
                                 >
                                   <X className="w-3 h-3" />
                                 </button>
@@ -456,12 +456,12 @@ export function ErDiagram() {
                                       'text-xs font-medium truncate',
                                       isActive
                                         ? 'text-aqua-700'
-                                        : 'text-slate-700'
+                                        : 'text-foreground'
                                     )}
                                   >
                                     {d.name}
                                   </p>
-                                  <p className="text-[10px] text-slate-400 truncate">
+                                  <p className="text-[10px] text-muted-foreground truncate">
                                     {typeConfig?.label}
                                   </p>
                                 </div>
@@ -471,7 +471,7 @@ export function ErDiagram() {
                                       e.stopPropagation();
                                       handleStartRename(d);
                                     }}
-                                    className="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200"
+                                    className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted"
                                     title="Rename"
                                   >
                                     <Pencil className="w-2.5 h-2.5" />
@@ -481,7 +481,7 @@ export function ErDiagram() {
                                       e.stopPropagation();
                                       handleDuplicateDiagram(d.id);
                                     }}
-                                    className="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200"
+                                    className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted"
                                     title="Duplicate"
                                   >
                                     <Copy className="w-2.5 h-2.5" />
@@ -491,7 +491,7 @@ export function ErDiagram() {
                                       e.stopPropagation();
                                       handleDeleteDiagram(d.id);
                                     }}
-                                    className="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                    className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
                                     title="Delete"
                                   >
                                     <Trash2 className="w-2.5 h-2.5" />
@@ -509,10 +509,10 @@ export function ErDiagram() {
             </div>
 
             {/* ── Diagram Types Section ──────────────────────────────────── */}
-            <div className="border-b border-slate-100">
+            <div className="border-b border-border/50">
               <button
                 onClick={() => setTypesExpanded(!typesExpanded)}
-                className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider hover:bg-slate-50"
+                className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-muted/50"
               >
                 <span className="flex items-center gap-1.5">
                   <LayoutGrid className="w-3.5 h-3.5" />
@@ -537,25 +537,25 @@ export function ErDiagram() {
                           'w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-left transition-colors',
                           isActive
                             ? 'bg-aqua-50 border border-aqua-200'
-                            : 'hover:bg-slate-50 border border-transparent'
+                            : 'hover:bg-muted/50 border border-transparent'
                         )}
                       >
                         <dt.icon
                           className={cn(
                             'w-4 h-4 flex-shrink-0 mt-0.5',
-                            isActive ? 'text-aqua-600' : 'text-slate-400'
+                            isActive ? 'text-aqua-600' : 'text-muted-foreground'
                           )}
                         />
                         <div className="min-w-0">
                           <p
                             className={cn(
                               'text-xs font-medium',
-                              isActive ? 'text-aqua-700' : 'text-slate-700'
+                              isActive ? 'text-aqua-700' : 'text-foreground'
                             )}
                           >
                             {dt.label}
                           </p>
-                          <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                          <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
                             {dt.description}
                           </p>
                         </div>
@@ -570,7 +570,7 @@ export function ErDiagram() {
             <div>
               <button
                 onClick={() => setTablesExpanded(!tablesExpanded)}
-                className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider hover:bg-slate-50"
+                className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-muted/50"
               >
                 <span className="flex items-center gap-1.5">
                   <Table2 className="w-3.5 h-3.5" />
@@ -592,7 +592,7 @@ export function ErDiagram() {
                       value={tableFilterSearch}
                       onChange={(e) => setTableFilterSearch(e.target.value)}
                       placeholder="Filter tables..."
-                      className="flex-1 px-2.5 py-1.5 text-xs border border-slate-200 rounded-md bg-card focus:outline-none focus:border-aqua-400"
+                      className="flex-1 px-2.5 py-1.5 text-xs border border-border rounded-md bg-card focus:outline-none focus:border-aqua-400"
                     />
                     <button
                       onClick={handleToggleAll}
@@ -600,7 +600,7 @@ export function ErDiagram() {
                         'px-2 py-1.5 text-[10px] font-medium rounded-md border transition-colors',
                         allSelected
                           ? 'bg-aqua-50 text-aqua-700 border-aqua-200'
-                          : 'bg-slate-50 text-slate-500 border-slate-200'
+                          : 'bg-muted/50 text-muted-foreground border-border'
                       )}
                       title={allSelected ? 'Deselect All' : 'Select All'}
                     >
@@ -631,14 +631,14 @@ export function ErDiagram() {
                           className={cn(
                             'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs transition-colors',
                             included
-                              ? 'text-slate-700 hover:bg-slate-50'
-                              : 'text-slate-400 hover:bg-slate-50'
+                              ? 'text-foreground hover:bg-muted/50'
+                              : 'text-muted-foreground hover:bg-muted/50'
                           )}
                         >
                           {included ? (
                             <Eye className="w-3 h-3 text-aqua-500 flex-shrink-0" />
                           ) : (
-                            <EyeOff className="w-3 h-3 text-slate-300 flex-shrink-0" />
+                            <EyeOff className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
                           )}
                           <span className="truncate">
                             {table.schema
@@ -660,7 +660,7 @@ export function ErDiagram() {
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="absolute top-2 left-2 z-20 w-8 h-8 rounded-lg bg-card border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+          className="absolute top-2 left-2 z-20 w-8 h-8 rounded-lg bg-card border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted"
           title="Open Sidebar"
         >
           <ChevronRight className="w-4 h-4" />

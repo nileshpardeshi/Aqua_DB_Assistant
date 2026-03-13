@@ -26,12 +26,16 @@ const TABS: {
   id: PerformanceTab;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  activeColor: string;
+  activeBg: string;
+  activeBorder: string;
+  hoverBg: string;
 }[] = [
-  { id: 'benchmarks', label: 'Benchmarks', icon: Timer },
-  { id: 'data-generator', label: 'Data Generator', icon: Database },
-  { id: 'index-advisor', label: 'Index Advisor', icon: Search },
-  { id: 'partition-advisor', label: 'Partition Advisor', icon: Layers },
-  { id: 'jpa-lab', label: 'JPA Query Lab', icon: FlaskConical },
+  { id: 'benchmarks', label: 'Benchmarks', icon: Timer, activeColor: 'text-emerald-700 dark:text-emerald-300', activeBg: 'bg-emerald-50 dark:bg-emerald-950/50', activeBorder: 'border-emerald-500 dark:border-emerald-600', hoverBg: 'hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30' },
+  { id: 'data-generator', label: 'Data Generator', icon: Database, activeColor: 'text-blue-700 dark:text-blue-300', activeBg: 'bg-blue-50 dark:bg-blue-950/50', activeBorder: 'border-blue-500 dark:border-blue-600', hoverBg: 'hover:bg-blue-50/50 dark:hover:bg-blue-950/30' },
+  { id: 'index-advisor', label: 'Index Advisor', icon: Search, activeColor: 'text-amber-700 dark:text-amber-300', activeBg: 'bg-amber-50 dark:bg-amber-950/50', activeBorder: 'border-amber-500 dark:border-amber-600', hoverBg: 'hover:bg-amber-50/50 dark:hover:bg-amber-950/30' },
+  { id: 'partition-advisor', label: 'Partition Advisor', icon: Layers, activeColor: 'text-purple-700 dark:text-purple-300', activeBg: 'bg-purple-50 dark:bg-purple-950/50', activeBorder: 'border-purple-500 dark:border-purple-600', hoverBg: 'hover:bg-purple-50/50 dark:hover:bg-purple-950/30' },
+  { id: 'jpa-lab', label: 'JPA Query Lab', icon: FlaskConical, activeColor: 'text-rose-700 dark:text-rose-300', activeBg: 'bg-rose-50 dark:bg-rose-950/50', activeBorder: 'border-rose-500 dark:border-rose-600', hoverBg: 'hover:bg-rose-50/50 dark:hover:bg-rose-950/30' },
 ];
 
 export function PerformanceLab() {
@@ -50,8 +54,8 @@ export function PerformanceLab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-cyan-100 flex items-center justify-center">
-            <Gauge className="w-5 h-5 text-emerald-600" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-cyan-100 dark:from-emerald-900/50 dark:to-cyan-900/50 flex items-center justify-center">
+            <Gauge className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-foreground">
@@ -72,43 +76,43 @@ export function PerformanceLab() {
             label: 'Total Runs',
             value: totalRuns,
             icon: Activity,
-            color: 'text-aqua-600',
-            bg: 'bg-aqua-50',
+            color: 'text-aqua-600 dark:text-aqua-400',
+            bg: 'bg-aqua-50 dark:bg-aqua-950/50',
           },
           {
             label: 'Benchmarks',
             value: benchmarkRuns,
             icon: Timer,
-            color: 'text-emerald-600',
-            bg: 'bg-emerald-50',
+            color: 'text-emerald-600 dark:text-emerald-400',
+            bg: 'bg-emerald-50 dark:bg-emerald-950/50',
           },
           {
             label: 'Completed',
             value: completedRuns,
             icon: TrendingUp,
-            color: 'text-blue-600',
-            bg: 'bg-blue-50',
+            color: 'text-blue-600 dark:text-blue-400',
+            bg: 'bg-blue-50 dark:bg-blue-950/50',
           },
           {
             label: 'Index Analyses',
             value: indexAnalyses,
             icon: Zap,
-            color: 'text-amber-600',
-            bg: 'bg-amber-50',
+            color: 'text-amber-600 dark:text-amber-400',
+            bg: 'bg-amber-50 dark:bg-amber-950/50',
           },
           {
             label: 'JPA Analyses',
             value: jpaAnalyses,
             icon: FlaskConical,
-            color: 'text-violet-600',
-            bg: 'bg-violet-50',
+            color: 'text-violet-600 dark:text-violet-400',
+            bg: 'bg-violet-50 dark:bg-violet-950/50',
           },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
             <div
               key={stat.label}
-              className="bg-card border border-slate-200 rounded-xl p-4 flex items-center gap-3"
+              className="bg-card border border-border rounded-xl p-4 flex items-center gap-3"
             >
               <div
                 className={cn(
@@ -119,8 +123,8 @@ export function PerformanceLab() {
                 <Icon className={cn('w-4 h-4', stat.color)} />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-800">{stat.value}</p>
-                <p className="text-[10px] text-slate-500 uppercase font-medium tracking-wide">
+                <p className="text-lg font-bold text-foreground">{stat.value}</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-wide">
                   {stat.label}
                 </p>
               </div>
@@ -130,7 +134,7 @@ export function PerformanceLab() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-1 border-b border-slate-200">
+      <div className="flex items-center gap-2 p-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -139,19 +143,19 @@ export function PerformanceLab() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all',
                 isActive
-                  ? 'border-aqua-500 text-aqua-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  ? `${tab.activeBg} ${tab.activeColor} shadow-sm border ${tab.activeBorder}`
+                  : `text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 ${tab.hoverBg} border border-transparent`
               )}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className={cn('w-4 h-4', isActive ? tab.activeColor : '')} />
               {tab.label}
             </button>
           );
         })}
 
-        <div className="ml-auto flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-slate-400">
+        <div className="ml-auto flex items-center gap-1.5 px-3 py-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
           <BarChart3 className="w-3 h-3" />
           {totalRuns} total runs
         </div>

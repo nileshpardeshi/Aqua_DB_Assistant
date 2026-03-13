@@ -261,7 +261,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
 
   // ---- Progress Stepper Renderer ----
   const renderProgressStepper = (steps: string[], currentStep: number) => (
-    <div className="bg-card border border-slate-200 rounded-xl p-4 space-y-3">
+    <div className="bg-card border border-border rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
         {steps.map((step, i) => {
           const isActive = i === currentStep;
@@ -276,7 +276,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                       ? 'bg-aqua-500 text-white'
                       : isActive
                         ? 'bg-aqua-100 text-aqua-700 ring-2 ring-aqua-500 animate-pulse'
-                        : 'bg-slate-100 text-slate-400'
+                        : 'bg-muted text-muted-foreground'
                   )}
                 >
                   {isCompleted ? (
@@ -292,7 +292,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                       ? 'text-aqua-700 font-medium'
                       : isCompleted
                         ? 'text-aqua-600'
-                        : 'text-slate-400'
+                        : 'text-muted-foreground'
                   )}
                 >
                   {step}
@@ -302,7 +302,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                 <div
                   className={cn(
                     'flex-1 h-0.5 min-w-[20px]',
-                    isCompleted ? 'bg-aqua-500' : 'bg-slate-200'
+                    isCompleted ? 'bg-aqua-500' : 'bg-muted'
                   )}
                 />
               )}
@@ -310,7 +310,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
           );
         })}
       </div>
-      <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+      <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
         <div
           className="bg-gradient-to-r from-aqua-500 to-cyan-500 h-1.5 rounded-full transition-all duration-500"
           style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
@@ -329,22 +329,22 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
   ) => {
     const isOpen = expandedSections.has(id);
     return (
-      <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <button
           onClick={() => toggleSection(id)}
-          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50/50 transition-colors"
+          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50/50 transition-colors"
         >
           {isOpen ? (
-            <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           )}
           {icon}
-          <span className="text-sm font-semibold text-slate-800 flex-1">{title}</span>
+          <span className="text-sm font-semibold text-foreground flex-1">{title}</span>
           {badge}
         </button>
         {isOpen && (
-          <div className="border-t border-slate-100 px-4 py-4">{children}</div>
+          <div className="border-t border-border/50 px-4 py-4">{children}</div>
         )}
       </div>
     );
@@ -355,10 +355,10 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
   return (
     <div className="space-y-6">
       {/* ── Configuration Section ───────────────────────────────────────── */}
-      <div className="bg-card border border-slate-200 rounded-xl p-5 space-y-4">
+      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <Brain className="w-5 h-5 text-aqua-600" />
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="text-sm font-semibold text-foreground">
             Migration Assessment & Planning
           </h3>
         </div>
@@ -366,13 +366,13 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Source Dialect */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1.5">
+            <label className="block text-xs font-medium text-foreground mb-1.5">
               Source Dialect
             </label>
             <select
               value={sourceDialect}
               onChange={(e) => setSourceDialect(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+              className="w-full px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
             >
               {SUPPORTED_DIALECTS.map((d) => (
                 <option key={d.value} value={d.value}>
@@ -384,13 +384,13 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
 
           {/* Target Dialect */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1.5">
+            <label className="block text-xs font-medium text-foreground mb-1.5">
               Target Dialect
             </label>
             <select
               value={targetDialect}
               onChange={(e) => setTargetDialect(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+              className="w-full px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
             >
               {SUPPORTED_DIALECTS.map((d) => (
                 <option key={d.value} value={d.value}>
@@ -409,7 +409,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
             className={cn(
               'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
               !projectId || assessMigration.isPending
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
                 : 'bg-aqua-600 text-white hover:bg-aqua-700'
             )}
           >
@@ -428,14 +428,14 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
 
           <button
             onClick={handleLoadDemo}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <FlaskConical className="w-4 h-4" />
             Load Demo
           </button>
 
           {assessMigration.isPending && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-muted-foreground">
               AI is analyzing schema and evaluating migration risks...
             </span>
           )}
@@ -479,14 +479,14 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                 >
                   Risk: {assessment.overallRisk}
                 </span>
-                <span className="px-3 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700">
+                <span className="px-3 py-1 text-xs font-bold rounded-full bg-muted text-foreground">
                   <Clock className="w-3 h-3 inline-block mr-1 -mt-0.5" />
                   Effort: {assessment.estimatedEffort}
                 </span>
               </div>
 
               {/* Summary */}
-              <p className="text-sm text-slate-700 leading-relaxed">
+              <p className="text-sm text-foreground leading-relaxed">
                 {assessment.summary}
               </p>
             </div>
@@ -500,13 +500,13 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 px-3 font-semibold text-slate-600">Table</th>
-                    <th className="text-left py-2 px-3 font-semibold text-slate-600">Est. Rows</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">Batch Size</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">Batches</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">Est. Time</th>
-                    <th className="text-left py-2 px-3 font-semibold text-slate-600">Notes</th>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Table</th>
+                    <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Est. Rows</th>
+                    <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Batch Size</th>
+                    <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Batches</th>
+                    <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Est. Time</th>
+                    <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Notes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -514,24 +514,24 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                     <tr
                       key={row.table}
                       className={cn(
-                        'border-b border-slate-100',
-                        i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
+                        'border-b border-border/50',
+                        i % 2 === 0 ? 'bg-card' : 'bg-muted/50/50'
                       )}
                     >
-                      <td className="py-2 px-3 font-mono font-medium text-slate-800">
+                      <td className="py-2 px-3 font-mono font-medium text-foreground">
                         {row.table}
                       </td>
-                      <td className="py-2 px-3 text-slate-700">{row.estimatedRows}</td>
-                      <td className="py-2 px-3 text-right text-slate-700">
+                      <td className="py-2 px-3 text-foreground">{row.estimatedRows}</td>
+                      <td className="py-2 px-3 text-right text-foreground">
                         {row.batchSize.toLocaleString()}
                       </td>
-                      <td className="py-2 px-3 text-right text-slate-700">
+                      <td className="py-2 px-3 text-right text-foreground">
                         {row.estimatedBatches}
                       </td>
-                      <td className="py-2 px-3 text-right text-slate-700">
+                      <td className="py-2 px-3 text-right text-foreground">
                         {row.estimatedTime}
                       </td>
-                      <td className="py-2 px-3 text-slate-500 italic">
+                      <td className="py-2 px-3 text-muted-foreground italic">
                         {row.notes ?? '\u2014'}
                       </td>
                     </tr>
@@ -539,7 +539,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                 </tbody>
               </table>
             </div>,
-            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
               {assessment.dataVolumeAnalysis.length} tables
             </span>
           )}
@@ -553,7 +553,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
               {assessment.incompatibilities.map((item, i) => (
                 <div
                   key={i}
-                  className="bg-white border border-slate-200 rounded-lg p-3 space-y-2"
+                  className="bg-card border border-border rounded-lg p-3 space-y-2"
                 >
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
@@ -564,7 +564,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                     >
                       {item.severity}
                     </span>
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-600 uppercase">
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-muted text-muted-foreground uppercase">
                       {item.type}
                     </span>
                   </div>
@@ -572,18 +572,18 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                     <code className="px-2 py-0.5 bg-red-50 text-red-700 rounded text-xs font-mono">
                       {item.source}
                     </code>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                     <code className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-mono">
                       {item.target}
                     </code>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     {item.resolution}
                   </p>
                 </div>
               ))}
             </div>,
-            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
               {assessment.incompatibilities.length} issues
             </span>
           )}
@@ -601,22 +601,22 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-800">
+                      <span className="text-sm font-semibold text-foreground">
                         {step.title}
                       </span>
-                      <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {step.estimatedTime}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {step.description}
                     </p>
                   </div>
                 </div>
               ))}
             </div>,
-            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
               {assessment.migrationSteps.length} phases
             </span>
           )}
@@ -628,33 +628,33 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
             <Zap className="w-4 h-4 text-aqua-600 flex-shrink-0" />,
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-slate-50 rounded-lg p-3 text-center">
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
                     Chunk Size
                   </p>
-                  <p className="text-lg font-bold text-slate-800">
+                  <p className="text-lg font-bold text-foreground">
                     {assessment.batchStrategy.recommendedChunkSize.toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-slate-50 rounded-lg p-3 text-center">
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
                     Parallelism
                   </p>
-                  <p className="text-lg font-bold text-slate-800">
+                  <p className="text-lg font-bold text-foreground">
                     {assessment.batchStrategy.parallelism}x
                   </p>
                 </div>
-                <div className="bg-slate-50 rounded-lg p-3 text-center">
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
                     Total Time
                   </p>
-                  <p className="text-lg font-bold text-slate-800">
+                  <p className="text-lg font-bold text-foreground">
                     {assessment.batchStrategy.estimatedTotalTime}
                   </p>
                 </div>
               </div>
               {assessment.batchStrategy.notes && (
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   {assessment.batchStrategy.notes}
                 </p>
               )}
@@ -670,20 +670,20 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
               {assessment.recommendations.map((rec, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <Lightbulb className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs text-slate-700 leading-relaxed">{rec}</span>
+                  <span className="text-xs text-foreground leading-relaxed">{rec}</span>
                 </li>
               ))}
             </ul>,
-            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
               {assessment.recommendations.length} tips
             </span>
           )}
 
           {/* ── Generate Scripts Section ────────────────────────────────── */}
-          <div className="bg-card border border-slate-200 rounded-xl p-5 space-y-4">
+          <div className="bg-card border border-border rounded-xl p-5 space-y-4">
             <div className="flex items-center gap-2 mb-1">
               <Database className="w-5 h-5 text-aqua-600" />
-              <h3 className="text-sm font-semibold text-slate-800">
+              <h3 className="text-sm font-semibold text-foreground">
                 Generate Migration Scripts
               </h3>
             </div>
@@ -695,7 +695,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
                   !projectId || generateScripts.isPending
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
                     : 'bg-emerald-600 text-white hover:bg-emerald-700'
                 )}
               >
@@ -713,7 +713,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
               </button>
 
               {generateScripts.isPending && (
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-muted-foreground">
                   AI is generating versioned migration scripts...
                 </span>
               )}
@@ -775,7 +775,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
               {/* Scripts List */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-slate-800">
+                  <h4 className="text-sm font-semibold text-foreground">
                     Migration Scripts ({scriptBundle.scripts.length})
                   </h4>
                   <button
@@ -784,7 +784,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                     className={cn(
                       'inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all shadow-sm',
                       savingScripts || savedCount === scriptBundle.scripts.length
-                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        ? 'bg-muted text-muted-foreground cursor-not-allowed'
                         : 'bg-aqua-600 text-white hover:bg-aqua-700'
                     )}
                   >
@@ -810,28 +810,28 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                 {scriptBundle.scripts.map((script, i) => (
                   <div
                     key={script.version}
-                    className="bg-card border border-slate-200 rounded-xl overflow-hidden"
+                    className="bg-card border border-border rounded-xl overflow-hidden"
                   >
                     {/* Script Header */}
-                    <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
                       <div className="w-8 h-8 rounded-full bg-aqua-100 text-aqua-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
                         {i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-600 font-mono">
+                          <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-muted text-muted-foreground font-mono">
                             {script.version}
                           </span>
-                          <span className="text-sm font-semibold text-slate-800 truncate">
+                          <span className="text-sm font-semibold text-foreground truncate">
                             {script.title}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-0.5 truncate">
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
                           {script.description}
                         </p>
                       </div>
                       {script.dependsOn && (
-                        <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">
+                        <span className="text-[10px] text-muted-foreground font-mono flex-shrink-0">
                           depends on: {script.dependsOn}
                         </span>
                       )}
@@ -845,7 +845,7 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                         </span>
                         <button
                           onClick={() => handleCopy(script.upSQL, `up-${i}`)}
-                          className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-700 transition-colors"
+                          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                         >
                           {copiedId === `up-${i}` ? (
                             <>
@@ -866,14 +866,14 @@ export function MigrationPlanner({ projectId }: MigrationPlannerProps) {
                     </div>
 
                     {/* DOWN SQL */}
-                    <div className="px-4 py-3 border-t border-slate-100 space-y-1.5">
+                    <div className="px-4 py-3 border-t border-border/50 space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">
                           DOWN (rollback)
                         </span>
                         <button
                           onClick={() => handleCopy(script.downSQL, `down-${i}`)}
-                          className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-700 transition-colors"
+                          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                         >
                           {copiedId === `down-${i}` ? (
                             <>

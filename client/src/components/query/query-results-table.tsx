@@ -136,8 +136,8 @@ export function QueryResultsTable({
           className,
         )}
       >
-        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-          <DatabaseZap className="w-7 h-7 text-slate-400" />
+        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+          <DatabaseZap className="w-7 h-7 text-muted-foreground" />
         </div>
         <p className="text-sm font-medium text-foreground mb-1">
           No results yet
@@ -153,7 +153,7 @@ export function QueryResultsTable({
   return (
     <div className={cn('flex flex-col h-full', className)}>
       {/* Result Info Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-border flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Rows3 className="w-3.5 h-3.5" />
@@ -167,7 +167,7 @@ export function QueryResultsTable({
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleCopyAll}
-            className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 px-2 py-1 bg-card rounded border border-border/50 hover:bg-slate-100 transition-colors"
+            className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground px-2 py-1 bg-card rounded border border-border/50 hover:bg-muted transition-colors"
           >
             {copiedAll ? (
               <>
@@ -183,14 +183,14 @@ export function QueryResultsTable({
           </button>
           <button
             onClick={handleExportCSV}
-            className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 px-2 py-1 bg-card rounded border border-border/50 hover:bg-slate-100 transition-colors"
+            className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground px-2 py-1 bg-card rounded border border-border/50 hover:bg-muted transition-colors"
           >
             <Download className="w-3 h-3" />
             CSV
           </button>
           <button
             onClick={handleExportJSON}
-            className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 px-2 py-1 bg-card rounded border border-border/50 hover:bg-slate-100 transition-colors"
+            className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground px-2 py-1 bg-card rounded border border-border/50 hover:bg-muted transition-colors"
           >
             <FileJson className="w-3 h-3" />
             JSON
@@ -202,15 +202,15 @@ export function QueryResultsTable({
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm border-collapse min-w-max">
           <thead className="sticky top-0 z-10">
-            <tr className="bg-slate-100 border-b border-border">
-              <th className="px-3 py-2 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-100 border-r border-border/50 w-12">
+            <tr className="bg-muted border-b border-border">
+              <th className="px-3 py-2 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted border-r border-border/50 w-12">
                 #
               </th>
               {columns.map((col, idx) => (
                 <th
                   key={idx}
                   onClick={() => handleSort(idx)}
-                  className="px-3 py-2 text-left text-[10px] font-semibold text-slate-600 uppercase tracking-wider bg-slate-100 border-r border-border/50 last:border-r-0 whitespace-nowrap cursor-pointer hover:bg-slate-200/70 transition-colors select-none group"
+                  className="px-3 py-2 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted border-r border-border/50 last:border-r-0 whitespace-nowrap cursor-pointer hover:bg-muted/70 transition-colors select-none group"
                 >
                   <span className="flex items-center gap-1">
                     {col}
@@ -221,7 +221,7 @@ export function QueryResultsTable({
                         <ArrowDown className="w-3 h-3 text-aqua-600" />
                       )
                     ) : (
-                      <ArrowUp className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ArrowUp className="w-3 h-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                     )}
                   </span>
                 </th>
@@ -236,10 +236,10 @@ export function QueryResultsTable({
                   key={globalRowIdx}
                   className={cn(
                     'border-b border-border/30 hover:bg-aqua-50/30 transition-colors',
-                    rowIdx % 2 === 0 ? 'bg-card' : 'bg-slate-50/50',
+                    rowIdx % 2 === 0 ? 'bg-card' : 'bg-muted/30',
                   )}
                 >
-                  <td className="px-3 py-1.5 text-xs text-slate-400 font-mono border-r border-border/30 tabular-nums">
+                  <td className="px-3 py-1.5 text-xs text-muted-foreground font-mono border-r border-border/30 tabular-nums">
                     {globalRowIdx + 1}
                   </td>
                   {row.map((cell, cellIdx) => {
@@ -266,7 +266,7 @@ export function QueryResultsTable({
                         title={isExpanded ? undefined : cellStr}
                       >
                         {cell === null || cell === undefined ? (
-                          <span className="text-slate-400 italic">NULL</span>
+                          <span className="text-muted-foreground italic">NULL</span>
                         ) : (
                           cellStr
                         )}
@@ -282,7 +282,7 @@ export function QueryResultsTable({
 
       {/* Pagination */}
       {rows.length > 25 && (
-        <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-t border-border flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-t border-border flex-shrink-0">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>Rows per page:</span>
             {[25, 50, 100].map((size) => (

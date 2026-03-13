@@ -173,6 +173,27 @@ export function QueryBenchmark() {
   const [explanationResult, setExplanationResult] = useState<QueryExplanation | null>(null);
   const [showAlternatives, setShowAlternatives] = useState(false);
   const [expandedSteps, setExpandedSteps] = useState(true);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopyText = useCallback((text: string, field: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    }).catch(() => {
+      // Fallback for non-HTTPS contexts
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    });
+  }, []);
 
   // AI hooks
   const generateSQL = useGenerateSQL();
@@ -336,7 +357,7 @@ export function QueryBenchmark() {
                     : mode.id === 'explain'
                     ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300 text-blue-700 shadow-sm'
                     : 'bg-gradient-to-r from-emerald-50 to-cyan-50 border-emerald-300 text-emerald-700 shadow-sm'
-                  : 'bg-card border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700',
+                  : 'bg-card border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground',
               )}
               title={mode.desc}
             >
@@ -346,7 +367,7 @@ export function QueryBenchmark() {
           );
         })}
 
-        <span className="ml-auto text-[10px] font-medium text-slate-400 uppercase tracking-wider bg-slate-50 px-2.5 py-1 rounded-md">
+        <span className="ml-auto text-[10px] font-medium text-muted-foreground uppercase tracking-wider bg-muted/50 px-2.5 py-1 rounded-md">
           {dialect}
         </span>
       </div>
@@ -355,31 +376,40 @@ export function QueryBenchmark() {
       {activeMode === 'generate' && (
         <div className="space-y-5">
           {/* Description Input */}
-          <div className="bg-gradient-to-br from-violet-50/50 to-purple-50/50 border border-violet-200 rounded-xl p-5">
+          <div className="bg-gradient-to-br from-violet-50/50 to-purple-50/50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-violet-600" />
-              <h4 className="text-sm font-semibold text-violet-800">
+              <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+              <h4 className="text-sm font-semibold text-violet-800 dark:text-violet-200">
                 Describe Your Query
               </h4>
+              {nlDescription.trim() && (
+                <button
+                  onClick={() => { setNlDescription(''); setGeneratedResult(null); }}
+                  className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-red-500 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Clear
+                </button>
+              )}
             </div>
             <textarea
               value={nlDescription}
               onChange={(e) => setNlDescription(e.target.value)}
               placeholder="Describe what data you want to retrieve in plain English..."
               rows={3}
-              className="w-full px-4 py-3 text-sm bg-white rounded-lg border border-violet-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 resize-y"
+              className="w-full px-4 py-3 text-sm bg-card rounded-lg border border-violet-200 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 resize-y"
             />
 
             {/* Sample Descriptions */}
             <div className="mt-3 flex flex-wrap gap-1.5">
-              <span className="text-[10px] font-medium text-slate-400 uppercase mr-1 self-center">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase mr-1 self-center">
                 Try:
               </span>
               {SAMPLE_DESCRIPTIONS.map((desc, i) => (
                 <button
                   key={i}
                   onClick={() => setNlDescription(desc)}
-                  className="text-[11px] px-2.5 py-1 bg-white border border-violet-200 rounded-full text-violet-600 hover:bg-violet-50 hover:border-violet-300 transition-colors truncate max-w-[280px]"
+                  className="text-[11px] px-2.5 py-1 bg-card border border-violet-200 rounded-full text-violet-600 hover:bg-violet-50 hover:border-violet-300 transition-colors truncate max-w-[280px]"
                   title={desc}
                 >
                   {desc}
@@ -394,7 +424,7 @@ export function QueryBenchmark() {
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
                   generateSQL.isPending || !nlDescription.trim()
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
                     : 'bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-700 hover:to-purple-700',
                 )}
               >
@@ -423,19 +453,22 @@ export function QueryBenchmark() {
           {generatedResult && (
             <div className="space-y-4">
               {/* Main Generated SQL */}
-              <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
-                  <h5 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border">
+                  <h5 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Check className="w-4 h-4 text-green-600" />
                     Generated SQL
                   </h5>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => navigator.clipboard.writeText(generatedResult.sql)}
-                      className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                      onClick={() => handleCopyText(generatedResult.sql, 'generated')}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <ClipboardCopy className="w-3 h-3" />
-                      Copy
+                      {copiedField === 'generated' ? (
+                        <><Check className="w-3 h-3 text-green-600" /> Copied!</>
+                      ) : (
+                        <><ClipboardCopy className="w-3 h-3" /> Copy</>
+                      )}
                     </button>
                     <button
                       onClick={() => handleUseGeneratedSQL(generatedResult.sql)}
@@ -446,13 +479,13 @@ export function QueryBenchmark() {
                     </button>
                   </div>
                 </div>
-                <pre className="px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 overflow-x-auto whitespace-pre-wrap">
-                  {generatedResult.sql}
+                <pre className="px-4 py-4 text-sm font-mono bg-[#1e293b] text-slate-100 overflow-x-auto whitespace-pre-wrap min-h-[120px] max-h-[400px] overflow-y-auto leading-relaxed">
+                  {generatedResult.sql || '-- No SQL was generated. Try rephrasing your description.'}
                 </pre>
               </div>
 
               {/* Explanation */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <div className="flex items-start gap-2">
                   <MessageSquare className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div>
@@ -464,7 +497,7 @@ export function QueryBenchmark() {
 
               {/* Assumptions */}
               {generatedResult.assumptions?.length > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                   <div className="flex items-start gap-2">
                     <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                     <div>
@@ -484,7 +517,7 @@ export function QueryBenchmark() {
 
               {/* Warnings */}
               {generatedResult.warnings?.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
                     <div>
@@ -504,27 +537,27 @@ export function QueryBenchmark() {
 
               {/* Alternative Approaches */}
               {generatedResult.alternativeApproaches?.length > 0 && (
-                <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
                   <button
                     onClick={() => setShowAlternatives(!showAlternatives)}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200 hover:bg-slate-100 transition-colors"
+                    className="w-full flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border hover:bg-muted transition-colors"
                   >
-                    <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                      <ListChecks className="w-4 h-4 text-slate-500" />
+                    <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <ListChecks className="w-4 h-4 text-muted-foreground" />
                       Alternative Approaches ({generatedResult.alternativeApproaches.length})
                     </span>
                     {showAlternatives ? (
-                      <ChevronUp className="w-4 h-4 text-slate-400" />
+                      <ChevronUp className="w-4 h-4 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     )}
                   </button>
                   {showAlternatives && (
-                    <div className="divide-y divide-slate-100">
+                    <div className="divide-y divide-border/50">
                       {generatedResult.alternativeApproaches.map((alt, i) => (
                         <div key={i} className="p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-medium text-slate-600">
+                            <p className="text-xs font-medium text-muted-foreground">
                               {alt.description}
                             </p>
                             <button
@@ -558,6 +591,15 @@ export function QueryBenchmark() {
               <h4 className="text-sm font-semibold text-amber-800">
                 Query to Optimize
               </h4>
+              {sql.trim() && (
+                <button
+                  onClick={() => { setSql(''); setOptimizationResult(null); }}
+                  className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-red-500 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Clear
+                </button>
+              )}
             </div>
             <textarea
               value={sql}
@@ -565,7 +607,7 @@ export function QueryBenchmark() {
               placeholder="Paste your SQL query here for AI-powered optimization..."
               rows={6}
               spellCheck={false}
-              className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-y selection:bg-amber-500/30 caret-amber-400"
+              className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-y selection:bg-amber-500/30 caret-amber-400"
             />
             <div className="mt-4 flex items-center gap-3">
               <button
@@ -574,7 +616,7 @@ export function QueryBenchmark() {
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
                   optimizeQuery.isPending || !sql.trim()
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
                     : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600',
                 )}
               >
@@ -609,23 +651,23 @@ export function QueryBenchmark() {
                   ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200'
                   : improvementPct && improvementPct >= 10
                   ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200'
-                  : 'bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200',
+                  : 'bg-gradient-to-r from-muted/50 to-muted/30 border border-border',
               )}>
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     'w-10 h-10 rounded-lg flex items-center justify-center',
-                    improvementPct && improvementPct >= 30 ? 'bg-green-100' : improvementPct && improvementPct >= 10 ? 'bg-blue-100' : 'bg-slate-100',
+                    improvementPct && improvementPct >= 30 ? 'bg-green-100' : improvementPct && improvementPct >= 10 ? 'bg-blue-100' : 'bg-muted',
                   )}>
                     <TrendingDown className={cn(
                       'w-5 h-5',
-                      improvementPct && improvementPct >= 30 ? 'text-green-600' : improvementPct && improvementPct >= 10 ? 'text-blue-600' : 'text-slate-600',
+                      improvementPct && improvementPct >= 30 ? 'text-green-600' : improvementPct && improvementPct >= 10 ? 'text-blue-600' : 'text-muted-foreground',
                     )} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">
+                    <p className="text-sm font-bold text-foreground">
                       Estimated Improvement: {optimizationResult.estimatedImprovement}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       {optimizationResult.changes?.length ?? 0} optimization(s) applied
                     </p>
                   </div>
@@ -640,17 +682,20 @@ export function QueryBenchmark() {
               </div>
 
               {/* Optimized SQL */}
-              <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
-                  <h5 className="text-sm font-semibold text-slate-700">
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border">
+                  <h5 className="text-sm font-semibold text-foreground">
                     Optimized SQL
                   </h5>
                   <button
-                    onClick={() => navigator.clipboard.writeText(optimizationResult.optimizedSQL)}
-                    className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700"
+                    onClick={() => handleCopyText(optimizationResult.optimizedSQL, 'optimized')}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                   >
-                    <ClipboardCopy className="w-3 h-3" />
-                    Copy
+                    {copiedField === 'optimized' ? (
+                      <><Check className="w-3 h-3 text-green-600" /> Copied!</>
+                    ) : (
+                      <><ClipboardCopy className="w-3 h-3" /> Copy</>
+                    )}
                   </button>
                 </div>
                 <pre className="px-4 py-3 text-sm font-mono bg-[#1e293b] text-green-300 overflow-x-auto whitespace-pre-wrap">
@@ -660,13 +705,13 @@ export function QueryBenchmark() {
 
               {/* Changes List */}
               {optimizationResult.changes?.length > 0 && (
-                <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
-                  <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-                    <h5 className="text-sm font-semibold text-slate-700">
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="px-4 py-3 bg-muted/50 border-b border-border">
+                    <h5 className="text-sm font-semibold text-foreground">
                       Optimization Details
                     </h5>
                   </div>
-                  <div className="divide-y divide-slate-100">
+                  <div className="divide-y divide-border/50">
                     {optimizationResult.changes.map((change, i) => (
                       <div key={i} className="px-4 py-3 flex items-start gap-3">
                         <span
@@ -676,14 +721,14 @@ export function QueryBenchmark() {
                               ? 'bg-green-100 text-green-700'
                               : change.impact === 'MEDIUM'
                               ? 'bg-blue-100 text-blue-700'
-                              : 'bg-slate-100 text-slate-600',
+                              : 'bg-muted text-muted-foreground',
                           )}
                         >
                           {change.impact}
                         </span>
                         <div>
-                          <p className="text-sm text-slate-700">{change.description}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">{change.category}</p>
+                          <p className="text-sm text-foreground">{change.description}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{change.category}</p>
                         </div>
                       </div>
                     ))}
@@ -704,7 +749,7 @@ export function QueryBenchmark() {
                     {optimizationResult.indexRecommendations.map((idx, i) => (
                       <div key={i} className="p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs text-slate-600">{idx.reason}</p>
+                          <p className="text-xs text-muted-foreground">{idx.reason}</p>
                           <span className="text-[10px] text-amber-600 font-medium">
                             {idx.estimatedImpact}
                           </span>
@@ -720,7 +765,7 @@ export function QueryBenchmark() {
 
               {/* Warnings */}
               {optimizationResult.warnings?.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
                   <h6 className="text-xs font-semibold text-red-800 mb-2 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5" />
                     Warnings
@@ -750,6 +795,15 @@ export function QueryBenchmark() {
               <h4 className="text-sm font-semibold text-blue-800">
                 Query to Explain
               </h4>
+              {sql.trim() && (
+                <button
+                  onClick={() => { setSql(''); setExplanationResult(null); }}
+                  className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-red-500 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Clear
+                </button>
+              )}
             </div>
             <textarea
               value={sql}
@@ -757,7 +811,7 @@ export function QueryBenchmark() {
               placeholder="Paste your SQL query here for AI-powered explanation..."
               rows={6}
               spellCheck={false}
-              className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-y selection:bg-blue-500/30 caret-blue-400"
+              className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-y selection:bg-blue-500/30 caret-blue-400"
             />
             <div className="mt-4 flex items-center gap-3">
               <button
@@ -766,7 +820,7 @@ export function QueryBenchmark() {
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
                   explainQuery.isPending || !sql.trim()
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
                     : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700',
                 )}
               >
@@ -795,9 +849,9 @@ export function QueryBenchmark() {
           {explanationResult && (
             <div className="space-y-4">
               {/* Summary + Complexity */}
-              <div className="bg-card border border-slate-200 rounded-xl p-5">
+              <div className="bg-card border border-border rounded-xl p-5">
                 <div className="flex items-start justify-between gap-4 mb-3">
-                  <h5 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                  <h5 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-blue-600" />
                     Summary
                   </h5>
@@ -816,30 +870,30 @@ export function QueryBenchmark() {
                     {explanationResult.complexity}
                   </span>
                 </div>
-                <p className="text-sm text-slate-600 leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   {explanationResult.summary}
                 </p>
               </div>
 
               {/* Step by Step */}
               {explanationResult.stepByStep?.length > 0 && (
-                <div className="bg-card border border-slate-200 rounded-xl overflow-hidden">
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
                   <button
                     onClick={() => setExpandedSteps(!expandedSteps)}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200 hover:bg-slate-100 transition-colors"
+                    className="w-full flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border hover:bg-muted transition-colors"
                   >
-                    <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground flex items-center gap-2">
                       <ListChecks className="w-4 h-4 text-blue-500" />
                       Step-by-Step Breakdown ({explanationResult.stepByStep.length} steps)
                     </span>
                     {expandedSteps ? (
-                      <ChevronUp className="w-4 h-4 text-slate-400" />
+                      <ChevronUp className="w-4 h-4 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     )}
                   </button>
                   {expandedSteps && (
-                    <div className="divide-y divide-slate-100">
+                    <div className="divide-y divide-border/50">
                       {explanationResult.stepByStep.map((step, i) => (
                         <div key={i} className="p-4">
                           <div className="flex items-center gap-3 mb-2">
@@ -853,7 +907,7 @@ export function QueryBenchmark() {
                           <pre className="px-3 py-2 text-xs font-mono bg-[#1e293b] text-slate-200 rounded-md mb-2 overflow-x-auto whitespace-pre-wrap">
                             {step.sql}
                           </pre>
-                          <p className="text-sm text-slate-600 pl-9">
+                          <p className="text-sm text-muted-foreground pl-9">
                             {step.explanation}
                           </p>
                         </div>
@@ -866,8 +920,8 @@ export function QueryBenchmark() {
               {/* Tables Used + Output Columns */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {explanationResult.tablesUsed?.length > 0 && (
-                  <div className="bg-card border border-slate-200 rounded-xl p-4">
-                    <h6 className="text-xs font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
+                  <div className="bg-card border border-border rounded-xl p-4">
+                    <h6 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
                       Tables Referenced
                     </h6>
                     <div className="space-y-2">
@@ -877,9 +931,9 @@ export function QueryBenchmark() {
                             {t.name}
                           </span>
                           {t.alias && t.alias !== t.name && (
-                            <span className="text-slate-400 text-xs">as {t.alias}</span>
+                            <span className="text-muted-foreground text-xs">as {t.alias}</span>
                           )}
-                          <span className="text-slate-500 text-xs ml-auto">{t.role}</span>
+                          <span className="text-muted-foreground text-xs ml-auto">{t.role}</span>
                         </div>
                       ))}
                     </div>
@@ -887,8 +941,8 @@ export function QueryBenchmark() {
                 )}
 
                 {explanationResult.outputColumns?.length > 0 && (
-                  <div className="bg-card border border-slate-200 rounded-xl p-4">
-                    <h6 className="text-xs font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
+                  <div className="bg-card border border-border rounded-xl p-4">
+                    <h6 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
                       Output Columns
                     </h6>
                     <div className="space-y-2">
@@ -897,7 +951,7 @@ export function QueryBenchmark() {
                           <span className="font-mono text-xs text-violet-700 bg-violet-50 px-2 py-0.5 rounded">
                             {col.alias || col.expression}
                           </span>
-                          <p className="text-xs text-slate-500 mt-0.5 pl-1">
+                          <p className="text-xs text-muted-foreground mt-0.5 pl-1">
                             {col.description}
                           </p>
                         </div>
@@ -909,7 +963,7 @@ export function QueryBenchmark() {
 
               {/* Performance Notes */}
               {explanationResult.performanceNotes?.length > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                   <h6 className="text-xs font-semibold text-amber-800 mb-2 flex items-center gap-1.5">
                     <TrendingUp className="w-3.5 h-3.5" />
                     Performance Notes
@@ -927,15 +981,15 @@ export function QueryBenchmark() {
 
               {/* Filters */}
               {explanationResult.filters?.length > 0 && (
-                <div className="bg-card border border-slate-200 rounded-lg p-4">
-                  <h6 className="text-xs font-semibold text-slate-700 mb-2">
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <h6 className="text-xs font-semibold text-foreground mb-2">
                     Active Filters
                   </h6>
                   <div className="flex flex-wrap gap-2">
                     {explanationResult.filters.map((f, i) => (
                       <span
                         key={i}
-                        className="px-2.5 py-1 text-xs font-mono bg-slate-100 text-slate-700 rounded-md border border-slate-200"
+                        className="px-2.5 py-1 text-xs font-mono bg-muted text-foreground rounded-md border border-border"
                       >
                         {f}
                       </span>
@@ -956,10 +1010,19 @@ export function QueryBenchmark() {
             {/* Primary Query */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-slate-700">
+                <label className="text-xs font-medium text-foreground">
                   {showComparison ? 'Query A' : 'SQL Query'}
                 </label>
                 <div className="flex items-center gap-2">
+                  {sql.trim() && (
+                    <button
+                      onClick={() => { setSql(''); setResult(null); setComparisonResult(null); }}
+                      className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-red-500 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                      Clear
+                    </button>
+                  )}
                   {!showComparison && (
                     <button
                       onClick={() => setShowComparison(true)}
@@ -977,7 +1040,7 @@ export function QueryBenchmark() {
                 placeholder="SELECT * FROM users WHERE active = true ORDER BY created_at DESC;"
                 rows={6}
                 spellCheck={false}
-                className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
+                className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
               />
             </div>
 
@@ -985,7 +1048,7 @@ export function QueryBenchmark() {
             {showComparison && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-slate-700">Query B</label>
+                  <label className="text-xs font-medium text-foreground">Query B</label>
                   <button
                     onClick={() => {
                       setShowComparison(false);
@@ -1004,7 +1067,7 @@ export function QueryBenchmark() {
                   placeholder="Paste optimized or alternative query here..."
                   rows={6}
                   spellCheck={false}
-                  className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
+                  className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
                 />
               </div>
             )}
@@ -1013,7 +1076,7 @@ export function QueryBenchmark() {
           {/* Controls */}
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-slate-600">Iterations:</label>
+              <label className="text-xs font-medium text-muted-foreground">Iterations:</label>
               <div className="flex gap-1">
                 {ITERATION_OPTIONS.map((opt) => (
                   <button
@@ -1023,7 +1086,7 @@ export function QueryBenchmark() {
                       'px-3 py-1.5 text-xs font-medium rounded-md border transition-all',
                       iterations === opt
                         ? 'bg-aqua-50 border-aqua-300 text-aqua-700'
-                        : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50',
+                        : 'bg-card border-border text-muted-foreground hover:bg-muted/50',
                     )}
                   >
                     {opt}
@@ -1038,7 +1101,7 @@ export function QueryBenchmark() {
               className={cn(
                 'inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-lg transition-all shadow-sm',
                 isRunning || !sql.trim()
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : 'bg-emerald-600 text-white hover:bg-emerald-700',
               )}
             >
@@ -1061,7 +1124,7 @@ export function QueryBenchmark() {
                 <button
                   onClick={() => { setActiveMode('optimize'); handleOptimizeQuery(); }}
                   disabled={optimizeQuery.isPending}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg hover:bg-amber-100 transition-colors"
                 >
                   {optimizeQuery.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
                   Optimize
@@ -1069,7 +1132,7 @@ export function QueryBenchmark() {
                 <button
                   onClick={() => { setActiveMode('explain'); handleExplainQuery(); }}
                   disabled={explainQuery.isPending}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-700 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   {explainQuery.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
                   Explain
@@ -1092,7 +1155,7 @@ export function QueryBenchmark() {
                 setResult(r1);
                 setComparisonResult(r2);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
             >
               <FlaskConical className="w-4 h-4" />
               Load Demo
@@ -1103,10 +1166,10 @@ export function QueryBenchmark() {
           {result && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Timer className="w-4 h-4 text-aqua-600" />
                   Benchmark Results
-                  <span className="text-[10px] text-slate-400 font-normal">
+                  <span className="text-[10px] text-muted-foreground font-normal">
                     ({result.iterations} iterations)
                   </span>
                 </h4>
@@ -1116,14 +1179,14 @@ export function QueryBenchmark() {
                       setResult(null);
                       setComparisonResult(null);
                     }}
-                    className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-muted-foreground transition-colors"
                   >
                     <RotateCcw className="w-3 h-3" />
                     Clear
                   </button>
                   <button
                     onClick={handleCopyStats}
-                    className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Copy className="w-3 h-3" />
                     Copy Stats
@@ -1140,12 +1203,12 @@ export function QueryBenchmark() {
                   /* Side by side comparison */
                   <div className="col-span-full">
                     <div className="grid grid-cols-9 gap-2 text-center">
-                      <div className="text-[10px] font-semibold text-slate-500 uppercase" />
+                      <div className="text-[10px] font-semibold text-muted-foreground uppercase" />
                       {(['Min', 'Max', 'Avg', 'Median', 'P95', 'P99', 'StdDev', 'QPS'] as const).map(
                         (label) => (
                           <div
                             key={label}
-                            className="text-[10px] font-semibold text-slate-500 uppercase"
+                            className="text-[10px] font-semibold text-muted-foreground uppercase"
                           >
                             {label}
                           </div>
@@ -1168,10 +1231,10 @@ export function QueryBenchmark() {
                       ].map((val, i) => (
                         <div
                           key={i}
-                          className="bg-card border border-slate-200 rounded-lg py-2 text-sm font-bold text-slate-800"
+                          className="bg-card border border-border rounded-lg py-2 text-sm font-bold text-foreground"
                         >
                           {val}
-                          <span className="text-[10px] text-slate-400 ml-0.5">
+                          <span className="text-[10px] text-muted-foreground ml-0.5">
                             {i === 7 ? '/s' : 'ms'}
                           </span>
                         </div>
@@ -1213,7 +1276,7 @@ export function QueryBenchmark() {
                                 ? 'bg-green-50 border-green-200 text-green-700'
                                 : isWorse
                                 ? 'bg-red-50 border-red-200 text-red-700'
-                                : 'bg-card border-slate-200 text-slate-800',
+                                : 'bg-card border-border text-foreground',
                             )}
                           >
                             {val}
@@ -1225,7 +1288,7 @@ export function QueryBenchmark() {
                       })}
 
                       {/* Delta row */}
-                      <div className="text-xs font-semibold text-slate-500 bg-slate-50 rounded-lg py-2 flex items-center justify-center">
+                      <div className="text-xs font-semibold text-muted-foreground bg-muted/50 rounded-lg py-2 flex items-center justify-center">
                         Delta
                       </div>
                       {[
@@ -1259,7 +1322,7 @@ export function QueryBenchmark() {
                             className={cn(
                               'rounded-lg py-2 text-xs font-bold border',
                               diff === 0
-                                ? 'bg-slate-50 border-slate-200 text-slate-400'
+                                ? 'bg-muted/50 border-border text-muted-foreground'
                                 : isGood
                                 ? 'bg-green-50 border-green-200 text-green-600'
                                 : 'bg-red-50 border-red-200 text-red-600',
@@ -1286,14 +1349,14 @@ export function QueryBenchmark() {
                   ].map((stat) => (
                     <div
                       key={stat.label}
-                      className="bg-card border border-slate-200 rounded-lg p-3 text-center"
+                      className="bg-card border border-border rounded-lg p-3 text-center"
                     >
-                      <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
                         {stat.label}
                       </p>
-                      <p className="text-lg font-bold text-slate-800">
+                      <p className="text-lg font-bold text-foreground">
                         {stat.value}
-                        <span className="text-xs text-slate-400 ml-0.5">
+                        <span className="text-xs text-muted-foreground ml-0.5">
                           {stat.unit}
                         </span>
                       </p>
@@ -1303,8 +1366,8 @@ export function QueryBenchmark() {
               </div>
 
               {/* Distribution Chart */}
-              <div className="bg-card border border-slate-200 rounded-lg p-4">
-                <h5 className="text-xs font-semibold text-slate-700 mb-3">
+              <div className="bg-card border border-border rounded-lg p-4">
+                <h5 className="text-xs font-semibold text-foreground mb-3">
                   Execution Time Distribution
                 </h5>
                 <div className="h-72">

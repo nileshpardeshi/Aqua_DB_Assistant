@@ -34,7 +34,7 @@ import type { MigrationScriptBundle } from '@/hooks/use-migration-ai';
 // ── Status badge colors ──────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, string> = {
-  draft: 'bg-slate-100 text-slate-600',
+  draft: 'bg-muted text-muted-foreground',
   pending: 'bg-amber-100 text-amber-700',
   running: 'bg-blue-100 text-blue-700',
   completed: 'bg-green-100 text-green-700',
@@ -264,7 +264,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <FileCode2 className="w-5 h-5 text-aqua-600" />
-          <h3 className="text-base font-semibold text-slate-800">Migration Scripts</h3>
+          <h3 className="text-base font-semibold text-foreground">Migration Scripts</h3>
           {migrations.length > 0 && (
             <span className="px-2 py-0.5 text-[10px] font-bold bg-aqua-100 text-aqua-700 rounded-full">
               {migrations.length}
@@ -278,7 +278,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
             className={cn(
               'inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all shadow-sm',
               generateScripts.isPending
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
                 : 'bg-violet-600 text-white hover:bg-violet-700'
             )}
           >
@@ -320,7 +320,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                         ? 'bg-violet-500 text-white'
                         : isActive
                           ? 'bg-violet-100 text-violet-700 ring-2 ring-violet-500 animate-pulse'
-                          : 'bg-slate-100 text-slate-400'
+                          : 'bg-muted text-muted-foreground'
                     )}
                   >
                     {isCompleted ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
@@ -328,19 +328,19 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                   <span
                     className={cn(
                       'text-xs whitespace-nowrap',
-                      isActive ? 'text-violet-700 font-medium' : isCompleted ? 'text-violet-600' : 'text-slate-400'
+                      isActive ? 'text-violet-700 font-medium' : isCompleted ? 'text-violet-600' : 'text-muted-foreground'
                     )}
                   >
                     {step}
                   </span>
                   {i < AI_STEPS.length - 1 && (
-                    <div className={cn('flex-1 h-0.5 min-w-[16px]', isCompleted ? 'bg-violet-500' : 'bg-slate-200')} />
+                    <div className={cn('flex-1 h-0.5 min-w-[16px]', isCompleted ? 'bg-violet-500' : 'bg-muted')} />
                   )}
                 </div>
               );
             })}
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
             <div
               className="bg-gradient-to-r from-violet-500 to-fuchsia-500 h-1.5 rounded-full transition-all duration-500"
               style={{ width: `${((aiStep + 1) / AI_STEPS.length) * 100}%` }}
@@ -364,7 +364,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                 className={cn(
                   'inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all shadow-sm',
                   isSavingAll
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
                     : 'bg-green-600 text-white hover:bg-green-700'
                 )}
               >
@@ -382,7 +382,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
               </button>
               <button
                 onClick={() => { setAiResult(null); setAiStep(0); }}
-                className="inline-flex items-center gap-1 px-2.5 py-2 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
                 Dismiss
@@ -396,16 +396,16 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                 <span className="px-2 py-0.5 text-[10px] font-bold font-mono bg-violet-100 text-violet-700 rounded-full">
                   v{script.version}
                 </span>
-                <span className="text-sm font-semibold text-slate-800">{script.title}</span>
+                <span className="text-sm font-semibold text-foreground">{script.title}</span>
                 {script.dependsOn && (
-                  <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-slate-500 bg-slate-100 rounded">
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-muted-foreground bg-muted rounded">
                     <GitBranch className="w-3 h-3" />
                     depends: {script.dependsOn}
                   </span>
                 )}
               </div>
               {script.description && (
-                <p className="text-xs text-slate-500">{script.description}</p>
+                <p className="text-xs text-muted-foreground">{script.description}</p>
               )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 <div>
@@ -460,13 +460,13 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
       {showCreateForm && (
         <div className="bg-card border border-aqua-200 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Plus className="w-4 h-4 text-aqua-600" />
               New Migration Script
             </h4>
             <button
               onClick={() => setShowCreateForm(false)}
-              className="text-slate-400 hover:text-slate-600 transition-colors"
+              className="text-muted-foreground hover:text-muted-foreground transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -475,48 +475,48 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Version */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Version</label>
+              <label className="block text-[11px] font-semibold text-muted-foreground mb-1">Version</label>
               <input
                 type="text"
                 value={formVersion}
                 onChange={(e) => setFormVersion(e.target.value)}
                 placeholder="001"
-                className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
               />
             </div>
             {/* Title */}
             <div className="md:col-span-2">
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Title</label>
+              <label className="block text-[11px] font-semibold text-muted-foreground mb-1">Title</label>
               <input
                 type="text"
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
                 placeholder="Create users table"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
               />
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Description</label>
+            <label className="block text-[11px] font-semibold text-muted-foreground mb-1">Description</label>
             <textarea
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Optional description of the migration..."
               rows={2}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y"
             />
           </div>
 
           {/* Source / Target dialects */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Source Dialect</label>
+              <label className="block text-[11px] font-semibold text-muted-foreground mb-1">Source Dialect</label>
               <select
                 value={formSourceDialect}
                 onChange={(e) => setFormSourceDialect(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
               >
                 {DATABASE_DIALECTS.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -526,11 +526,11 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Target Dialect</label>
+              <label className="block text-[11px] font-semibold text-muted-foreground mb-1">Target Dialect</label>
               <select
                 value={formTargetDialect}
                 onChange={(e) => setFormTargetDialect(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
               >
                 {DATABASE_DIALECTS.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -540,11 +540,11 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Depends On</label>
+              <label className="block text-[11px] font-semibold text-muted-foreground mb-1">Depends On</label>
               <select
                 value={formDependsOn}
                 onChange={(e) => setFormDependsOn(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
               >
                 <option value="">None</option>
                 {sortedMigrations.map((m) => (
@@ -558,7 +558,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
 
           {/* UP SQL */}
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+            <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
               Forward Migration (UP SQL)
             </label>
             <textarea
@@ -567,13 +567,13 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
               placeholder="-- Write your forward migration SQL here..."
               rows={8}
               spellCheck={false}
-              className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y"
+              className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y"
             />
           </div>
 
           {/* DOWN SQL */}
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+            <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
               Rollback (DOWN SQL)
             </label>
             <textarea
@@ -582,7 +582,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
               placeholder="-- Write your rollback migration SQL here (optional)..."
               rows={5}
               spellCheck={false}
-              className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y"
+              className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y"
             />
           </div>
 
@@ -594,7 +594,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
               className={cn(
                 'inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all shadow-sm',
                 createMigration.isPending || !formVersion.trim() || !formTitle.trim() || !formUpSQL.trim()
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : 'bg-aqua-600 text-white hover:bg-aqua-700'
               )}
             >
@@ -612,7 +612,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
             </button>
             <button
               onClick={() => setShowCreateForm(false)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
             >
               Cancel
             </button>
@@ -624,14 +624,14 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
       {isLoading && (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-card border border-slate-200 rounded-lg p-4 animate-pulse">
+            <div key={i} className="bg-card border border-border rounded-lg p-4 animate-pulse">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-6 bg-slate-200 rounded-full" />
+                <div className="w-12 h-6 bg-muted rounded-full" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-slate-200 rounded w-1/3" />
-                  <div className="h-3 bg-slate-100 rounded w-2/3" />
+                  <div className="h-4 bg-muted rounded w-1/3" />
+                  <div className="h-3 bg-muted rounded w-2/3" />
                 </div>
-                <div className="w-16 h-5 bg-slate-200 rounded-full" />
+                <div className="w-16 h-5 bg-muted rounded-full" />
               </div>
             </div>
           ))}
@@ -640,10 +640,10 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
 
       {/* ── Empty State ─────────────────────────────────────────────────── */}
       {!isLoading && sortedMigrations.length === 0 && !showCreateForm && (
-        <div className="text-center py-16 bg-card border border-slate-200 rounded-xl">
-          <FileCode2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm font-medium text-slate-600">No migration scripts yet</p>
-          <p className="text-xs text-slate-400 mt-1">
+        <div className="text-center py-16 bg-card border border-border rounded-xl">
+          <FileCode2 className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-sm font-medium text-muted-foreground">No migration scripts yet</p>
+          <p className="text-xs text-muted-foreground mt-1">
             Create your first script or use AI to generate them
           </p>
         </div>
@@ -660,15 +660,15 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
             return (
               <div
                 key={migration.id}
-                className="bg-card border border-slate-200 rounded-lg overflow-hidden transition-all hover:border-slate-300"
+                className="bg-card border border-border rounded-lg overflow-hidden transition-all hover:border-border"
               >
                 {/* Card Header */}
                 <button
                   onClick={() => toggleExpand(migration.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50/50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50/50 transition-colors"
                 >
                   {/* Expand chevron */}
-                  <div className="flex-shrink-0 text-slate-400">
+                  <div className="flex-shrink-0 text-muted-foreground">
                     {isExpanded ? (
                       <ChevronDown className="w-4 h-4" />
                     ) : (
@@ -677,15 +677,15 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                   </div>
 
                   {/* Version badge */}
-                  <span className="px-2.5 py-0.5 text-[11px] font-bold font-mono bg-slate-100 text-slate-700 rounded-full flex-shrink-0">
+                  <span className="px-2.5 py-0.5 text-[11px] font-bold font-mono bg-muted text-foreground rounded-full flex-shrink-0">
                     v{migration.version}
                   </span>
 
                   {/* Title & description */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{migration.title}</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{migration.title}</p>
                     {migration.description && (
-                      <p className="text-xs text-slate-500 truncate mt-0.5">{migration.description}</p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{migration.description}</p>
                     )}
                   </div>
 
@@ -696,15 +696,15 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                         className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: sourceDialect?.color || '#94a3b8' }}
                       />
-                      <span className="text-[10px] text-slate-500">{sourceDialect?.label || migration.sourceDialect}</span>
+                      <span className="text-[10px] text-muted-foreground">{sourceDialect?.label || migration.sourceDialect}</span>
                     </div>
-                    <ArrowRight className="w-3 h-3 text-slate-400" />
+                    <ArrowRight className="w-3 h-3 text-muted-foreground" />
                     <div className="flex items-center gap-1">
                       <div
                         className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: targetDialect?.color || '#94a3b8' }}
                       />
-                      <span className="text-[10px] text-slate-500">{targetDialect?.label || migration.targetDialect}</span>
+                      <span className="text-[10px] text-muted-foreground">{targetDialect?.label || migration.targetDialect}</span>
                     </div>
                   </div>
 
@@ -719,20 +719,20 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                   </span>
 
                   {/* Checksum */}
-                  <span className="text-[10px] font-mono text-slate-400 flex-shrink-0 flex items-center gap-1" title={`Checksum: ${migration.checksum}`}>
+                  <span className="text-[10px] font-mono text-muted-foreground flex-shrink-0 flex items-center gap-1" title={`Checksum: ${migration.checksum}`}>
                     <Hash className="w-3 h-3" />
                     {migration.checksum.slice(0, 8)}
                   </span>
 
                   {/* Created date */}
-                  <span className="text-[10px] text-slate-400 flex-shrink-0 flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {formatDate(migration.createdAt)}
                   </span>
 
                   {/* DependsOn badge */}
                   {migration.dependsOn && (
-                    <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded flex-shrink-0">
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-muted-foreground bg-muted/50 border border-border rounded flex-shrink-0">
                       <GitBranch className="w-3 h-3" />
                       {migration.dependsOn}
                     </span>
@@ -741,7 +741,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
 
                 {/* Expanded View */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100 px-4 py-4 space-y-4">
+                  <div className="border-t border-border/50 px-4 py-4 space-y-4">
                     {/* UP SQL */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
@@ -755,7 +755,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                               e.stopPropagation();
                               handleCopy(migration.upSQL, `up-${migration.id}`);
                             }}
-                            className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-700 transition-colors"
+                            className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                           >
                             {copiedId === `up-${migration.id}` ? (
                               <>
@@ -774,7 +774,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                               e.stopPropagation();
                               handleDownload(migration.upSQL, migration);
                             }}
-                            className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-700 transition-colors"
+                            className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                           >
                             <Download className="w-3 h-3" />
                             Download
@@ -799,7 +799,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                               e.stopPropagation();
                               handleCopy(migration.downSQL!, `down-${migration.id}`);
                             }}
-                            className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-700 transition-colors"
+                            className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                           >
                             {copiedId === `down-${migration.id}` ? (
                               <>
@@ -821,7 +821,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                     </div>
 
                     {/* Actions Row */}
-                    <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                    <div className="flex items-center gap-2 pt-1 border-t border-border/50">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -853,7 +853,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                           e.stopPropagation();
                           handleCopy(migration.upSQL, `quick-${migration.id}`);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
                       >
                         {copiedId === `quick-${migration.id}` ? (
                           <>
@@ -873,7 +873,7 @@ export function MigrationScriptsPanel({ projectId }: MigrationScriptsPanelProps)
                           e.stopPropagation();
                           handleDownload(migration.upSQL, migration);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
                       >
                         <Download className="w-3.5 h-3.5" />
                         Download .sql

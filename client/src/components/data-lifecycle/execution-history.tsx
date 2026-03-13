@@ -93,10 +93,10 @@ const DEMO_RECORDS: ExecutionRecord[] = [
 ];
 
 const STATUS_CONFIG: Record<ExecutionStatus, { icon: typeof CheckCircle2; color: string; bg: string; label: string }> = {
-  completed: { icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', label: 'Completed' },
-  failed: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50', label: 'Failed' },
-  running: { icon: Play, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Running' },
-  'dry-run': { icon: Shield, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Dry Run' },
+  completed: { icon: CheckCircle2, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', label: 'Completed' },
+  failed: { icon: XCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', label: 'Failed' },
+  running: { icon: Play, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', label: 'Running' },
+  'dry-run': { icon: Shield, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', label: 'Dry Run' },
 };
 
 export function ExecutionHistory() {
@@ -117,26 +117,26 @@ export function ExecutionHistory() {
     <div className="space-y-4">
       {/* Summary */}
       <div className="flex items-center gap-4 flex-wrap text-xs">
-        <span className="text-slate-500">{records.length} executions recorded</span>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-bold">
+        <span className="text-muted-foreground">{records.length} executions recorded</span>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-bold">
           <CheckCircle2 className="w-2.5 h-2.5" /> {completed} completed
         </span>
         {failed > 0 && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-bold">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 font-bold">
             <XCircle className="w-2.5 h-2.5" /> {failed} failed
           </span>
         )}
-        <span className="text-slate-500">
+        <span className="text-muted-foreground">
           {totalPurged.toLocaleString()} rows purged total
         </span>
       </div>
 
       {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700 flex items-center gap-2">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-xs text-blue-700 dark:text-blue-400 flex items-center gap-2">
         <History className="w-4 h-4 flex-shrink-0" />
         <div>
           <p className="font-medium">Execution Audit Trail</p>
-          <p className="mt-0.5 text-blue-600">
+          <p className="mt-0.5 text-blue-600 dark:text-blue-300">
             Every purge script execution is logged here for compliance and audit purposes.
             Connect to your database execution engine to see live results.
           </p>
@@ -153,24 +153,24 @@ export function ExecutionHistory() {
           return (
             <div
               key={record.id}
-              className="bg-card border border-slate-200 rounded-lg overflow-hidden"
+              className="bg-card border border-border rounded-lg overflow-hidden"
             >
               {/* Header */}
               <button
                 onClick={() => toggleExpand(record.id)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50/50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors"
               >
                 {isExpanded ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 )}
 
                 <StatusIcon className={cn('w-4 h-4 flex-shrink-0', statusConfig.color)} />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-800 truncate">
+                    <span className="text-sm font-semibold text-foreground truncate">
                       {record.ruleName}
                     </span>
                     <span className={cn(
@@ -181,12 +181,12 @@ export function ExecutionHistory() {
                     </span>
                     <span className={cn(
                       'px-1.5 py-0.5 text-[9px] font-bold rounded uppercase',
-                      record.mode === 'live' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+                      record.mode === 'live' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                     )}>
                       {record.mode === 'live' ? 'LIVE' : 'DRY RUN'}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     <span className="font-mono">{record.targetTable}</span>
                     {' — '}
                     {record.rowsAffected.toLocaleString()} rows
@@ -200,30 +200,30 @@ export function ExecutionHistory() {
 
               {/* Expanded Details */}
               {isExpanded && (
-                <div className="border-t border-slate-100 px-4 py-3 bg-slate-50/50 space-y-3">
+                <div className="border-t border-border/50 px-4 py-3 bg-muted/50 space-y-3">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                     <div>
-                      <span className="text-slate-500 font-medium">Started</span>
-                      <p className="text-slate-800 mt-0.5">{new Date(record.startedAt).toLocaleString()}</p>
+                      <span className="text-muted-foreground font-medium">Started</span>
+                      <p className="text-foreground mt-0.5">{new Date(record.startedAt).toLocaleString()}</p>
                     </div>
                     <div>
-                      <span className="text-slate-500 font-medium">Completed</span>
-                      <p className="text-slate-800 mt-0.5">
+                      <span className="text-muted-foreground font-medium">Completed</span>
+                      <p className="text-foreground mt-0.5">
                         {record.completedAt ? new Date(record.completedAt).toLocaleString() : '—'}
                       </p>
                     </div>
                     <div>
-                      <span className="text-slate-500 font-medium">Rows Affected</span>
-                      <p className="font-semibold text-slate-800 mt-0.5">{record.rowsAffected.toLocaleString()}</p>
+                      <span className="text-muted-foreground font-medium">Rows Affected</span>
+                      <p className="font-semibold text-foreground mt-0.5">{record.rowsAffected.toLocaleString()}</p>
                     </div>
                     <div>
-                      <span className="text-slate-500 font-medium">Batch Size</span>
-                      <p className="text-slate-800 mt-0.5">{record.batchSize.toLocaleString()}</p>
+                      <span className="text-muted-foreground font-medium">Batch Size</span>
+                      <p className="text-foreground mt-0.5">{record.batchSize.toLocaleString()}</p>
                     </div>
                   </div>
 
                   {record.error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700 flex items-start gap-2">
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-xs text-red-700 dark:text-red-400 flex items-start gap-2">
                       <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                       <div>
                         <p className="font-semibold">Execution Error</p>
@@ -233,7 +233,7 @@ export function ExecutionHistory() {
                   )}
 
                   <div>
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                       Executed Script
                     </span>
                     <pre className="mt-1 text-xs font-mono bg-[#1e293b] text-slate-200 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
@@ -241,7 +241,7 @@ export function ExecutionHistory() {
                     </pre>
                   </div>
 
-                  <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                     <span>Dialect: {record.dialect}</span>
                     <span>ID: {record.id}</span>
                   </div>
@@ -253,10 +253,10 @@ export function ExecutionHistory() {
       </div>
 
       {records.length === 0 && (
-        <div className="text-center py-16 bg-card border border-slate-200 rounded-xl">
-          <Clock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h4 className="text-sm font-semibold text-slate-700 mb-1">No Execution History</h4>
-          <p className="text-xs text-slate-500">
+        <div className="text-center py-16 bg-card border border-border rounded-xl">
+          <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <h4 className="text-sm font-semibold text-foreground mb-1">No Execution History</h4>
+          <p className="text-xs text-muted-foreground">
             Purge script executions will appear here once you run your first script.
           </p>
         </div>

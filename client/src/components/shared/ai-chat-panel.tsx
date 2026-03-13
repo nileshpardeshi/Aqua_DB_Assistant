@@ -228,7 +228,7 @@ export function AIChatPanel({
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-aqua-50 to-cyan-50 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-aqua-50 to-cyan-50 dark:from-aqua-950/30 dark:to-cyan-950/30 flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-aqua-500 flex items-center justify-center shadow-sm">
             <Sparkles className="w-4 h-4 text-white" />
@@ -249,7 +249,7 @@ export function AIChatPanel({
           <div className="relative" ref={contextMenuRef}>
             <button
               onClick={() => setShowContextMenu(!showContextMenu)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground bg-card rounded-md border border-border hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground bg-card rounded-md border border-border hover:bg-muted/50 transition-colors"
             >
               {contextOptions.find((c) => c.value === context)?.label}
               <ChevronDown className="w-3 h-3" />
@@ -264,9 +264,9 @@ export function AIChatPanel({
                       setShowContextMenu(false);
                     }}
                     className={cn(
-                      'w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 transition-colors',
+                      'w-full px-3 py-1.5 text-xs text-left hover:bg-muted/50 transition-colors',
                       context === opt.value
-                        ? 'text-aqua-700 bg-aqua-50 font-medium'
+                        ? 'text-aqua-700 bg-aqua-50 dark:text-aqua-300 dark:bg-aqua-950/30 font-medium'
                         : 'text-foreground'
                     )}
                   >
@@ -295,7 +295,7 @@ export function AIChatPanel({
             <div className="w-7 h-7 rounded-full bg-aqua-100 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Bot className="w-4 h-4 text-aqua-600" />
             </div>
-            <div className="bg-slate-50 rounded-xl rounded-tl-sm px-4 py-3 max-w-[85%]">
+            <div className="bg-muted/50 rounded-xl rounded-tl-sm px-4 py-3 max-w-[85%]">
               <p className="text-xs text-foreground leading-relaxed">
                 {welcomeMessages[context]}
               </p>
@@ -331,7 +331,7 @@ export function AIChatPanel({
                 'rounded-xl px-4 py-3 max-w-[85%]',
                 msg.role === 'user'
                   ? 'bg-aqua-600 text-white rounded-tr-sm'
-                  : 'bg-slate-50 text-foreground rounded-tl-sm'
+                  : 'bg-muted/50 text-foreground rounded-tl-sm'
               )}
             >
               <p
@@ -365,7 +365,7 @@ export function AIChatPanel({
             <div className="w-7 h-7 rounded-full bg-aqua-100 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Bot className="w-4 h-4 text-aqua-600" />
             </div>
-            <div className="bg-slate-50 rounded-xl rounded-tl-sm px-4 py-3">
+            <div className="bg-muted/50 rounded-xl rounded-tl-sm px-4 py-3">
               <div className="flex items-center gap-2">
                 <Loader2 className="w-3.5 h-3.5 text-aqua-500 animate-spin" />
                 <span className="text-xs text-muted-foreground">
@@ -389,7 +389,7 @@ export function AIChatPanel({
             onKeyDown={handleKeyDown}
             placeholder="Ask about your database..."
             rows={1}
-            className="flex-1 px-3 py-2 text-sm bg-slate-50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400 resize-none max-h-24"
+            className="flex-1 px-3 py-2 text-sm bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-muted-foreground resize-none max-h-24"
           />
           <button
             onClick={handleSend}
@@ -398,7 +398,7 @@ export function AIChatPanel({
               'flex items-center justify-center w-9 h-9 rounded-lg transition-all flex-shrink-0',
               inputValue.trim() && !isLoading
                 ? 'bg-aqua-600 text-white hover:bg-aqua-700 shadow-sm'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-muted text-muted-foreground cursor-not-allowed'
             )}
           >
             <Send className="w-4 h-4" />

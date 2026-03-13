@@ -41,9 +41,9 @@ const STATUS_CONFIG: Record<
   draft: {
     icon: FileCode2,
     label: 'Draft',
-    color: 'text-slate-500',
-    bg: 'bg-slate-50',
-    border: 'border-slate-200',
+    color: 'text-muted-foreground',
+    bg: 'bg-muted/50',
+    border: 'border-border',
     line: 'bg-slate-300',
   },
   pending: {
@@ -236,7 +236,7 @@ export function MigrationTimeline() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-slate-800">
+        <h4 className="text-sm font-semibold text-foreground">
           Migration History ({migrations.length})
         </h4>
         <button
@@ -251,7 +251,7 @@ export function MigrationTimeline() {
       {/* Status Filter Bar + Search */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         {/* Status filter buttons */}
-        <div className="inline-flex items-center bg-slate-100 rounded-lg p-0.5">
+        <div className="inline-flex items-center bg-muted rounded-lg p-0.5">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
@@ -259,8 +259,8 @@ export function MigrationTimeline() {
               className={cn(
                 'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
                 statusFilter === f.value
-                  ? 'bg-white text-slate-800 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
               {f.label}
@@ -270,13 +270,13 @@ export function MigrationTimeline() {
 
         {/* Search input */}
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by title..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+            className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
           />
         </div>
       </div>
@@ -285,12 +285,12 @@ export function MigrationTimeline() {
       {showCreateForm && (
         <div className="bg-card border border-aqua-200 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h5 className="text-sm font-semibold text-slate-800">
+            <h5 className="text-sm font-semibold text-foreground">
               Create New Migration
             </h5>
             <button
               onClick={resetCreateForm}
-              className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+              className="p-1 text-muted-foreground hover:text-muted-foreground transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -298,7 +298,7 @@ export function MigrationTimeline() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">
+              <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">
                 Version *
               </label>
               <input
@@ -306,11 +306,11 @@ export function MigrationTimeline() {
                 value={newVersion}
                 onChange={(e) => setNewVersion(e.target.value)}
                 placeholder="e.g. V001, 1.0.0"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">
+              <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">
                 Title *
               </label>
               <input
@@ -318,13 +318,13 @@ export function MigrationTimeline() {
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 placeholder="Migration title..."
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">
+            <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">
               Description
             </label>
             <textarea
@@ -332,19 +332,19 @@ export function MigrationTimeline() {
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Optional description of what this migration does..."
               rows={2}
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y"
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">
+              <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">
                 Source Dialect
               </label>
               <select
                 value={newSourceDialect}
                 onChange={(e) => setNewSourceDialect(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
               >
                 {DIALECTS.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -354,13 +354,13 @@ export function MigrationTimeline() {
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">
+              <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">
                 Target Dialect
               </label>
               <select
                 value={newTargetDialect}
                 onChange={(e) => setNewTargetDialect(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
               >
                 {DIALECTS.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -372,7 +372,7 @@ export function MigrationTimeline() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">
+            <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">
               Up SQL (migration) *
             </label>
             <textarea
@@ -381,12 +381,12 @@ export function MigrationTimeline() {
               placeholder="SQL to apply this migration..."
               rows={4}
               spellCheck={false}
-              className="w-full px-3 py-2 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 resize-y"
+              className="w-full px-3 py-2 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 resize-y"
             />
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">
+            <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">
               Down SQL (rollback)
             </label>
             <textarea
@@ -395,14 +395,14 @@ export function MigrationTimeline() {
               placeholder="SQL to rollback this migration (optional)..."
               rows={3}
               spellCheck={false}
-              className="w-full px-3 py-2 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 resize-y"
+              className="w-full px-3 py-2 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 resize-y"
             />
           </div>
 
           <div className="flex justify-end gap-2">
             <button
               onClick={resetCreateForm}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -413,7 +413,7 @@ export function MigrationTimeline() {
                 'inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-lg transition-colors',
                 canCreate
                   ? 'text-white bg-aqua-600 hover:bg-aqua-700'
-                  : 'text-slate-400 bg-slate-100 cursor-not-allowed'
+                  : 'text-muted-foreground bg-muted cursor-not-allowed'
               )}
             >
               {createMigration.isPending ? (
@@ -432,10 +432,10 @@ export function MigrationTimeline() {
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex gap-4">
-              <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse flex-shrink-0" />
-              <div className="flex-1 bg-slate-100 rounded-lg p-4 animate-pulse">
-                <div className="h-4 bg-slate-200 rounded w-2/3 mb-2" />
-                <div className="h-3 bg-slate-200 rounded w-1/3" />
+              <div className="w-8 h-8 rounded-full bg-muted animate-pulse flex-shrink-0" />
+              <div className="flex-1 bg-muted rounded-lg p-4 animate-pulse">
+                <div className="h-4 bg-muted rounded w-2/3 mb-2" />
+                <div className="h-3 bg-muted rounded w-1/3" />
               </div>
             </div>
           ))}
@@ -485,20 +485,20 @@ export function MigrationTimeline() {
                 <div className={cn('flex-1 pb-6', isLast && 'pb-0')}>
                   <button
                     onClick={() => handleToggleExpand(migration.id)}
-                    className="w-full text-left bg-card border border-slate-200 rounded-lg p-3 hover:border-slate-300 hover:shadow-sm transition-all"
+                    className="w-full text-left bg-card border border-border rounded-lg p-3 hover:border-border hover:shadow-sm transition-all"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                         ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                         )}
                         {/* Version badge */}
                         <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold text-aqua-700 bg-aqua-50 border border-aqua-200 rounded">
                           {migration.version}
                         </span>
-                        <h5 className="text-sm font-semibold text-slate-800">
+                        <h5 className="text-sm font-semibold text-foreground">
                           {migration.title}
                         </h5>
                       </div>
@@ -513,7 +513,7 @@ export function MigrationTimeline() {
                           <span style={{ color: getDialectColor(migration.sourceDialect) }}>
                             {getDialectLabel(migration.sourceDialect)}
                           </span>
-                          <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
+                          <ArrowRight className="w-2.5 h-2.5 text-muted-foreground" />
                           <span
                             className="w-1.5 h-1.5 rounded-full"
                             style={{ backgroundColor: getDialectColor(migration.targetDialect) }}
@@ -536,7 +536,7 @@ export function MigrationTimeline() {
                       </div>
                     </div>
 
-                    <p className="text-[10px] text-slate-500 mt-1 ml-5">
+                    <p className="text-[10px] text-muted-foreground mt-1 ml-5">
                       {formatDate(migration.createdAt)}
                       {migration.appliedAt && (
                         <span className="ml-2 text-green-600">
@@ -548,21 +548,21 @@ export function MigrationTimeline() {
 
                   {/* Expanded Details */}
                   {isExpanded && (
-                    <div className="mt-2 bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                    <div className="mt-2 bg-muted/50 border border-border rounded-lg p-4 space-y-3">
                       {/* Description */}
                       {migration.description && (
                         <div>
-                          <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
                             Description
                           </p>
-                          <p className="text-xs text-slate-600">{migration.description}</p>
+                          <p className="text-xs text-muted-foreground">{migration.description}</p>
                         </div>
                       )}
 
                       {/* Up SQL */}
                       {migration.upSQL && (
                         <div>
-                          <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
                             Up SQL (Migration)
                           </p>
                           <pre className="text-xs font-mono bg-[#1e293b] text-slate-100 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
@@ -574,7 +574,7 @@ export function MigrationTimeline() {
                       {/* Down SQL (Rollback) */}
                       {migration.downSQL && (
                         <div>
-                          <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
                             Rollback SQL
                           </p>
                           <pre className="text-xs font-mono bg-[#1e293b] text-slate-100 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
@@ -586,15 +586,15 @@ export function MigrationTimeline() {
                       {/* Checksum */}
                       {migration.checksum && (
                         <div>
-                          <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
                             Checksum
                           </p>
-                          <p className="text-xs font-mono text-slate-500">{migration.checksum}</p>
+                          <p className="text-xs font-mono text-muted-foreground">{migration.checksum}</p>
                         </div>
                       )}
 
                       {/* Action buttons */}
-                      <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+                      <div className="flex items-center gap-2 pt-2 border-t border-border">
                         {/* Apply button for draft migrations */}
                         {isDraft && (
                           <button
@@ -643,13 +643,13 @@ export function MigrationTimeline() {
       {/* Empty State */}
       {!isLoading && filteredMigrations.length === 0 && (
         <div className="text-center py-12">
-          <Clock className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm text-slate-500">
+          <Clock className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">
             {migrations.length === 0
               ? 'No migrations yet'
               : 'No migrations match your filters'}
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {migrations.length === 0
               ? 'Create your first migration to get started'
               : 'Try adjusting the status filter or search query'}

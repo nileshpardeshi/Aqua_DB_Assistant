@@ -75,11 +75,11 @@ function getActionIcon(action: string) {
   if (a.includes('create') || a.includes('project.create')) return <Database className="w-3.5 h-3.5 text-emerald-500" />;
   if (a.includes('upload') || a.includes('file')) return <FileUp className="w-3.5 h-3.5 text-blue-500" />;
   if (a.includes('query') || a.includes('search')) return <Search className="w-3.5 h-3.5 text-violet-500" />;
-  if (a.includes('settings') || a.includes('connection')) return <Settings className="w-3.5 h-3.5 text-slate-500" />;
+  if (a.includes('settings') || a.includes('connection')) return <Settings className="w-3.5 h-3.5 text-muted-foreground" />;
   if (a.includes('migration') || a.includes('snapshot')) return <GitBranch className="w-3.5 h-3.5 text-amber-500" />;
   if (a.includes('performance') || a.includes('ai')) return <Zap className="w-3.5 h-3.5 text-aqua-500" />;
   if (a.includes('delete')) return <Trash2 className="w-3.5 h-3.5 text-red-500" />;
-  return <Database className="w-3.5 h-3.5 text-slate-400" />;
+  return <Database className="w-3.5 h-3.5 text-muted-foreground" />;
 }
 
 function formatTimeAgo(dateStr: string): string {

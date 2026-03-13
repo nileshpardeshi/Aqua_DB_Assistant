@@ -33,7 +33,18 @@ export async function listPerformanceRuns(projectId: string) {
     orderBy: { startedAt: 'desc' },
   });
 
-  return runs;
+  // Map Prisma fields to client-expected shape
+  return runs.map((r) => ({
+    id: r.id,
+    projectId: r.projectId,
+    type: r.runType,
+    name: r.summary ?? r.runType,
+    status: r.status,
+    config: r.findings ? JSON.parse(r.findings) : {},
+    results: r.recommendations ? JSON.parse(r.recommendations) : null,
+    createdAt: r.startedAt.toISOString(),
+    updatedAt: (r.completedAt ?? r.startedAt).toISOString(),
+  }));
 }
 
 // ---------- Get Performance Run ----------

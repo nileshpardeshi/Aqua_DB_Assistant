@@ -227,7 +227,7 @@ export function SQLConverterPage() {
         {/* Source Panel */}
         <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           {/* Source Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-slate-50/50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Source
@@ -240,7 +240,7 @@ export function SQLConverterPage() {
             <div className="flex items-center gap-1.5">
               <button
                 onClick={handleFileUpload}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
                 title="Upload .sql file"
               >
                 <Upload className="w-3.5 h-3.5" />
@@ -249,7 +249,7 @@ export function SQLConverterPage() {
               <button
                 onClick={handleClear}
                 disabled={!sourceSQL}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Clear"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -264,7 +264,7 @@ export function SQLConverterPage() {
             onChange={(e) => setSourceSQL(e.target.value)}
             onPaste={handlePaste}
             placeholder={`Paste or type your SQL here...\n\nExample:\nCREATE TABLE users (\n  id SERIAL PRIMARY KEY,\n  name VARCHAR(100) NOT NULL,\n  email TEXT UNIQUE,\n  is_active BOOLEAN DEFAULT true,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);`}
-            className="w-full min-h-[320px] px-4 py-3 text-sm font-mono bg-card text-foreground placeholder:text-slate-400 resize-y focus:outline-none"
+            className="w-full min-h-[320px] px-4 py-3 text-sm font-mono bg-card text-foreground placeholder:text-muted-foreground resize-y focus:outline-none"
             spellCheck={false}
           />
 
@@ -303,7 +303,7 @@ export function SQLConverterPage() {
         {/* Target Panel */}
         <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           {/* Target Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-slate-50/50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Target
@@ -330,7 +330,7 @@ export function SQLConverterPage() {
               <button
                 onClick={handleCopyToClipboard}
                 disabled={!convertedSQL}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Copy to clipboard"
               >
                 {copied ? (
@@ -343,7 +343,7 @@ export function SQLConverterPage() {
               <button
                 onClick={handleDownload}
                 disabled={!convertedSQL}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Download .sql file"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -358,7 +358,7 @@ export function SQLConverterPage() {
               value={convertedSQL}
               readOnly
               placeholder="Converted SQL will appear here..."
-              className="w-full min-h-[320px] px-4 py-3 text-sm font-mono bg-slate-50 text-foreground placeholder:text-slate-400 resize-y focus:outline-none"
+              className="w-full min-h-[320px] px-4 py-3 text-sm font-mono bg-muted/50 text-foreground placeholder:text-muted-foreground resize-y focus:outline-none"
               spellCheck={false}
             />
 
@@ -395,7 +395,7 @@ export function SQLConverterPage() {
       {/* Conversion Changelog */}
       {changes.length > 0 && (
         <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-slate-50/50">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-muted/50">
             <div className="flex items-center gap-2.5">
               <FileText className="w-4 h-4 text-aqua-500" />
               <h3 className="text-sm font-semibold text-foreground">
@@ -411,7 +411,7 @@ export function SQLConverterPage() {
             {changes.map((change, index) => (
               <div
                 key={index}
-                className="flex items-start gap-4 px-5 py-3 hover:bg-slate-50/50 transition-colors"
+                className="flex items-start gap-4 px-5 py-3 hover:bg-muted/50 transition-colors"
               >
                 <div className="flex-shrink-0 mt-0.5">
                   <div className="w-6 h-6 rounded-full bg-aqua-100 flex items-center justify-center">
@@ -444,8 +444,8 @@ export function SQLConverterPage() {
       {changes.length === 0 && !convertSQL.isPending && !convertedSQL && (
         <div className="bg-card rounded-xl border border-border shadow-sm p-8">
           <div className="flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-              <Info className="w-6 h-6 text-slate-400" />
+            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-3">
+              <Info className="w-6 h-6 text-muted-foreground" />
             </div>
             <h3 className="text-sm font-semibold text-foreground mb-1">
               Ready to Convert
@@ -477,7 +477,7 @@ function DialectSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none pl-3 pr-8 py-1.5 text-xs font-medium bg-card border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent cursor-pointer"
+        className="appearance-none pl-3 pr-8 py-1.5 text-xs font-medium bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent cursor-pointer"
         style={{
           borderLeftColor: dialect?.color || '#64748b',
           borderLeftWidth: '3px',

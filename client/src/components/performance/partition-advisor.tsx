@@ -327,7 +327,7 @@ export function PartitionAdvisor() {
     <div className="space-y-6">
       {/* Query Input */}
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1.5 flex items-center gap-1.5">
+        <label className="block text-xs font-medium text-foreground mb-1.5 flex items-center gap-1.5">
           <Layers className="w-3.5 h-3.5" />
           Paste Queries for Partition Analysis
         </label>
@@ -337,20 +337,20 @@ export function PartitionAdvisor() {
           placeholder={`-- Paste queries that are slow on large tables\nSELECT * FROM orders WHERE created_at BETWEEN '2025-01-01' AND '2025-03-31';\n\nSELECT COUNT(*) FROM events WHERE event_type = 'login' AND created_at > NOW() - INTERVAL '30 days';\n\nSELECT * FROM logs WHERE log_level = 'ERROR' AND timestamp > '2025-01-01';`}
           rows={8}
           spellCheck={false}
-          className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
+          className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
         />
       </div>
 
       {/* Controls */}
       <div className="flex items-center gap-3 flex-wrap">
         <div>
-          <label className="block text-[10px] font-medium text-slate-500 uppercase mb-1">
+          <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">
             Data Volume
           </label>
           <select
             value={dataVolume}
             onChange={(e) => setDataVolume(e.target.value)}
-            className="px-3 py-2 text-sm bg-card border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400"
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400"
           >
             {DATA_VOLUMES.map((vol) => (
               <option key={vol.value} value={vol.value}>
@@ -367,7 +367,7 @@ export function PartitionAdvisor() {
             className={cn(
               'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
               isAnalyzing || !projectId
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
                 : 'bg-aqua-600 text-white hover:bg-aqua-700'
             )}
           >
@@ -385,7 +385,7 @@ export function PartitionAdvisor() {
           </button>
           <button
             onClick={handleLoadDemo}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <FlaskConical className="w-4 h-4" />
             Load Demo
@@ -393,7 +393,7 @@ export function PartitionAdvisor() {
         </div>
 
         {isAnalyzing && (
-          <span className="text-xs text-slate-500 pt-4">
+          <span className="text-xs text-muted-foreground pt-4">
             AI is analyzing table structures and query patterns for partition opportunities...
           </span>
         )}
@@ -401,7 +401,7 @@ export function PartitionAdvisor() {
 
       {/* Analysis Progress Stepper */}
       {isAnalyzing && (
-        <div className="bg-card border border-slate-200 rounded-lg p-5">
+        <div className="bg-card border border-border rounded-lg p-5">
           {/* Stepper */}
           <div className="flex items-center justify-between mb-4">
             {ANALYSIS_STEPS.map((step, idx) => {
@@ -418,7 +418,7 @@ export function PartitionAdvisor() {
                         'w-8 h-8 rounded-full flex items-center justify-center transition-all',
                         isCompleted && 'bg-aqua-500 text-white',
                         isActive && 'bg-aqua-100 text-aqua-600 animate-pulse ring-2 ring-aqua-500',
-                        isPending && 'bg-slate-100 text-slate-400'
+                        isPending && 'bg-muted text-muted-foreground'
                       )}
                     >
                       <StepIcon className="w-4 h-4" />
@@ -428,7 +428,7 @@ export function PartitionAdvisor() {
                         'text-[10px] font-medium text-center max-w-[100px]',
                         isCompleted && 'text-aqua-600',
                         isActive && 'text-aqua-700 font-semibold',
-                        isPending && 'text-slate-400'
+                        isPending && 'text-muted-foreground'
                       )}
                     >
                       {step.label}
@@ -438,7 +438,7 @@ export function PartitionAdvisor() {
                     <div
                       className={cn(
                         'flex-1 h-0.5 mx-3 mt-[-18px] rounded-full transition-all',
-                        idx < analysisStep ? 'bg-aqua-500' : 'bg-slate-200'
+                        idx < analysisStep ? 'bg-aqua-500' : 'bg-muted'
                       )}
                     />
                   )}
@@ -448,7 +448,7 @@ export function PartitionAdvisor() {
           </div>
 
           {/* Gradient progress bar */}
-          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-aqua-400 via-aqua-500 to-aqua-600 transition-all duration-500 ease-out"
               style={{ width: `${((analysisStep + 1) / ANALYSIS_STEPS.length) * 100}%` }}
@@ -488,8 +488,8 @@ export function PartitionAdvisor() {
               { label: 'LIST', value: strategyCounts.LIST, color: 'text-cyan-600' },
               { label: 'HASH', value: strategyCounts.HASH, color: 'text-orange-600' },
             ].map((stat) => (
-              <div key={stat.label} className="bg-card border border-slate-200 rounded-lg p-3 text-center">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">{stat.label}</p>
+              <div key={stat.label} className="bg-card border border-border rounded-lg p-3 text-center">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">{stat.label}</p>
                 <p className={cn('text-lg font-bold', stat.color)}>{stat.value}</p>
               </div>
             ))}
@@ -498,8 +498,8 @@ export function PartitionAdvisor() {
           {/* Strategy Distribution PieChart + Partitions per Table BarChart */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Left - PieChart donut */}
-            <div className="bg-card border border-slate-200 rounded-lg p-4">
-              <h5 className="text-xs font-semibold text-slate-700 mb-3">Strategy Distribution</h5>
+            <div className="bg-card border border-border rounded-lg p-4">
+              <h5 className="text-xs font-semibold text-foreground mb-3">Strategy Distribution</h5>
               {strategyChartData.length > 0 ? (
                 <>
                   <div className="h-52">
@@ -535,7 +535,7 @@ export function PartitionAdvisor() {
                           className="w-2.5 h-2.5 rounded-full"
                           style={{ backgroundColor: entry.fill }}
                         />
-                        <span className="text-[10px] font-medium text-slate-600">
+                        <span className="text-[10px] font-medium text-muted-foreground">
                           {entry.name} ({entry.value})
                         </span>
                       </div>
@@ -543,13 +543,13 @@ export function PartitionAdvisor() {
                   </div>
                 </>
               ) : (
-                <p className="text-xs text-slate-400 text-center py-10">No strategy data</p>
+                <p className="text-xs text-muted-foreground text-center py-10">No strategy data</p>
               )}
             </div>
 
             {/* Right - BarChart */}
-            <div className="bg-card border border-slate-200 rounded-lg p-4">
-              <h5 className="text-xs font-semibold text-slate-700 mb-3">Partitions per Table</h5>
+            <div className="bg-card border border-border rounded-lg p-4">
+              <h5 className="text-xs font-semibold text-foreground mb-3">Partitions per Table</h5>
               {partitionCountData.length > 0 ? (
                 <div className="h-52">
                   <ResponsiveContainer width="100%" height="100%">
@@ -576,27 +576,27 @@ export function PartitionAdvisor() {
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 text-center py-10">No partition data</p>
+                <p className="text-xs text-muted-foreground text-center py-10">No partition data</p>
               )}
             </div>
           </div>
 
           {/* Header with actions */}
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-slate-800">
+            <h4 className="text-sm font-semibold text-foreground">
               Partition Recommendations ({result.partitionRecommendations.length})
             </h4>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleExportDDL}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export DDL
               </button>
               <button
                 onClick={handleCopyAllDDL}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 {copiedId === 'all' ? (
                   <>
@@ -618,7 +618,7 @@ export function PartitionAdvisor() {
             const impact = IMPACT_CONFIG[rec.estimatedImpact] || IMPACT_CONFIG.MEDIUM;
             const ImpactIcon = impact.icon;
             const isExpanded = expandedIds.has(idx);
-            const stratColor = STRATEGY_COLORS[rec.strategy] || 'bg-slate-100 text-slate-700';
+            const stratColor = STRATEGY_COLORS[rec.strategy] || 'bg-muted text-foreground';
 
             return (
               <div
@@ -631,7 +631,7 @@ export function PartitionAdvisor() {
                 {/* Header */}
                 <button
                   onClick={() => toggleExpand(idx)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50/50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors"
                 >
                   <div
                     className={cn(
@@ -644,7 +644,7 @@ export function PartitionAdvisor() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-800">
+                      <span className="text-sm font-semibold text-foreground">
                         {rec.tableName}
                       </span>
                       <span
@@ -655,11 +655,11 @@ export function PartitionAdvisor() {
                       >
                         {rec.strategy}
                       </span>
-                      <span className="text-xs text-slate-500 font-mono">
+                      <span className="text-xs text-muted-foreground font-mono">
                         on {rec.partitionKey}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5 truncate">
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
                       {rec.reason}
                     </p>
                   </div>
@@ -674,38 +674,38 @@ export function PartitionAdvisor() {
                       {rec.estimatedImpact}
                     </span>
                     {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-slate-400" />
+                      <ChevronUp className="w-4 h-4 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     )}
                   </div>
                 </button>
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100 px-4 py-3 space-y-4">
+                  <div className="border-t border-border/50 px-4 py-3 space-y-4">
                     {/* Query Improvement */}
                     <div>
-                      <p className="text-xs font-medium text-slate-600 mb-1">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
                         Expected Improvement:
                       </p>
-                      <p className="text-sm text-slate-700">{rec.queryImprovement}</p>
+                      <p className="text-sm text-foreground">{rec.queryImprovement}</p>
                     </div>
 
                     {/* Enhanced Before / After Metrics - Visual Comparison Bars */}
-                    <div className="bg-card border border-slate-200 rounded-lg p-4 space-y-4">
-                      <h5 className="text-xs font-semibold text-slate-700">Performance Comparison</h5>
+                    <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+                      <h5 className="text-xs font-semibold text-foreground">Performance Comparison</h5>
 
                       {/* Rows Scanned */}
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-600 font-medium">Rows Scanned</span>
+                          <span className="text-muted-foreground font-medium">Rows Scanned</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] text-red-600 font-mono w-20 text-right flex-shrink-0">
                             {rec.beforeMetrics?.estimatedScanRows || 'All'}
                           </span>
-                          <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden relative">
+                          <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden relative">
                             <div className="absolute inset-y-0 left-0 bg-red-200 rounded-full" style={{ width: '100%' }} />
                             <div className="absolute inset-y-0 left-0 bg-emerald-500 rounded-full transition-all" style={{ width: '25%' }} />
                           </div>
@@ -718,13 +718,13 @@ export function PartitionAdvisor() {
                       {/* Estimated Time */}
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-600 font-medium">Estimated Time</span>
+                          <span className="text-muted-foreground font-medium">Estimated Time</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] text-red-600 font-mono w-20 text-right flex-shrink-0">
                             {rec.beforeMetrics?.estimatedTime || 'N/A'}
                           </span>
-                          <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden relative">
+                          <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden relative">
                             <div className="absolute inset-y-0 left-0 bg-red-200 rounded-full" style={{ width: '100%' }} />
                             <div className="absolute inset-y-0 left-0 bg-emerald-500 rounded-full transition-all" style={{ width: '15%' }} />
                           </div>
@@ -737,14 +737,14 @@ export function PartitionAdvisor() {
                       {/* Scan Type Change */}
                       <div className="flex items-center gap-4 pt-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-500">Before:</span>
+                          <span className="text-[10px] text-muted-foreground">Before:</span>
                           <span className="px-2.5 py-1 text-[10px] font-bold bg-red-100 text-red-700 rounded-full">
                             {rec.beforeMetrics?.scanType || 'Full Table Scan'}
                           </span>
                         </div>
-                        <ArrowRight className="w-4 h-4 text-slate-400" />
+                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-500">After:</span>
+                          <span className="text-[10px] text-muted-foreground">After:</span>
                           <span className="px-2.5 py-1 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded-full">
                             {rec.afterMetrics?.scanType || 'Partition Pruned'}
                           </span>
@@ -760,11 +760,11 @@ export function PartitionAdvisor() {
                       }));
                       return (
                         <div>
-                          <p className="text-xs font-medium text-slate-600 mb-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">
                             Partition Layout ({rec.partitions.length} partitions)
                           </p>
                           {chartData.some((d) => d.rows > 0) && (
-                            <div className="bg-card border border-slate-200 rounded-lg p-3 mb-3">
+                            <div className="bg-card border border-border rounded-lg p-3 mb-3">
                               <div className="h-40">
                                 <ResponsiveContainer width="100%" height="100%">
                                   <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
@@ -779,17 +779,17 @@ export function PartitionAdvisor() {
                             </div>
                           )}
                           {/* Partition Details Table */}
-                          <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                          <div className="bg-muted/50 rounded-lg border border-border overflow-hidden">
                             <table className="w-full text-xs">
                               <thead>
-                                <tr className="border-b border-slate-200 bg-slate-100">
-                                  <th className="px-3 py-2 text-left font-medium text-slate-600">
+                                <tr className="border-b border-border bg-muted">
+                                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                                     Name
                                   </th>
-                                  <th className="px-3 py-2 text-left font-medium text-slate-600">
+                                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                                     Condition
                                   </th>
-                                  <th className="px-3 py-2 text-right font-medium text-slate-600">
+                                  <th className="px-3 py-2 text-right font-medium text-muted-foreground">
                                     Est. Rows
                                   </th>
                                 </tr>
@@ -798,15 +798,15 @@ export function PartitionAdvisor() {
                                 {rec.partitions.map((p, i) => (
                                   <tr
                                     key={i}
-                                    className="border-b border-slate-100 last:border-0"
+                                    className="border-b border-border/50 last:border-0"
                                   >
-                                    <td className="px-3 py-2 font-mono text-slate-700">
+                                    <td className="px-3 py-2 font-mono text-foreground">
                                       {p.name}
                                     </td>
-                                    <td className="px-3 py-2 text-slate-600">
+                                    <td className="px-3 py-2 text-muted-foreground">
                                       {p.condition}
                                     </td>
-                                    <td className="px-3 py-2 text-right text-slate-600">
+                                    <td className="px-3 py-2 text-right text-muted-foreground">
                                       {p.estimatedRows}
                                     </td>
                                   </tr>
@@ -821,7 +821,7 @@ export function PartitionAdvisor() {
                     {/* DDL */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-xs font-medium text-slate-600">
+                        <p className="text-xs font-medium text-muted-foreground">
                           Partition DDL:
                         </p>
                         <button
@@ -829,7 +829,7 @@ export function PartitionAdvisor() {
                             e.stopPropagation();
                             handleCopy(rec.ddl, `ddl-${idx}`);
                           }}
-                          className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-700 transition-colors"
+                          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                         >
                           {copiedId === `ddl-${idx}` ? (
                             <>
@@ -876,11 +876,11 @@ export function PartitionAdvisor() {
 
           {/* General Advice */}
           {result.generalAdvice && (
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-              <p className="text-xs font-semibold text-slate-600 uppercase mb-1.5">
+            <div className="bg-muted/50 border border-border rounded-lg p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">
                 General Partitioning Advice
               </p>
-              <p className="text-sm text-slate-700">{result.generalAdvice}</p>
+              <p className="text-sm text-foreground">{result.generalAdvice}</p>
             </div>
           )}
         </div>

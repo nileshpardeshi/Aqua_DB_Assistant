@@ -120,6 +120,32 @@ export function useCleanupSandbox() {
   });
 }
 
+export interface CleanupPromotedResult {
+  tables: Array<{ tableName: string; status: string; error?: string }>;
+}
+
+export function useCleanupPromoted() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      projectId: string;
+      tableNames: string[];
+    }) => {
+      const response = await apiClient.post(
+        `/projects/${data.projectId}/sandbox/cleanup-promoted`,
+        { tableNames: data.tableNames }
+      );
+      return response as unknown as CleanupPromotedResult;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: sandboxKeys.all(variables.projectId),
+      });
+    },
+  });
+}
+
 export function usePromoteSandbox() {
   const queryClient = useQueryClient();
 

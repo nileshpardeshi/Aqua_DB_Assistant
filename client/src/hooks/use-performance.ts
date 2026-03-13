@@ -5,9 +5,9 @@ import apiClient from '../lib/api-client';
 export interface PerformanceRun {
   id: string;
   projectId: string;
-  type: 'benchmark' | 'data-generation' | 'index-analysis';
+  type: string;
   name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: string;
   config: Record<string, unknown>;
   results?: BenchmarkResults | DataGenResults | IndexAnalysisResults;
   createdAt: string;
@@ -49,7 +49,7 @@ export interface IndexRecommendation {
 
 export interface CreatePerformanceRunInput {
   projectId: string;
-  type: 'benchmark' | 'data-generation' | 'index-analysis';
+  type: string;
   name: string;
   config: Record<string, unknown>;
 }

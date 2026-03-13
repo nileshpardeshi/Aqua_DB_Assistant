@@ -30,14 +30,14 @@ export const getById = asyncHandler(async (req: Request, res: Response) => {
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
   const projectId = req.params.projectId as string;
-  const { runType, status, summary, findings, recommendations } = req.body;
+  const { runType, type, status, name, config, summary, findings, recommendations } = req.body;
 
   const run = await performanceService.createPerformanceRun({
     projectId,
-    runType,
-    status,
-    summary,
-    findings,
+    runType: runType || type || 'benchmark',
+    status: status || 'completed',
+    summary: summary || name || null,
+    findings: findings || (config ? JSON.stringify(config) : null),
     recommendations,
   });
 

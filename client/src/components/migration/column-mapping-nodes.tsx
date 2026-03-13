@@ -63,7 +63,7 @@ function SourceTableNodeComponent({ data }: NodeProps<ColumnMappingNodeData>) {
       className={cn(
         'bg-card rounded-xl shadow-md border-2 min-w-[280px] max-w-[340px]',
         'hover:shadow-lg hover:scale-[1.02] transition-all duration-200',
-        'border-slate-200 hover:border-purple-300'
+        'border-border hover:border-purple-300'
       )}
       style={{ position: 'relative' }}
     >
@@ -98,7 +98,7 @@ function SourceTableNodeComponent({ data }: NodeProps<ColumnMappingNodeData>) {
               key={col.id || col.name}
               className={cn(
                 'flex items-center gap-2 px-3 text-xs',
-                idx % 2 === 0 ? 'bg-card' : 'bg-slate-50/70'
+                idx % 2 === 0 ? 'bg-card' : 'bg-muted/50'
               )}
               style={{ height: `${ROW_HEIGHT}px` }}
             >
@@ -114,7 +114,7 @@ function SourceTableNodeComponent({ data }: NodeProps<ColumnMappingNodeData>) {
               </span>
 
               {/* Column name */}
-              <span className="flex-1 font-medium text-slate-700 truncate">
+              <span className="flex-1 font-medium text-foreground truncate">
                 {col.name}
               </span>
 
@@ -126,7 +126,7 @@ function SourceTableNodeComponent({ data }: NodeProps<ColumnMappingNodeData>) {
               )}
 
               {/* Data type */}
-              <span className="text-[11px] text-slate-400 font-mono flex-shrink-0 truncate max-w-[80px]">
+              <span className="text-[11px] text-muted-foreground font-mono flex-shrink-0 truncate max-w-[80px]">
                 {col.dataType}
               </span>
 
@@ -134,7 +134,7 @@ function SourceTableNodeComponent({ data }: NodeProps<ColumnMappingNodeData>) {
               <span
                 className={cn(
                   'w-2 h-2 rounded-full flex-shrink-0',
-                  isMapped ? 'bg-green-500' : 'bg-slate-300'
+                  isMapped ? 'bg-green-500' : 'bg-muted-foreground/40'
                 )}
               />
             </div>
@@ -176,7 +176,7 @@ function TargetTableNodeComponent({ data }: NodeProps<ColumnMappingNodeData>) {
       className={cn(
         'bg-card rounded-xl shadow-md border-2 min-w-[280px] max-w-[340px]',
         'hover:shadow-lg hover:scale-[1.02] transition-all duration-200',
-        'border-slate-200 hover:border-aqua-300'
+        'border-border hover:border-aqua-300'
       )}
       style={{ position: 'relative' }}
     >
@@ -211,7 +211,7 @@ function TargetTableNodeComponent({ data }: NodeProps<ColumnMappingNodeData>) {
               key={col.id || col.name}
               className={cn(
                 'flex items-center gap-2 px-3 text-xs',
-                idx % 2 === 0 ? 'bg-card' : 'bg-slate-50/70'
+                idx % 2 === 0 ? 'bg-card' : 'bg-muted/50'
               )}
               style={{ height: `${ROW_HEIGHT}px` }}
             >
@@ -227,7 +227,7 @@ function TargetTableNodeComponent({ data }: NodeProps<ColumnMappingNodeData>) {
               </span>
 
               {/* Column name */}
-              <span className="flex-1 font-medium text-slate-700 truncate">
+              <span className="flex-1 font-medium text-foreground truncate">
                 {col.name}
               </span>
 
@@ -239,7 +239,7 @@ function TargetTableNodeComponent({ data }: NodeProps<ColumnMappingNodeData>) {
               )}
 
               {/* Data type */}
-              <span className="text-[11px] text-slate-400 font-mono flex-shrink-0 truncate max-w-[80px]">
+              <span className="text-[11px] text-muted-foreground font-mono flex-shrink-0 truncate max-w-[80px]">
                 {col.dataType}
               </span>
 
@@ -247,7 +247,7 @@ function TargetTableNodeComponent({ data }: NodeProps<ColumnMappingNodeData>) {
               <span
                 className={cn(
                   'w-2 h-2 rounded-full flex-shrink-0',
-                  isMapped ? 'bg-green-500' : 'bg-slate-300'
+                  isMapped ? 'bg-green-500' : 'bg-muted-foreground/40'
                 )}
               />
             </div>

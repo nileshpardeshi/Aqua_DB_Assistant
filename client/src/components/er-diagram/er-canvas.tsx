@@ -173,7 +173,7 @@ function AnnotationOverlay() {
           }}
         >
           <div
-            className="px-3 py-2 rounded-lg shadow-md border border-slate-200 min-w-[100px] max-w-[200px] text-xs"
+            className="px-3 py-2 rounded-lg shadow-md border border-border min-w-[100px] max-w-[200px] text-xs"
             style={{ backgroundColor: ann.color }}
           >
             {editingId === ann.id ? (
@@ -190,12 +190,12 @@ function AnnotationOverlay() {
                     setEditingId(null);
                   }
                 }}
-                className="w-full bg-transparent text-slate-700 outline-none resize-none"
+                className="w-full bg-transparent text-foreground outline-none resize-none"
                 rows={2}
               />
             ) : (
               <p
-                className="text-slate-700 cursor-pointer"
+                className="text-foreground cursor-pointer"
                 onDoubleClick={() => setEditingId(ann.id)}
               >
                 {ann.text}
@@ -227,7 +227,7 @@ function TableDetailPanel({
   const fkColumns = table.columns.filter((c) => c.isForeignKey);
 
   return (
-    <div className="absolute top-0 right-0 bottom-0 w-80 bg-card border-l border-slate-200 shadow-xl z-20 flex flex-col overflow-hidden">
+    <div className="absolute top-0 right-0 bottom-0 w-80 bg-card border-l border-border shadow-xl z-20 flex flex-col overflow-hidden">
       <div
         className="px-4 py-3 flex items-center justify-between gap-2 flex-shrink-0"
         style={{ background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)' }}
@@ -247,60 +247,60 @@ function TableDetailPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-4">
-          <div className="text-xs text-slate-500">
-            <span className="font-medium text-slate-700">{table.columns.length}</span> columns
+        <div className="px-4 py-3 border-b border-border/50 flex items-center gap-4">
+          <div className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{table.columns.length}</span> columns
           </div>
           {table.estimatedRows != null && (
-            <div className="text-xs text-slate-500">
-              <span className="font-medium text-slate-700">{table.estimatedRows.toLocaleString()}</span> rows
+            <div className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{table.estimatedRows.toLocaleString()}</span> rows
             </div>
           )}
-          <div className="text-xs text-slate-500">
-            <span className="font-medium text-slate-700">{table.indexes?.length ?? 0}</span> indexes
+          <div className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{table.indexes?.length ?? 0}</span> indexes
           </div>
         </div>
 
-        <div className="px-4 py-3 border-b border-slate-100">
-          <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Columns</h4>
+        <div className="px-4 py-3 border-b border-border/50">
+          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Columns</h4>
           <div className="space-y-1">
             {table.columns.map((col) => (
-              <div key={col.id || col.name} className="flex items-center gap-2 py-1 px-2 rounded-md hover:bg-slate-50 text-xs">
+              <div key={col.id || col.name} className="flex items-center gap-2 py-1 px-2 rounded-md hover:bg-muted/50 text-xs">
                 <span className="w-4 flex-shrink-0 flex items-center justify-center">
                   {col.isPrimaryKey ? <Key className="w-3 h-3 text-amber-500" /> : col.isForeignKey ? <Link className="w-3 h-3 text-blue-500" /> : <span className="w-3" />}
                 </span>
-                <span className="flex-1 font-medium text-slate-700 truncate">{col.name}</span>
+                <span className="flex-1 font-medium text-foreground truncate">{col.name}</span>
                 {!col.nullable && <span className="text-red-400 text-[10px] font-bold flex-shrink-0">*</span>}
-                <span className="text-[11px] text-slate-400 font-mono flex-shrink-0">{col.dataType}</span>
+                <span className="text-[11px] text-muted-foreground font-mono flex-shrink-0">{col.dataType}</span>
               </div>
             ))}
           </div>
         </div>
 
         {pkColumns.length > 0 && (
-          <div className="px-4 py-3 border-b border-slate-100">
-            <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <div className="px-4 py-3 border-b border-border/50">
+            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Key className="w-3 h-3 text-amber-500" /> Primary Keys
             </h4>
             <div className="flex flex-wrap gap-1.5">
               {pkColumns.map((col) => (
-                <span key={col.id || col.name} className="px-2 py-0.5 text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-md">{col.name}</span>
+                <span key={col.id || col.name} className="px-2 py-0.5 text-[11px] font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-200 border border-amber-200 dark:border-amber-800 rounded-md">{col.name}</span>
               ))}
             </div>
           </div>
         )}
 
         {fkColumns.length > 0 && (
-          <div className="px-4 py-3 border-b border-slate-100">
-            <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <div className="px-4 py-3 border-b border-border/50">
+            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Link className="w-3 h-3 text-blue-500" /> Foreign Keys
             </h4>
             <div className="space-y-1.5">
               {fkColumns.map((col) => (
-                <div key={col.id || col.name} className="text-[11px] px-2 py-1 rounded-md bg-blue-50 border border-blue-100">
-                  <span className="font-medium text-blue-700">{col.name}</span>
+                <div key={col.id || col.name} className="text-[11px] px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-800">
+                  <span className="font-medium text-blue-700 dark:text-blue-200">{col.name}</span>
                   {col.referencesTable && (
-                    <span className="text-blue-500"> &rarr; {col.referencesTable}{col.referencesColumn ? `.${col.referencesColumn}` : ''}</span>
+                    <span className="text-blue-500 dark:text-blue-400"> &rarr; {col.referencesTable}{col.referencesColumn ? `.${col.referencesColumn}` : ''}</span>
                   )}
                 </div>
               ))}
@@ -309,18 +309,18 @@ function TableDetailPanel({
         )}
 
         {table.indexes && table.indexes.length > 0 && (
-          <div className="px-4 py-3 border-b border-slate-100">
-            <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Hash className="w-3 h-3 text-slate-400" /> Indexes
+          <div className="px-4 py-3 border-b border-border/50">
+            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Hash className="w-3 h-3 text-muted-foreground" /> Indexes
             </h4>
             <div className="space-y-1.5">
               {table.indexes.map((idx) => (
-                <div key={idx.id || idx.name} className="text-[11px] px-2 py-1 rounded-md bg-slate-50 border border-slate-100">
+                <div key={idx.id || idx.name} className="text-[11px] px-2 py-1 rounded-md bg-muted/50 border border-border/50">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-medium text-slate-700 truncate">{idx.name}</span>
-                    {idx.isUnique && <span className="px-1 py-px text-[9px] font-semibold bg-teal-50 text-teal-600 border border-teal-200 rounded">UNIQUE</span>}
+                    <span className="font-medium text-foreground truncate">{idx.name}</span>
+                    {idx.isUnique && <span className="px-1 py-px text-[9px] font-semibold bg-teal-50 dark:bg-teal-950/30 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800 rounded">UNIQUE</span>}
                   </div>
-                  <span className="text-slate-400 font-mono">({idx.columns.join(', ')})</span>
+                  <span className="text-muted-foreground font-mono">({idx.columns.join(', ')})</span>
                 </div>
               ))}
             </div>
@@ -329,17 +329,17 @@ function TableDetailPanel({
 
         {table.constraints && table.constraints.length > 0 && (
           <div className="px-4 py-3">
-            <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <ShieldCheck className="w-3 h-3 text-slate-400" /> Constraints
+            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <ShieldCheck className="w-3 h-3 text-muted-foreground" /> Constraints
             </h4>
             <div className="space-y-1.5">
               {table.constraints.map((con) => (
-                <div key={con.id || con.name} className="text-[11px] px-2 py-1 rounded-md bg-slate-50 border border-slate-100">
+                <div key={con.id || con.name} className="text-[11px] px-2 py-1 rounded-md bg-muted/50 border border-border/50">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-medium text-slate-700 truncate">{con.name}</span>
-                    <span className="px-1 py-px text-[9px] font-semibold bg-slate-100 text-slate-500 rounded">{con.type}</span>
+                    <span className="font-medium text-foreground truncate">{con.name}</span>
+                    <span className="px-1 py-px text-[9px] font-semibold bg-muted text-muted-foreground rounded">{con.type}</span>
                   </div>
-                  <span className="text-slate-400 font-mono">({con.columns.join(', ')})</span>
+                  <span className="text-muted-foreground font-mono">({con.columns.join(', ')})</span>
                 </div>
               ))}
             </div>
@@ -573,7 +573,7 @@ function ERCanvasInner({ activeDiagram }: ERCanvasProps) {
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-aqua-500 animate-spin" />
-          <p className="text-sm text-slate-500">Loading diagram...</p>
+          <p className="text-sm text-muted-foreground">Loading diagram...</p>
         </div>
       </div>
     );
@@ -583,11 +583,11 @@ function ERCanvasInner({ activeDiagram }: ERCanvasProps) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
             <GitFork className="w-6 h-6 text-red-400" />
           </div>
-          <p className="text-sm font-medium text-slate-700">Failed to load diagram</p>
-          <p className="text-xs text-slate-500">Please check your connection and try again.</p>
+          <p className="text-sm font-medium text-foreground">Failed to load diagram</p>
+          <p className="text-xs text-muted-foreground">Please check your connection and try again.</p>
         </div>
       </div>
     );
@@ -600,8 +600,8 @@ function ERCanvasInner({ activeDiagram }: ERCanvasProps) {
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-100 to-aqua-100 flex items-center justify-center">
             <GitFork className="w-8 h-8 text-teal-600" />
           </div>
-          <h3 className="text-base font-semibold text-slate-700">No tables found</h3>
-          <p className="text-sm text-slate-500 max-w-sm">
+          <h3 className="text-base font-semibold text-foreground">No tables found</h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
             Upload SQL files in Schema Intelligence to populate the diagram with your database tables and relationships.
           </p>
         </div>
@@ -647,12 +647,12 @@ function ERCanvasInner({ activeDiagram }: ERCanvasProps) {
           />
           <Controls
             showInteractive={false}
-            className="!shadow-md !rounded-lg !border !border-slate-200"
+            className="!shadow-md !rounded-lg !border !border-border"
           />
           <MiniMap
             nodeColor="#0891b2"
             maskColor="rgba(241, 245, 249, 0.7)"
-            className="!shadow-md !rounded-lg !border !border-slate-200"
+            className="!shadow-md !rounded-lg !border !border-border"
           />
         </ReactFlow>
 
@@ -665,10 +665,10 @@ function ERCanvasInner({ activeDiagram }: ERCanvasProps) {
         {diagramType === 'schema-group' && schemaGroups && (
           <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5">
             {Object.keys(schemaGroups).map((schema) => (
-              <div key={schema} className="flex items-center gap-1.5 px-2 py-1 bg-card/90 backdrop-blur rounded-md shadow-sm border border-slate-200 text-xs">
+              <div key={schema} className="flex items-center gap-1.5 px-2 py-1 bg-card/90 backdrop-blur rounded-md shadow-sm border border-border text-xs">
                 <div className="w-2.5 h-2.5 rounded-full bg-aqua-500" />
-                <span className="font-medium text-slate-700">{schema}</span>
-                <span className="text-slate-400">({schemaGroups[schema].length})</span>
+                <span className="font-medium text-foreground">{schema}</span>
+                <span className="text-muted-foreground">({schemaGroups[schema].length})</span>
               </div>
             ))}
           </div>

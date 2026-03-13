@@ -186,19 +186,19 @@ export function Dashboard() {
         <div className="flex flex-wrap items-center gap-3 mb-5">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search projects..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-slate-400"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent placeholder:text-muted-foreground"
             />
           </div>
 
           {/* Dialect Filter */}
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <select
               value={dialectFilter}
               onChange={(e) => setDialectFilter(e.target.value)}
@@ -215,7 +215,7 @@ export function Dashboard() {
 
           {/* Sort */}
           <div className="relative">
-            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <select
               value={`${sortBy}-${sortOrder}`}
               onChange={(e) => {
@@ -255,9 +255,9 @@ export function Dashboard() {
                 key={i}
                 className="rounded-xl border border-border p-5 animate-pulse"
               >
-                <div className="h-5 bg-slate-200 rounded w-2/3 mb-3" />
-                <div className="h-3 bg-slate-100 rounded w-full mb-2" />
-                <div className="h-3 bg-slate-100 rounded w-1/2" />
+                <div className="h-5 bg-muted rounded w-2/3 mb-3" />
+                <div className="h-3 bg-muted rounded w-full mb-2" />
+                <div className="h-3 bg-muted rounded w-1/2" />
               </div>
             ))}
           </div>
@@ -274,9 +274,9 @@ export function Dashboard() {
             {/* New Project Card */}
             <button
               onClick={() => setCreateDialogOpen(true)}
-              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-200 p-8 text-muted-foreground hover:border-aqua-300 hover:text-aqua-600 hover:bg-aqua-50/50 transition-all duration-200 group"
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border p-8 text-muted-foreground hover:border-aqua-300 hover:text-aqua-600 hover:bg-aqua-50/50 transition-all duration-200 group"
             >
-              <div className="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-aqua-100 flex items-center justify-center transition-colors">
+              <div className="w-12 h-12 rounded-full bg-muted group-hover:bg-aqua-100 flex items-center justify-center transition-colors">
                 <Plus className="w-6 h-6" />
               </div>
               <span className="text-sm font-medium">Create New Project</span>
@@ -284,8 +284,8 @@ export function Dashboard() {
           </div>
         ) : hasActiveFilters ? (
           <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-5">
-              <Search className="w-8 h-8 text-slate-400" />
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-5">
+              <Search className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">
               No matching projects
@@ -353,7 +353,7 @@ function ProjectCard({
             setMenuOpen(!menuOpen);
             setConfirmArchive(false);
           }}
-          className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <MoreVertical className="w-4 h-4" />
         </button>
@@ -369,7 +369,7 @@ function ProjectCard({
                 'w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors',
                 confirmArchive
                   ? 'text-red-600 bg-red-50 hover:bg-red-100 font-medium'
-                  : 'text-foreground hover:bg-slate-50',
+                  : 'text-foreground hover:bg-muted/50',
               )}
             >
               <Archive className="w-3.5 h-3.5" />
@@ -388,7 +388,7 @@ function ProjectCard({
             {project.name}
           </h3>
         </div>
-        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-aqua-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+        <ArrowRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-aqua-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
       </div>
 
       {/* Dialect Badge */}
@@ -412,7 +412,7 @@ function ProjectCard({
         </p>
       )}
 
-      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+      <div className="flex items-center justify-between pt-3 border-t border-border/50">
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           {typeof project.tableCount === 'number' && (
             <span className="flex items-center gap-1">

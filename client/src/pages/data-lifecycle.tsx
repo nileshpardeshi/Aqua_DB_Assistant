@@ -49,7 +49,7 @@ export function DataLifecycle() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 flex items-center justify-center">
             <Shield className="w-5 h-5 text-blue-600" />
           </div>
           <div>
@@ -71,35 +71,35 @@ export function DataLifecycle() {
             value: totalRules,
             icon: Activity,
             color: 'text-blue-600',
-            bg: 'bg-blue-50',
+            bg: 'bg-blue-50 dark:bg-blue-900/20',
           },
           {
             label: 'Active Rules',
             value: activeRules,
             icon: CheckCircle2,
             color: 'text-green-600',
-            bg: 'bg-green-50',
+            bg: 'bg-green-50 dark:bg-green-900/20',
           },
           {
             label: 'Tables Covered',
             value: tablesWithRules,
             icon: Table2,
             color: 'text-aqua-600',
-            bg: 'bg-aqua-50',
+            bg: 'bg-aqua-50 dark:bg-aqua-900/20',
           },
           {
             label: 'Critical Rules',
             value: criticalRules,
             icon: criticalRules > 0 ? AlertTriangle : Trash2,
-            color: criticalRules > 0 ? 'text-red-600' : 'text-slate-400',
-            bg: criticalRules > 0 ? 'bg-red-50' : 'bg-slate-50',
+            color: criticalRules > 0 ? 'text-red-600' : 'text-muted-foreground',
+            bg: criticalRules > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-muted/50',
           },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
             <div
               key={stat.label}
-              className="bg-card border border-slate-200 rounded-xl p-4 flex items-center gap-3"
+              className="bg-card border border-border rounded-xl p-4 flex items-center gap-3"
             >
               <div
                 className={cn(
@@ -110,8 +110,8 @@ export function DataLifecycle() {
                 <Icon className={cn('w-4 h-4', stat.color)} />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-800">{stat.value}</p>
-                <p className="text-[10px] text-slate-500 uppercase font-medium tracking-wide">
+                <p className="text-lg font-bold text-foreground">{stat.value}</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-wide">
                   {stat.label}
                 </p>
               </div>
@@ -121,7 +121,7 @@ export function DataLifecycle() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto">
+      <div className="flex items-center gap-1 border-b border-border overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -132,8 +132,8 @@ export function DataLifecycle() {
               className={cn(
                 'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap',
                 isActive
-                  ? 'border-blue-500 text-blue-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  ? 'border-blue-500 text-blue-700 dark:text-blue-400'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               )}
             >
               <Icon className="w-4 h-4" />

@@ -115,8 +115,8 @@ export function MigrationStudio() {
             label: 'Draft Scripts',
             value: draftMigrations,
             icon: FileEdit,
-            color: 'text-slate-600',
-            bg: 'bg-slate-100',
+            color: 'text-muted-foreground',
+            bg: 'bg-muted',
           },
           {
             label: 'Success Rate',
@@ -133,7 +133,7 @@ export function MigrationStudio() {
           return (
             <div
               key={stat.label}
-              className="bg-card border border-slate-200 rounded-xl p-3.5 flex items-center gap-3"
+              className="bg-card border border-border rounded-xl p-3.5 flex items-center gap-3"
             >
               <div
                 className={cn(
@@ -144,8 +144,8 @@ export function MigrationStudio() {
                 <Icon className={cn('w-4 h-4', stat.color)} />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-800">{stat.value}</p>
-                <p className="text-[9px] text-slate-500 uppercase font-medium tracking-wide">
+                <p className="text-lg font-bold text-foreground">{stat.value}</p>
+                <p className="text-[9px] text-muted-foreground uppercase font-medium tracking-wide">
                   {stat.label}
                 </p>
               </div>
@@ -155,7 +155,7 @@ export function MigrationStudio() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto">
+      <div className="flex items-center gap-1 border-b border-border overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -167,7 +167,7 @@ export function MigrationStudio() {
                 'flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-medium border-b-2 transition-colors -mb-px whitespace-nowrap',
                 isActive
                   ? 'border-purple-500 text-purple-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               )}
             >
               <Icon className="w-3.5 h-3.5" />

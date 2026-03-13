@@ -43,7 +43,7 @@ export function UsageByModuleChart({ data, isLoading }: Props) {
             const tokens = m.totalTokens ?? 0;
             const cost = m.totalCost ?? 0;
             const pct = (tokens / maxTokens) * 100;
-            const color = MODULE_COLORS[m.module] ?? 'bg-slate-500';
+            const color = MODULE_COLORS[m.module] ?? 'bg-muted-foreground';
             return (
               <div key={m.module}>
                 <div className="flex items-center justify-between text-xs mb-1">

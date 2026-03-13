@@ -75,7 +75,7 @@ const ACTIVITY_ICONS: Record<string, { icon: typeof Database; color: string }> =
   query: { icon: Terminal, color: 'text-amber-600 bg-amber-50' },
   file: { icon: FileText, color: 'text-cyan-600 bg-cyan-50' },
   migration: { icon: GitFork, color: 'text-emerald-600 bg-emerald-50' },
-  default: { icon: Activity, color: 'text-slate-600 bg-slate-50' },
+  default: { icon: Activity, color: 'text-muted-foreground bg-muted/50' },
 };
 
 // ── Demo Data Generators ─────────────────────────────────────────────────────
@@ -722,7 +722,7 @@ export function ProjectOverview() {
                     <span className={cn('text-2xl font-bold', getHealthColor(schemaHealth.overallScore).text)}>
                       {schemaHealth.overallScore}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-medium">/ 100</span>
+                    <span className="text-[10px] text-muted-foreground font-medium">/ 100</span>
                   </div>
                 </div>
               </div>
@@ -738,8 +738,8 @@ export function ProjectOverview() {
                   <div key={metric.label} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <metric.icon className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="text-xs font-medium text-slate-700">{metric.label}</span>
+                        <metric.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium text-foreground">{metric.label}</span>
                       </div>
                       <span className={cn('text-xs font-bold', metric.invert
                         ? (metric.value <= 30 ? 'text-emerald-600' : metric.value <= 50 ? 'text-amber-600' : 'text-red-600')
@@ -748,7 +748,7 @@ export function ProjectOverview() {
                         {metric.value}%
                       </span>
                     </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className={cn(
                           'h-full rounded-full transition-all duration-700',
@@ -757,27 +757,27 @@ export function ProjectOverview() {
                         style={{ width: `${metric.value}%` }}
                       />
                     </div>
-                    <p className="text-[10px] text-slate-400">{metric.desc}</p>
+                    <p className="text-[10px] text-muted-foreground">{metric.desc}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Health Summary Chips */}
-            <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t border-slate-100">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-slate-50 text-slate-600">
+            <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t border-border/50">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-muted/50 text-muted-foreground">
                 <Table2 className="w-3 h-3" /> {displayTables.length} tables
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-slate-50 text-slate-600">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-muted/50 text-muted-foreground">
                 <Columns3 className="w-3 h-3" /> {totalColumns} columns
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-slate-50 text-slate-600">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-muted/50 text-muted-foreground">
                 <Key className="w-3 h-3" /> {totalIndexes} indexes
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-slate-50 text-slate-600">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-muted/50 text-muted-foreground">
                 <Shield className="w-3 h-3" /> {totalConstraints} constraints
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-slate-50 text-slate-600">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-muted/50 text-muted-foreground">
                 <GitFork className="w-3 h-3" /> {displayRelationships.length} relationships
               </div>
             </div>
@@ -786,8 +786,8 @@ export function ProjectOverview() {
       ) : !hasSchemaData ? (
         <div className="bg-card rounded-xl border border-border p-8 shadow-sm">
           <div className="flex flex-col items-center justify-center text-center">
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-              <Shield className="w-7 h-7 text-slate-400" />
+            <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+              <Shield className="w-7 h-7 text-muted-foreground" />
             </div>
             <h3 className="text-sm font-semibold text-foreground mb-1">No schema data yet</h3>
             <p className="text-xs text-muted-foreground max-w-sm mb-4">
@@ -949,13 +949,13 @@ export function ProjectOverview() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50">
-                  <th className="text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 px-5">Table Name</th>
-                  <th className="text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 px-3">Columns</th>
-                  <th className="text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 px-3">Indexes</th>
-                  <th className="text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 px-3">Constraints</th>
-                  <th className="text-right text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 px-3">Est. Rows</th>
-                  <th className="text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 px-5">Health</th>
+                <tr className="border-b border-border/50 bg-muted/50">
+                  <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider py-3 px-5">Table Name</th>
+                  <th className="text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider py-3 px-3">Columns</th>
+                  <th className="text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider py-3 px-3">Indexes</th>
+                  <th className="text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider py-3 px-3">Constraints</th>
+                  <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider py-3 px-3">Est. Rows</th>
+                  <th className="text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider py-3 px-5">Health</th>
                 </tr>
               </thead>
               <tbody>
@@ -965,11 +965,11 @@ export function ProjectOverview() {
                   .map(table => {
                     const health = getTableHealth(table);
                     return (
-                      <tr key={table.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                      <tr key={table.id} className="border-b border-border/30 hover:bg-muted/50 transition-colors">
                         <td className="py-3 px-5">
                           <div className="flex items-center gap-2">
                             <Table2 className="w-3.5 h-3.5 text-aqua-500 flex-shrink-0" />
-                            <span className="text-sm font-medium text-slate-800">{table.name}</span>
+                            <span className="text-sm font-medium text-foreground">{table.name}</span>
                           </div>
                         </td>
                         <td className="text-center py-3 px-3">
@@ -988,7 +988,7 @@ export function ProjectOverview() {
                           </span>
                         </td>
                         <td className="text-right py-3 px-3">
-                          <span className="text-sm font-mono text-slate-600">
+                          <span className="text-sm font-mono text-muted-foreground">
                             {table.estimatedRows ? formatNumber(table.estimatedRows) : '—'}
                           </span>
                         </td>
@@ -1018,19 +1018,19 @@ export function ProjectOverview() {
             {connectionCounts.total > 0 ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Total</span>
-                  <span className="text-lg font-bold text-slate-800">{connectionCounts.total}</span>
+                  <span className="text-xs text-muted-foreground">Total</span>
+                  <span className="text-lg font-bold text-foreground">{connectionCounts.total}</span>
                 </div>
                 <div className="space-y-2">
                   {[
                     { label: 'Connected', count: connectionCounts.connected, dot: 'bg-emerald-500', text: 'text-emerald-700' },
-                    { label: 'Disconnected', count: connectionCounts.disconnected, dot: 'bg-slate-400', text: 'text-slate-600' },
+                    { label: 'Disconnected', count: connectionCounts.disconnected, dot: 'bg-muted-foreground', text: 'text-muted-foreground' },
                     { label: 'Error', count: connectionCounts.error, dot: 'bg-red-500', text: 'text-red-700' },
                   ].filter(s => s.count > 0).map(s => (
                     <div key={s.label} className="flex items-center justify-between py-1">
                       <div className="flex items-center gap-2">
                         <span className={cn('w-2 h-2 rounded-full', s.dot)} />
-                        <span className="text-xs text-slate-600">{s.label}</span>
+                        <span className="text-xs text-muted-foreground">{s.label}</span>
                       </div>
                       <span className={cn('text-xs font-bold', s.text)}>{s.count}</span>
                     </div>
@@ -1039,7 +1039,7 @@ export function ProjectOverview() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-6 text-center">
-                <Server className="w-6 h-6 text-slate-300 mb-2" />
+                <Server className="w-6 h-6 text-muted-foreground/40 mb-2" />
                 <p className="text-xs text-muted-foreground">No connections configured</p>
               </div>
             )}
@@ -1056,8 +1056,8 @@ export function ProjectOverview() {
             {migrationCounts.total > 0 ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Total</span>
-                  <span className="text-lg font-bold text-slate-800">{migrationCounts.total}</span>
+                  <span className="text-xs text-muted-foreground">Total</span>
+                  <span className="text-lg font-bold text-foreground">{migrationCounts.total}</span>
                 </div>
                 <div className="space-y-2">
                   {[
@@ -1069,7 +1069,7 @@ export function ProjectOverview() {
                     <div key={s.label} className="flex items-center justify-between py-1">
                       <div className="flex items-center gap-2">
                         <span className={cn('w-2 h-2 rounded-full', s.dot)} />
-                        <span className="text-xs text-slate-600">{s.label}</span>
+                        <span className="text-xs text-muted-foreground">{s.label}</span>
                       </div>
                       <span className={cn('text-xs font-bold', s.text)}>{s.count}</span>
                     </div>
@@ -1078,7 +1078,7 @@ export function ProjectOverview() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-6 text-center">
-                <Layers className="w-6 h-6 text-slate-300 mb-2" />
+                <Layers className="w-6 h-6 text-muted-foreground/40 mb-2" />
                 <p className="text-xs text-muted-foreground">No migrations yet</p>
               </div>
             )}
@@ -1095,20 +1095,20 @@ export function ProjectOverview() {
             {lifecycleCounts.total > 0 ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Total Rules</span>
-                  <span className="text-lg font-bold text-slate-800">{lifecycleCounts.total}</span>
+                  <span className="text-xs text-muted-foreground">Total Rules</span>
+                  <span className="text-lg font-bold text-foreground">{lifecycleCounts.total}</span>
                 </div>
                 <div className="space-y-2">
                   {[
                     { label: 'Active', count: lifecycleCounts.active, dot: 'bg-emerald-500', text: 'text-emerald-700' },
-                    { label: 'Inactive', count: lifecycleCounts.inactive, dot: 'bg-slate-400', text: 'text-slate-600' },
+                    { label: 'Inactive', count: lifecycleCounts.inactive, dot: 'bg-muted-foreground', text: 'text-muted-foreground' },
                     { label: 'Critical Priority', count: lifecycleCounts.critical, dot: 'bg-red-500', text: 'text-red-700' },
                     { label: 'High Priority', count: lifecycleCounts.high, dot: 'bg-amber-500', text: 'text-amber-700' },
                   ].filter(s => s.count > 0).map(s => (
                     <div key={s.label} className="flex items-center justify-between py-1">
                       <div className="flex items-center gap-2">
                         <span className={cn('w-2 h-2 rounded-full', s.dot)} />
-                        <span className="text-xs text-slate-600">{s.label}</span>
+                        <span className="text-xs text-muted-foreground">{s.label}</span>
                       </div>
                       <span className={cn('text-xs font-bold', s.text)}>{s.count}</span>
                     </div>
@@ -1117,7 +1117,7 @@ export function ProjectOverview() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-6 text-center">
-                <RefreshCw className="w-6 h-6 text-slate-300 mb-2" />
+                <RefreshCw className="w-6 h-6 text-muted-foreground/40 mb-2" />
                 <p className="text-xs text-muted-foreground">No lifecycle rules defined</p>
               </div>
             )}
@@ -1143,16 +1143,16 @@ export function ProjectOverview() {
           <div className="p-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Total Runs', value: perfRunCounts.total, color: 'text-slate-800', bg: 'bg-slate-50' },
-                { label: 'Completed', value: perfRunCounts.completed, color: 'text-emerald-700', bg: 'bg-emerald-50' },
-                { label: 'Running', value: perfRunCounts.running, color: 'text-blue-700', bg: 'bg-blue-50' },
-                { label: 'Failed', value: perfRunCounts.failed, color: 'text-red-700', bg: 'bg-red-50' },
+                { label: 'Total Runs', value: perfRunCounts.total, color: 'text-foreground', bg: 'bg-muted/50' },
+                { label: 'Completed', value: perfRunCounts.completed, color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
+                { label: 'Running', value: perfRunCounts.running, color: 'text-blue-700 dark:text-blue-300', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+                { label: 'Failed', value: perfRunCounts.failed, color: 'text-red-700 dark:text-red-300', bg: 'bg-red-50 dark:bg-red-950/30' },
               ].map(item => (
                 <div key={item.label} className={cn('rounded-lg p-4 text-center', item.bg)}>
                   <p className="text-2xl font-bold mb-0.5" style={{ color: undefined }}>
                     <span className={item.color}>{item.value}</span>
                   </p>
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{item.label}</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -1169,19 +1169,19 @@ export function ProjectOverview() {
           </div>
         </div>
         {recentActivity.length > 0 ? (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border/50">
             {recentActivity.map((item, index) => {
               const entityKey = (item.entityType ?? item.entity ?? 'default') as string;
               const activityConfig = ACTIVITY_ICONS[entityKey.toLowerCase()] ?? ACTIVITY_ICONS.default;
               const Icon = activityConfig.icon;
               return (
-                <div key={item.id} className="flex items-start gap-4 px-6 py-4 hover:bg-slate-50/50 transition-colors">
+                <div key={item.id} className="flex items-start gap-4 px-6 py-4 hover:bg-muted/50 transition-colors">
                   <div className="flex flex-col items-center pt-0.5">
                     <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', activityConfig.color)}>
                       <Icon className="w-4 h-4" />
                     </div>
                     {index < recentActivity.length - 1 && (
-                      <div className="w-px h-full bg-slate-200 mt-2 min-h-[16px]" />
+                      <div className="w-px h-full bg-border mt-2 min-h-[16px]" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -1197,9 +1197,9 @@ export function ProjectOverview() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-10 text-center">
-            <Inbox className="w-8 h-8 text-slate-300 mb-3" />
+            <Inbox className="w-8 h-8 text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">No recent activity</p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Activity will appear here as you work with this project.
             </p>
           </div>

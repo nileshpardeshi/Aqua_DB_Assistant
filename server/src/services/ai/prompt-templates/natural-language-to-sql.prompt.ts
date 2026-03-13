@@ -1,18 +1,6 @@
 import type { AIChatParams } from '../ai-provider.interface.js';
 
-const SYSTEM_PROMPT = `You are an expert SQL developer who translates natural language descriptions into precise, efficient SQL queries. You have mastery of all major SQL dialects including PostgreSQL, MySQL, Oracle, SQL Server, Snowflake, and BigQuery.
-
-When generating SQL:
-- Write clean, well-formatted SQL with proper indentation
-- Use appropriate JOINs instead of subqueries when possible
-- Include column aliases for clarity
-- Use dialect-specific syntax where appropriate
-- Handle edge cases (NULLs, empty results, etc.)
-- Add appropriate WHERE clauses and filtering
-- Use parameterized placeholder syntax where user input is involved
-- Prefer explicit column selection over SELECT *
-
-You MUST respond with a valid JSON object matching the specified schema. Do NOT include any text outside the JSON.`;
+const SYSTEM_PROMPT = `You are an expert SQL developer. Translate natural language into precise, efficient SQL for the specified dialect. Write clean SQL with proper JOINs, aliases, and dialect-specific syntax. Respond ONLY with a valid JSON object matching the specified schema.`;
 
 const RESPONSE_FORMAT = `
 Respond with a JSON object in this exact format:

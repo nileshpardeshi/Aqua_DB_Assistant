@@ -32,33 +32,33 @@ const SENSITIVITY_CONFIG: Record<
 > = {
   PII: {
     label: 'PII',
-    color: 'text-red-700',
-    bg: 'bg-red-50',
-    border: 'border-red-200',
+    color: 'text-red-700 dark:text-red-400',
+    bg: 'bg-red-50 dark:bg-red-900/20',
+    border: 'border-red-200 dark:border-red-800',
   },
   PHI: {
     label: 'PHI',
-    color: 'text-purple-700',
-    bg: 'bg-purple-50',
-    border: 'border-purple-200',
+    color: 'text-purple-700 dark:text-purple-400',
+    bg: 'bg-purple-50 dark:bg-purple-900/20',
+    border: 'border-purple-200 dark:border-purple-800',
   },
   Financial: {
     label: 'Financial',
-    color: 'text-amber-700',
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
+    color: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-900/20',
+    border: 'border-amber-200 dark:border-amber-800',
   },
   Public: {
     label: 'Public',
-    color: 'text-green-700',
-    bg: 'bg-green-50',
-    border: 'border-green-200',
+    color: 'text-green-700 dark:text-green-400',
+    bg: 'bg-green-50 dark:bg-green-900/20',
+    border: 'border-green-200 dark:border-green-800',
   },
   Internal: {
     label: 'Internal',
-    color: 'text-blue-700',
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
+    color: 'text-blue-700 dark:text-blue-400',
+    bg: 'bg-blue-50 dark:bg-blue-900/20',
+    border: 'border-blue-200 dark:border-blue-800',
   },
 };
 
@@ -193,16 +193,16 @@ export function DataClassification() {
     <div className="space-y-6">
       {/* Summary Bar */}
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-xs font-medium text-slate-600">
+        <span className="text-xs font-medium text-muted-foreground">
           {tables.length} tables, {totalColumns} columns:
         </span>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
           {piiColumns} PII
         </span>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-purple-100 text-purple-700">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400">
           {phiColumns} PHI
         </span>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
           {financialColumns} Financial
         </span>
         <div className="ml-auto flex items-center gap-2">
@@ -210,8 +210,8 @@ export function DataClassification() {
             className={cn(
               'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full',
               gdprCompliant === tables.length
-                ? 'bg-green-100 text-green-700'
-                : 'bg-amber-100 text-amber-700'
+                ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
+                : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400'
             )}
           >
             {gdprCompliant === tables.length ? (
@@ -225,8 +225,8 @@ export function DataClassification() {
             className={cn(
               'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full',
               pciCompliant === tables.length
-                ? 'bg-green-100 text-green-700'
-                : 'bg-amber-100 text-amber-700'
+                ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
+                : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400'
             )}
           >
             {pciCompliant === tables.length ? (
@@ -246,7 +246,7 @@ export function DataClassification() {
         className={cn(
           'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
           isClassifying
-            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+            ? 'bg-muted text-muted-foreground cursor-not-allowed'
             : 'bg-aqua-600 text-white hover:bg-aqua-700'
         )}
       >
@@ -274,17 +274,17 @@ export function DataClassification() {
           return (
             <div
               key={table.name}
-              className="bg-card border border-slate-200 rounded-lg overflow-hidden"
+              className="bg-card border border-border rounded-lg overflow-hidden"
             >
               {/* Table Header */}
               <button
                 onClick={() => toggleExpand(table.name)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50/50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors"
               >
                 {isExpanded ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 )}
 
                 <Shield
@@ -294,16 +294,16 @@ export function DataClassification() {
                   )}
                 />
 
-                <span className="text-sm font-semibold font-mono text-slate-800">
+                <span className="text-sm font-semibold font-mono text-foreground">
                   {table.name}
                 </span>
 
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-muted-foreground">
                   {table.columns.length} columns
                 </span>
 
                 {sensitiveCount > 0 && (
-                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700">
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
                     {sensitiveCount} sensitive
                   </span>
                 )}
@@ -337,8 +337,8 @@ export function DataClassification() {
                     className={cn(
                       'px-1.5 py-0.5 text-[9px] font-bold rounded',
                       table.gdprCompliant
-                        ? 'bg-green-50 text-green-700'
-                        : 'bg-red-50 text-red-700'
+                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                        : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
                     )}
                   >
                     GDPR {table.gdprCompliant ? 'OK' : 'FAIL'}
@@ -347,8 +347,8 @@ export function DataClassification() {
                     className={cn(
                       'px-1.5 py-0.5 text-[9px] font-bold rounded',
                       table.pciCompliant
-                        ? 'bg-green-50 text-green-700'
-                        : 'bg-red-50 text-red-700'
+                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                        : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
                     )}
                   >
                     PCI {table.pciCompliant ? 'OK' : 'FAIL'}
@@ -358,9 +358,9 @@ export function DataClassification() {
 
               {/* Column Details */}
               {isExpanded && (
-                <div className="border-t border-slate-100">
+                <div className="border-t border-border/50">
                   {/* Column Header */}
-                  <div className="grid grid-cols-12 gap-2 px-4 py-1.5 bg-slate-50 text-[10px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100">
+                  <div className="grid grid-cols-12 gap-2 px-4 py-1.5 bg-muted/50 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/50">
                     <div className="col-span-3">Column</div>
                     <div className="col-span-3">Type</div>
                     <div className="col-span-3">Classification</div>
@@ -373,20 +373,20 @@ export function DataClassification() {
                       <div
                         key={col.name}
                         className={cn(
-                          'grid grid-cols-12 gap-2 px-4 py-2 items-center border-b border-slate-50 last:border-b-0',
-                          col.sensitivity === 'PII' && 'bg-red-50/30',
-                          col.sensitivity === 'PHI' && 'bg-purple-50/30',
-                          col.sensitivity === 'Financial' && 'bg-amber-50/30'
+                          'grid grid-cols-12 gap-2 px-4 py-2 items-center border-b border-border/50 last:border-b-0',
+                          col.sensitivity === 'PII' && 'bg-red-50/30 dark:bg-red-900/10',
+                          col.sensitivity === 'PHI' && 'bg-purple-50/30 dark:bg-purple-900/10',
+                          col.sensitivity === 'Financial' && 'bg-amber-50/30 dark:bg-amber-900/10'
                         )}
                       >
                         <div className="col-span-3">
-                          <span className="text-sm font-mono text-slate-700">
+                          <span className="text-sm font-mono text-foreground">
                             {col.name}
                           </span>
                         </div>
 
                         <div className="col-span-3">
-                          <span className="text-xs font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                          <span className="text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                             {col.type}
                           </span>
                         </div>
@@ -425,7 +425,7 @@ export function DataClassification() {
                               AI Detected
                             </span>
                           ) : (
-                            <span className="text-[10px] text-slate-400">Manual</span>
+                            <span className="text-[10px] text-muted-foreground">Manual</span>
                           )}
                         </div>
                       </div>

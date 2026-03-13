@@ -26,32 +26,39 @@ export function useFileUpload(projectId: string | undefined) {
     mutationFn: async (files: File[]) => {
       if (!projectId) throw new Error('Project ID is required');
 
-      const formData = new FormData();
-      files.forEach((file) => {
-        formData.append('files', file);
-      });
-
       setProgress(0);
 
-      const response = await apiClient.post(
-        `/projects/${projectId}/files/upload`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const pct = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setProgress(pct);
-            }
-          },
-        }
-      );
+      // Upload files one at a time (server accepts single file with field name 'file')
+      const results: UploadedFile[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const formData = new FormData();
+        formData.append('file', files[i]);
 
-      return response as unknown as UploadedFile[];
+        const response = await apiClient.post(
+          `/projects/${projectId}/files`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total) {
+                const fileProgress = Math.round(
+                  (progressEvent.loaded * 100) / progressEvent.total
+                );
+                const overallProgress = Math.round(
+                  ((i * 100 + fileProgress) / files.length)
+                );
+                setProgress(overallProgress);
+              }
+            },
+          }
+        );
+
+        results.push(response as unknown as UploadedFile);
+      }
+
+      return results;
     },
     onSuccess: () => {
       setProgress(100);

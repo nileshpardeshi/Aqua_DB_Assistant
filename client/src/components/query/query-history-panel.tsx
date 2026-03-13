@@ -154,8 +154,8 @@ export function QueryHistoryPanel({
         {/* Empty State */}
         {!isLoading && filteredHistory.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-              <History className="w-7 h-7 text-slate-400" />
+            <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+              <History className="w-7 h-7 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-foreground mb-1">
               No query history
@@ -174,7 +174,7 @@ export function QueryHistoryPanel({
             {filteredHistory.map(item => (
               <div
                 key={item.id}
-                className="px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer group relative"
+                className="px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group relative"
                 onClick={() => onLoadQuery(item.sql)}
               >
                 <div className="flex items-start gap-3">
@@ -208,8 +208,8 @@ export function QueryHistoryPanel({
                         className={cn(
                           'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border',
                           item.status === 'success'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-red-50 text-red-700 border-red-200',
+                            ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                            : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
                         )}
                       >
                         {item.status === 'success' ? 'Success' : 'Failed'}
@@ -240,7 +240,7 @@ export function QueryHistoryPanel({
 
                     {/* Error Message */}
                     {item.status === 'error' && item.errorMessage && (
-                      <div className="bg-red-50 text-red-700 rounded p-2 text-xs font-mono mt-1.5">
+                      <div className="bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded p-2 text-xs font-mono mt-1.5">
                         {item.errorMessage}
                       </div>
                     )}
@@ -254,7 +254,7 @@ export function QueryHistoryPanel({
                       'opacity-0 group-hover:opacity-100',
                       copiedId === item.id
                         ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                        : 'bg-card border-border text-muted-foreground hover:bg-slate-50',
+                        : 'bg-card border-border text-muted-foreground hover:bg-muted/50',
                     )}
                     title={copiedId === item.id ? 'Copied!' : 'Copy SQL'}
                   >

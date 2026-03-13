@@ -111,9 +111,23 @@ type AnyResponse = Record<string, any>;
 function normalizeGeneratedSQL(raw: AnyResponse): GeneratedSQL {
   // Server wraps: { result: {...}, usage, model } → apiClient unwraps { success, data }
   const data = raw.result ?? raw;
+
+  // Handle rawResponse case (when AI returns unparseable JSON)
+  if (data.rawResponse && typeof data.rawResponse === 'string') {
+    // Try to extract SQL from markdown code blocks
+    const codeBlockMatch = data.rawResponse.match(/```sql?\s*\n?([\s\S]*?)```/);
+    return {
+      sql: codeBlockMatch ? codeBlockMatch[1].trim() : data.rawResponse,
+      explanation: 'Response was returned as raw text (not structured JSON).',
+      assumptions: [],
+      alternativeApproaches: [],
+      warnings: ['AI returned an unstructured response. The SQL may need manual review.'],
+    };
+  }
+
   return {
-    sql: data.sql ?? data.query ?? data.generated_sql ?? '',
-    explanation: data.explanation ?? data.description ?? '',
+    sql: data.sql ?? data.query ?? data.generated_sql ?? data.generatedSQL ?? '',
+    explanation: data.explanation ?? data.description ?? data.summary ?? '',
     assumptions: data.assumptions ?? [],
     alternativeApproaches: data.alternativeApproaches ?? data.alternative_approaches ?? data.alternatives ?? [],
     warnings: data.warnings ?? [],

@@ -320,7 +320,7 @@ export function SchemaReferencePanel({
                           )}
                           {col.nullable && (
                             <span
-                              className="text-[10px] text-slate-400 font-medium leading-none"
+                              className="text-[10px] text-muted-foreground font-medium leading-none"
                               aria-label="Nullable"
                             >
                               ?

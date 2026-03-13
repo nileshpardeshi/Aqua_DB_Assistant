@@ -14,25 +14,25 @@ import { APP_NAME } from '@/config/constants';
 
 export function Settings() {
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-background flex flex-col pt-12 pb-8 px-6 text-slate-900 dark:text-slate-100">
+    <div className="min-h-[calc(100vh-4rem)] bg-background flex flex-col pt-12 pb-8 px-6 text-foreground">
       
       {/* Header Container */}
       <div className="max-w-4xl w-full mx-auto mb-10 text-center space-y-3">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">
           Developer Profile
         </h1>
-        <p className="text-sm text-slate-500 max-w-2xl mx-auto">
+        <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
           Learn more about the creator and connect to discuss technology, collaboration, and enterprise solutions.
         </p>
       </div>
 
       <div className="max-w-4xl w-full mx-auto">
-        <div className="bg-card dark:bg-card rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col md:flex-row">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden flex flex-col md:flex-row">
           
           {/* Left Side: Photo & Quick Info */}
-          <div className="md:w-[320px] shrink-0 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 bg-secondary/50 p-8 flex flex-col items-center justify-center text-center">
+          <div className="md:w-[320px] shrink-0 border-b md:border-b-0 md:border-r border-border bg-secondary/50 p-8 flex flex-col items-center justify-center text-center">
             
-            <div className="w-48 h-48 rounded-full border-4 border-card dark:border-card shadow-md overflow-hidden mb-6 bg-slate-200 dark:bg-slate-800">
+            <div className="w-48 h-48 rounded-full border-4 border-card shadow-md overflow-hidden mb-6 bg-muted">
               <img
                 src="/creator-profile.png"
                 alt="Nilesh Pardeshi"
@@ -57,27 +57,27 @@ export function Settings() {
               <Briefcase className="w-4 h-4" /> Technical Manager
             </div>
             
-            <div className="flex items-center gap-1.5 text-sm text-slate-500 mb-6">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-6">
               <MapPin className="w-4 h-4" /> Opus Technologies
             </div>
 
             <div className="w-full h-px bg-border my-2" />
 
             <div className="w-full pt-4 space-y-3">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-left mb-2">Connect</p>
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest text-left mb-2">Connect</p>
               
-              <a href="mailto:contactaquaai@gmail.com" className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 hover:text-aqua-600 dark:hover:text-aqua-400 transition-colors">
-                <Mail className="w-4 h-4 shrink-0 text-slate-400" />
+              <a href="mailto:contactaquaai@gmail.com" className="flex items-center gap-3 text-sm text-muted-foreground hover:text-aqua-600 dark:hover:text-aqua-400 transition-colors">
+                <Mail className="w-4 h-4 shrink-0 text-muted-foreground" />
                 <span className="truncate">contactaquaai@gmail.com</span>
               </a>
               
-              <a href="tel:+919762017007" className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 hover:text-aqua-600 dark:hover:text-aqua-400 transition-colors">
-                <Phone className="w-4 h-4 shrink-0 text-slate-400" />
+              <a href="tel:+919762017007" className="flex items-center gap-3 text-sm text-muted-foreground hover:text-aqua-600 dark:hover:text-aqua-400 transition-colors">
+                <Phone className="w-4 h-4 shrink-0 text-muted-foreground" />
                 <span>+91-9762017007</span>
               </a>
               
-              <a href="https://www.linkedin.com/in/nileshpardeshi" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 hover:text-aqua-600 dark:hover:text-aqua-400 transition-colors">
-                <Linkedin className="w-4 h-4 shrink-0 text-slate-400" />
+              <a href="https://www.linkedin.com/in/nileshpardeshi" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-muted-foreground hover:text-aqua-600 dark:hover:text-aqua-400 transition-colors">
+                <Linkedin className="w-4 h-4 shrink-0 text-muted-foreground" />
                 <span className="truncate">nileshpardeshi</span>
               </a>
             </div>
@@ -129,7 +129,7 @@ export function Settings() {
         </div>
         
         {/* Footer Note */}
-        <div className="mt-8 text-center flex items-center justify-center gap-2 text-sm text-slate-500">
+        <div className="mt-8 text-center flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Code2 className="w-4 h-4" />
           <span>Crafted with care by Nilesh Pardeshi</span>
         </div>

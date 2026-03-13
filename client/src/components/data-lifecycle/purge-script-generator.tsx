@@ -113,17 +113,17 @@ export function PurgeScriptGenerator() {
     <div className="space-y-6">
       {/* Rule Selector */}
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1.5 flex items-center gap-1.5">
+        <label className="block text-xs font-medium text-foreground mb-1.5 flex items-center gap-1.5">
           <FileCode className="w-3.5 h-3.5" />
           Select Retention Rule
         </label>
         {isLoading ? (
-          <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             Loading rules...
           </div>
         ) : activeRules.length === 0 ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700 flex items-center gap-2">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             <div>
               <p className="font-medium">No active retention rules found</p>
@@ -134,7 +134,7 @@ export function PurgeScriptGenerator() {
           <select
             value={selectedRuleId}
             onChange={(e) => handleRuleSelect(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+            className="w-full px-3 py-2.5 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
           >
             <option value="">-- Select a rule ({activeRules.length} active) --</option>
             {activeRules.map((rule) => {
@@ -151,39 +151,39 @@ export function PurgeScriptGenerator() {
 
       {/* Selected Rule Details */}
       {selectedRule && selectedConfig && (
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+        <div className="bg-muted/50 border border-border rounded-lg p-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div>
-              <span className="text-slate-500 font-medium">Table</span>
-              <p className="font-mono font-semibold text-slate-800 mt-0.5">
+              <span className="text-muted-foreground font-medium">Table</span>
+              <p className="font-mono font-semibold text-foreground mt-0.5">
                 {selectedRule.targetTable}
               </p>
             </div>
             <div>
-              <span className="text-slate-500 font-medium">Retention</span>
-              <p className="font-semibold text-slate-800 mt-0.5">
+              <span className="text-muted-foreground font-medium">Retention</span>
+              <p className="font-semibold text-foreground mt-0.5">
                 {selectedConfig.retentionPeriod} {selectedConfig.retentionUnit}
               </p>
             </div>
             <div>
-              <span className="text-slate-500 font-medium">Date Column</span>
-              <p className="font-mono font-semibold text-slate-800 mt-0.5">
+              <span className="text-muted-foreground font-medium">Date Column</span>
+              <p className="font-mono font-semibold text-foreground mt-0.5">
                 {selectedConfig.retentionColumn}
               </p>
             </div>
             <div>
-              <span className="text-slate-500 font-medium">Priority</span>
-              <p className="font-semibold text-slate-800 mt-0.5 capitalize">
+              <span className="text-muted-foreground font-medium">Priority</span>
+              <p className="font-semibold text-foreground mt-0.5 capitalize">
                 {selectedConfig.priority}
               </p>
             </div>
           </div>
           {selectedConfig.conditions.length > 0 && (
             <div className="mt-2 text-xs">
-              <span className="text-slate-500 font-medium">Conditions:</span>
+              <span className="text-muted-foreground font-medium">Conditions:</span>
               <div className="mt-1 space-y-0.5">
                 {selectedConfig.conditions.map((c, i) => (
-                  <code key={i} className="block font-mono text-slate-700 bg-card px-2 py-0.5 rounded border border-slate-200">
+                  <code key={i} className="block font-mono text-foreground bg-card px-2 py-0.5 rounded border border-border">
                     {i > 0 ? `${c.conjunction} ` : ''}{c.column} {c.operator}
                     {c.operator !== 'IS NULL' && c.operator !== 'IS NOT NULL' && ` '${c.value}'`}
                   </code>
@@ -203,7 +203,7 @@ export function PurgeScriptGenerator() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Batch Size */}
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground mb-1.5">
             Batch Size
           </label>
           <div className="flex gap-1.5 flex-wrap">
@@ -214,8 +214,8 @@ export function PurgeScriptGenerator() {
                 className={cn(
                   'px-2.5 py-2 text-xs font-medium rounded-lg border transition-all',
                   batchSize === opt.value
-                    ? 'bg-aqua-50 border-aqua-300 text-aqua-700 shadow-sm'
-                    : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-aqua-50 dark:bg-aqua-900/20 border-aqua-300 dark:border-aqua-700 text-aqua-700 dark:text-aqua-400 shadow-sm'
+                    : 'bg-card border-border text-muted-foreground hover:bg-muted/50'
                 )}
               >
                 {opt.label}
@@ -226,13 +226,13 @@ export function PurgeScriptGenerator() {
 
         {/* SQL Dialect Override */}
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground mb-1.5">
             SQL Dialect
           </label>
           <select
             value={dialect}
             onChange={(e) => setDialect(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-card text-slate-700 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
+            className="w-full px-3 py-2.5 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500"
           >
             {DIALECT_OPTIONS.map((d) => (
               <option key={d.value} value={d.value}>{d.label}</option>
@@ -242,7 +242,7 @@ export function PurgeScriptGenerator() {
 
         {/* Mode Toggle */}
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground mb-1.5">
             Mode
           </label>
           <div className="flex gap-2">
@@ -251,8 +251,8 @@ export function PurgeScriptGenerator() {
               className={cn(
                 'flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-lg border transition-all',
                 dryRun
-                  ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-sm'
-                  : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
+                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400 shadow-sm'
+                  : 'bg-card border-border text-muted-foreground hover:bg-muted/50'
               )}
             >
               <Shield className="w-3.5 h-3.5" />
@@ -263,8 +263,8 @@ export function PurgeScriptGenerator() {
               className={cn(
                 'flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-lg border transition-all',
                 !dryRun
-                  ? 'bg-red-50 border-red-300 text-red-700 shadow-sm'
-                  : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
+                  ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 shadow-sm'
+                  : 'bg-card border-border text-muted-foreground hover:bg-muted/50'
               )}
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -282,7 +282,7 @@ export function PurgeScriptGenerator() {
           className={cn(
             'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
             !selectedRule || generatePurgeScript.isPending
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              ? 'bg-muted text-muted-foreground cursor-not-allowed'
               : dryRun
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                 : 'bg-red-600 text-white hover:bg-red-700'
@@ -311,7 +311,7 @@ export function PurgeScriptGenerator() {
 
       {/* Error Display */}
       {generatePurgeScript.isError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 flex items-center gap-2">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
           Failed to generate script. Please check the rule configuration and try again.
         </div>
@@ -322,18 +322,18 @@ export function PurgeScriptGenerator() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h4 className="text-xs font-semibold text-slate-700">
+              <h4 className="text-xs font-semibold text-foreground">
                 Generated {scriptMeta.dryRun ? 'Dry Run' : 'Purge'} Script
               </h4>
               <span className={cn(
                 'px-2 py-0.5 text-[10px] font-bold rounded',
                 scriptMeta.dryRun
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-red-100 text-red-700'
+                  ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400'
+                  : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'
               )}>
                 {scriptMeta.dryRun ? 'DRY RUN' : 'LIVE DELETE'}
               </span>
-              <span className="text-[10px] text-slate-400 flex items-center gap-1">
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" />
                 {new Date().toLocaleTimeString()}
               </span>
@@ -341,7 +341,7 @@ export function PurgeScriptGenerator() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 {copied ? (
                   <>
@@ -357,7 +357,7 @@ export function PurgeScriptGenerator() {
               </button>
               <button
                 onClick={handleDownload}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 Download .sql
@@ -370,7 +370,7 @@ export function PurgeScriptGenerator() {
           </pre>
 
           {/* Script Info */}
-          <div className="flex items-center gap-4 text-[10px] text-slate-400">
+          <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
             <span>Table: <span className="font-mono">{scriptMeta.targetTable}</span></span>
             <span>Dialect: {dialect}</span>
             <span>Batch: {batchSize.toLocaleString()}</span>

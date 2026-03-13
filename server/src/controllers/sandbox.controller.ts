@@ -51,9 +51,25 @@ export const cleanup = asyncHandler(async (_req: Request, res: Response) => {
 // ---------- Promote Sandbox to Real Tables ----------
 
 export const promote = asyncHandler(async (req: Request, res: Response) => {
+  const projectId = req.params.projectId as string;
   const { tableNames } = req.body;
 
   const result = await sandboxService.promoteSandbox({
+    projectId,
+    tableNames: tableNames || [],
+  });
+
+  res.json({ success: true, data: result });
+});
+
+// ---------- Cleanup Promoted (Real) Tables ----------
+
+export const cleanupPromoted = asyncHandler(async (req: Request, res: Response) => {
+  const projectId = req.params.projectId as string;
+  const { tableNames } = req.body;
+
+  const result = await sandboxService.cleanupPromotedTables({
+    projectId,
     tableNames: tableNames || [],
   });
 

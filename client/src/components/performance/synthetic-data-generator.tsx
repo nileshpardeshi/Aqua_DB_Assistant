@@ -1272,8 +1272,8 @@ export function SyntheticDataGenerator() {
           className={cn(
             'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all',
             mode === 'single'
-              ? 'bg-aqua-50 border-aqua-300 text-aqua-700 shadow-sm'
-              : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
+              ? 'bg-aqua-50 dark:bg-aqua-950/30 border-aqua-300 dark:border-aqua-700 text-aqua-700 dark:text-aqua-300 shadow-sm'
+              : 'bg-card border-border text-muted-foreground hover:bg-muted/50'
           )}
         >
           <Table2 className="w-4 h-4" />
@@ -1284,8 +1284,8 @@ export function SyntheticDataGenerator() {
           className={cn(
             'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all',
             mode === 'multi'
-              ? 'bg-aqua-50 border-aqua-300 text-aqua-700 shadow-sm'
-              : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
+              ? 'bg-aqua-50 dark:bg-aqua-950/30 border-aqua-300 dark:border-aqua-700 text-aqua-700 dark:text-aqua-300 shadow-sm'
+              : 'bg-card border-border text-muted-foreground hover:bg-muted/50'
           )}
         >
           <Layers className="w-4 h-4" />
@@ -1294,14 +1294,14 @@ export function SyntheticDataGenerator() {
 
         {/* Script Style Toggle */}
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-slate-500">Script Style:</span>
+          <span className="text-xs text-muted-foreground">Script Style:</span>
           <button
             onClick={() => { setScriptStyle('bulk'); setGeneratedSQL(''); }}
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-all',
               scriptStyle === 'bulk'
-                ? 'bg-aqua-50 border-aqua-300 text-aqua-700'
-                : 'bg-card border-slate-200 text-slate-500 hover:bg-slate-50'
+                ? 'bg-aqua-50 dark:bg-aqua-950/30 border-aqua-300 dark:border-aqua-700 text-aqua-700'
+                : 'bg-card border-border text-muted-foreground hover:bg-muted/50'
             )}
             title="Bulk INSERT ... SELECT FROM generate_series() — fast for large datasets"
           >
@@ -1313,8 +1313,8 @@ export function SyntheticDataGenerator() {
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-all',
               scriptStyle === 'individual'
-                ? 'bg-aqua-50 border-aqua-300 text-aqua-700'
-                : 'bg-card border-slate-200 text-slate-500 hover:bg-slate-50'
+                ? 'bg-aqua-50 dark:bg-aqua-950/30 border-aqua-300 dark:border-aqua-700 text-aqua-700'
+                : 'bg-card border-border text-muted-foreground hover:bg-muted/50'
             )}
             title="Individual INSERT VALUES — readable, max 10K rows"
           >
@@ -1326,9 +1326,9 @@ export function SyntheticDataGenerator() {
 
       {/* Individual INSERT warning */}
       {scriptStyle === 'individual' && (
-        <div className="flex items-start gap-3 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-start gap-3 px-4 py-2.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
           <FileText className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-blue-700">
+          <p className="text-xs text-blue-700 dark:text-blue-300">
             <strong>Individual mode</strong> generates separate INSERT VALUES statements (batched 100/INSERT). Capped at 10,000 rows per table for script size.
             Use <strong>Bulk</strong> mode for larger datasets.
           </p>
@@ -1337,11 +1337,11 @@ export function SyntheticDataGenerator() {
 
       {/* FK Warning Banner for Single Mode */}
       {mode === 'single' && hasFKColumns && (
-        <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
+        <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
           <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-medium text-amber-800">Foreign Key Columns Detected</p>
-            <p className="text-xs text-amber-700 mt-0.5">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Foreign Key Columns Detected</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
               This table has FK references. For correct referential integrity, consider using <strong>Multi-Table (FK Chain)</strong> mode to generate parent data first.
               In single-table mode, FK columns will reference existing data in the parent table.
             </p>
@@ -1351,7 +1351,7 @@ export function SyntheticDataGenerator() {
 
       {/* Distribution */}
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1.5">Data Distribution</label>
+        <label className="block text-xs font-medium text-foreground mb-1.5">Data Distribution</label>
         <div className="grid grid-cols-3 gap-3">
           {DISTRIBUTION_OPTIONS.map(opt => {
             const Icon = opt.icon;
@@ -1362,14 +1362,14 @@ export function SyntheticDataGenerator() {
                 className={cn(
                   'flex items-center gap-3 px-4 py-3 rounded-lg border transition-all text-left',
                   distribution === opt.value
-                    ? 'bg-aqua-50 border-aqua-300 shadow-sm'
-                    : 'bg-card border-slate-200 hover:bg-slate-50'
+                    ? 'bg-aqua-50 dark:bg-aqua-950/30 border-aqua-300 dark:border-aqua-700 shadow-sm'
+                    : 'bg-card border-border hover:bg-muted/50'
                 )}
               >
-                <Icon className={cn('w-4 h-4 flex-shrink-0', distribution === opt.value ? 'text-aqua-600' : 'text-slate-400')} />
+                <Icon className={cn('w-4 h-4 flex-shrink-0', distribution === opt.value ? 'text-aqua-600' : 'text-muted-foreground')} />
                 <div>
-                  <p className={cn('text-sm font-medium', distribution === opt.value ? 'text-aqua-700' : 'text-slate-700')}>{opt.label}</p>
-                  <p className="text-[10px] text-slate-500">{opt.description}</p>
+                  <p className={cn('text-sm font-medium', distribution === opt.value ? 'text-aqua-700 dark:text-aqua-300' : 'text-foreground')}>{opt.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{opt.description}</p>
                 </div>
               </button>
             );
@@ -1383,12 +1383,12 @@ export function SyntheticDataGenerator() {
           {/* Table Selection & Row Count */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Select Table</label>
+              <label className="block text-xs font-medium text-foreground mb-1.5">Select Table</label>
               <select
                 value={selectedTableId}
                 onChange={e => handleSelectTable(e.target.value)}
                 disabled={tablesLoading}
-                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
+                className="w-full text-sm border border-border rounded-lg px-3 py-2.5 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 transition-all"
               >
                 <option value="">-- Select a table from schema --</option>
                 {schemaTables?.map((t: Table) => (
@@ -1399,7 +1399,7 @@ export function SyntheticDataGenerator() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Number of Rows</label>
+              <label className="block text-xs font-medium text-foreground mb-1.5">Number of Rows</label>
               <div className="flex gap-2 items-center">
                 {ROW_COUNT_PRESETS.map(opt => (
                   <button
@@ -1408,8 +1408,8 @@ export function SyntheticDataGenerator() {
                     className={cn(
                       'px-3 py-2 text-xs font-medium rounded-lg border transition-all',
                       rowCount === opt.value && !customRowCount
-                        ? 'bg-aqua-50 border-aqua-300 text-aqua-700 shadow-sm'
-                        : 'bg-card border-slate-200 text-slate-600 hover:bg-slate-50'
+                        ? 'bg-aqua-50 dark:bg-aqua-950/30 border-aqua-300 dark:border-aqua-700 text-aqua-700 dark:text-aqua-300 shadow-sm'
+                        : 'bg-card border-border text-muted-foreground hover:bg-muted/50'
                     )}
                   >
                     {opt.label}
@@ -1422,8 +1422,8 @@ export function SyntheticDataGenerator() {
                   placeholder="Custom"
                   min={1}
                   className={cn(
-                    'w-24 text-xs border rounded-lg px-2 py-2 bg-card text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-aqua-500/30',
-                    customRowCount ? 'border-aqua-300' : 'border-slate-200'
+                    'w-24 text-xs border rounded-lg px-2 py-2 bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-aqua-500/30',
+                    customRowCount ? 'border-aqua-300' : 'border-border'
                   )}
                 />
               </div>
@@ -1458,7 +1458,7 @@ export function SyntheticDataGenerator() {
               onChange={e => { handleAddMultiTable(e.target.value); e.target.value = ''; }}
               value=""
               disabled={tablesLoading}
-              className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2.5 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30"
+              className="flex-1 text-sm border border-border rounded-lg px-3 py-2.5 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30"
             >
               <option value="">+ Add table to generation chain...</option>
               {schemaTables?.filter((t: Table) => !multiTables.some(mt => mt.tableName === t.name)).map((t: Table) => (
@@ -1470,7 +1470,7 @@ export function SyntheticDataGenerator() {
             <button
               onClick={handleAutoDetectFKChain}
               disabled={!schemaTables || !relationships}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
             >
               <Link2 className="w-3.5 h-3.5" />
               Auto-Detect FK Chain
@@ -1479,11 +1479,11 @@ export function SyntheticDataGenerator() {
 
           {/* Multi-table Insert Order Info */}
           {multiTables.length > 1 && (
-            <div className="flex items-start gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
               <Link2 className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-blue-800">Insert Order (Topologically Sorted)</p>
-                <p className="text-xs text-blue-700 mt-0.5">
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
                   {resolveInsertOrder(multiTables).map((t, i) => (
                     <span key={t.tableName}>
                       {i > 0 && ' → '}
@@ -1498,32 +1498,32 @@ export function SyntheticDataGenerator() {
 
           {/* Table Cards */}
           {multiTables.map((tbl, tblIdx) => (
-            <div key={tbl.tableName} className="border border-slate-200 rounded-lg overflow-hidden bg-card">
+            <div key={tbl.tableName} className="border border-border rounded-lg overflow-hidden bg-card">
               {/* Table Header */}
               <div
-                className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200 cursor-pointer"
+                className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border cursor-pointer"
                 onClick={() => handleToggleMultiTable(tblIdx)}
               >
                 <div className="flex items-center gap-3">
-                  {tbl.expanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                  {tbl.expanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                   <Database className="w-4 h-4 text-aqua-600" />
-                  <span className="text-sm font-semibold text-slate-700">{tbl.tableName}</span>
-                  <span className="text-xs text-slate-500">{tbl.columns.length} columns</span>
+                  <span className="text-sm font-semibold text-foreground">{tbl.tableName}</span>
+                  <span className="text-xs text-muted-foreground">{tbl.columns.length} columns</span>
                   {tbl.columns.some(c => c.isForeignKey) && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 rounded-full">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 dark:text-amber-300 rounded-full">
                       <Link2 className="w-3 h-3" /> FK refs
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-slate-500">Rows:</label>
+                    <label className="text-xs text-muted-foreground">Rows:</label>
                     <input
                       type="number"
                       value={tbl.rowCount}
                       onChange={e => handleUpdateMultiTableRows(tblIdx, parseInt(e.target.value) || 100)}
                       min={1}
-                      className="w-24 text-xs border border-slate-200 rounded px-2 py-1 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
+                      className="w-24 text-xs border border-border rounded px-2 py-1 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
                     />
                   </div>
                   <button
@@ -1555,7 +1555,7 @@ export function SyntheticDataGenerator() {
 
       {/* ════════════════════ FK TYPE MISMATCH WARNINGS ════════════════════ */}
       {fkTypeMismatches.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 space-y-1">
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 space-y-1">
           <div className="flex items-center gap-2 text-sm font-semibold text-red-800">
             <AlertTriangle className="w-4 h-4" />
             FK Type Mismatch — Fix before generating
@@ -1576,7 +1576,7 @@ export function SyntheticDataGenerator() {
           className={cn(
             'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
             (mode === 'single' && !tableName.trim()) || (mode === 'multi' && multiTables.length === 0) || fkTypeMismatches.length > 0
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              ? 'bg-muted text-muted-foreground cursor-not-allowed'
               : 'bg-aqua-600 text-white hover:bg-aqua-700'
           )}
         >
@@ -1587,7 +1587,7 @@ export function SyntheticDataGenerator() {
         {mode === 'single' && columns.length > 0 && (
           <button
             onClick={() => setShowPreview(!showPreview)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <Hash className="w-3.5 h-3.5" />
             {showPreview ? 'Hide' : 'Show'} Preview
@@ -1598,14 +1598,14 @@ export function SyntheticDataGenerator() {
           <>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? 'Copied!' : 'Copy SQL'}
             </button>
             <button
               onClick={handleDownload}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
               Download .sql
@@ -1644,10 +1644,10 @@ export function SyntheticDataGenerator() {
           {/* SQL Output */}
           <div className={hasFKs ? 'lg:col-span-2' : ''}>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-semibold text-slate-700">
+              <h4 className="text-xs font-semibold text-foreground">
                 Generated PostgreSQL Script ({scriptStyle === 'bulk' ? 'Bulk' : 'Individual'})
               </h4>
-              <span className="text-[10px] text-slate-500">{generatedSQL.split('\n').length} lines</span>
+              <span className="text-[10px] text-muted-foreground">{generatedSQL.split('\n').length} lines</span>
             </div>
             <div className="bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
               <pre className="p-4 text-xs text-green-400 font-mono overflow-x-auto max-h-[500px] overflow-y-auto whitespace-pre leading-relaxed">
@@ -1660,13 +1660,13 @@ export function SyntheticDataGenerator() {
           {hasFKs && (
             <div className="lg:col-span-1">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-semibold text-slate-700">Execution Plan</h4>
-                <span className="text-[10px] text-slate-500">{ordered.length} tables</span>
+                <h4 className="text-xs font-semibold text-foreground">Execution Plan</h4>
+                <span className="text-[10px] text-muted-foreground">{ordered.length} tables</span>
               </div>
-              <div className="border border-slate-200 rounded-lg bg-card overflow-hidden">
+              <div className="border border-border rounded-lg bg-card overflow-hidden">
                 {/* Execution Order */}
-                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                <div className="px-4 py-3 bg-muted/50 border-b border-border">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                     Execution Order (Topological Sort)
                   </p>
                   <div className="space-y-0">
@@ -1681,10 +1681,10 @@ export function SyntheticDataGenerator() {
                             <span className={cn(
                               'flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
                               isParent && !isChild
-                                ? 'bg-blue-100 text-blue-700'
+                                ? 'bg-blue-100 text-blue-700 dark:text-blue-300'
                                 : isChild
-                                  ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-slate-100 text-slate-600'
+                                  ? 'bg-amber-100 text-amber-700 dark:text-amber-300'
+                                  : 'bg-muted text-muted-foreground'
                             )}>
                               {idx + 1}
                             </span>
@@ -1693,12 +1693,12 @@ export function SyntheticDataGenerator() {
                               <div className="flex items-center gap-1.5">
                                 <Database className={cn(
                                   'w-3 h-3 flex-shrink-0',
-                                  isParent && !isChild ? 'text-blue-500' : isChild ? 'text-amber-500' : 'text-slate-400'
+                                  isParent && !isChild ? 'text-blue-500' : isChild ? 'text-amber-500' : 'text-muted-foreground'
                                 )} />
-                                <span className="text-xs font-semibold text-slate-700 truncate">{t.tableName}</span>
+                                <span className="text-xs font-semibold text-foreground truncate">{t.tableName}</span>
                               </div>
                               <div className="flex items-center gap-2 ml-4.5 mt-0.5">
-                                <span className="text-[10px] text-slate-500">
+                                <span className="text-[10px] text-muted-foreground">
                                   {t.rowCount.toLocaleString()} rows
                                 </span>
                                 {isParent && !isChild && (
@@ -1722,7 +1722,7 @@ export function SyntheticDataGenerator() {
                           {/* Arrow between steps */}
                           {idx < ordered.length - 1 && (
                             <div className="flex items-center ml-2 py-0.5">
-                              <div className="w-0.5 h-3 bg-slate-300 ml-[9px]" />
+                              <div className="w-0.5 h-3 bg-muted-foreground/40 ml-[9px]" />
                             </div>
                           )}
                         </div>
@@ -1733,27 +1733,27 @@ export function SyntheticDataGenerator() {
 
                 {/* FK Relationships */}
                 <div className="px-4 py-3">
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                     FK Relationships
                   </p>
                   <div className="space-y-2">
                     {fkEdges.map((edge, idx) => (
                       <div key={idx} className="flex items-center gap-1.5 text-[11px]">
                         {/* Parent */}
-                        <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-blue-700 font-mono">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded text-blue-700 dark:text-blue-300 font-mono">
                           <Lock className="w-2.5 h-2.5" />
                           <span className="font-semibold">{edge.from}</span>
                           <span className="text-blue-500">.{edge.refCol}</span>
                         </div>
                         {/* Arrow */}
-                        <div className="flex items-center text-slate-400">
-                          <div className="w-3 h-px bg-slate-300" />
-                          <svg className="w-2.5 h-2.5 text-slate-400 -ml-px" fill="none" viewBox="0 0 8 8">
+                        <div className="flex items-center text-muted-foreground">
+                          <div className="w-3 h-px bg-muted-foreground/40" />
+                          <svg className="w-2.5 h-2.5 text-muted-foreground -ml-px" fill="none" viewBox="0 0 8 8">
                             <path d="M1 1l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </div>
                         {/* Child */}
-                        <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-amber-700 font-mono">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded text-amber-700 dark:text-amber-300 font-mono">
                           <Link2 className="w-2.5 h-2.5" />
                           <span className="font-semibold">{edge.to}</span>
                           <span className="text-amber-500">.{edge.fkCol}</span>
@@ -1764,8 +1764,8 @@ export function SyntheticDataGenerator() {
                 </div>
 
                 {/* Summary */}
-                <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200">
-                  <div className="flex items-center justify-between text-[10px] text-slate-500">
+                <div className="px-4 py-2.5 bg-muted/50 border-t border-border">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                     <span>{ordered.length} tables · {fkEdges.length} FK reference{fkEdges.length !== 1 ? 's' : ''}</span>
                     <span>
                       Total: {ordered.reduce((sum, t) => sum + t.rowCount, 0).toLocaleString()} rows
@@ -1813,18 +1813,18 @@ function ColumnConfigTable({
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
+        <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
           <Columns3 className="w-3.5 h-3.5" />
           Column Configuration
         </label>
-        <span className="text-[10px] text-slate-500">
+        <span className="text-[10px] text-muted-foreground">
           {columns.length} column{columns.length !== 1 ? 's' : ''}
         </span>
       </div>
 
-      <div className="bg-card border border-slate-200 rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
         {/* Header */}
-        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/50 border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
           <div className="col-span-2">Column</div>
           <div className="col-span-2">Type</div>
           <div className="col-span-4">Generator</div>
@@ -1840,14 +1840,14 @@ function ColumnConfigTable({
           const hasJava = !!genDef?.javaExpression;
 
           return (
-            <div key={idx} className="border-b border-slate-100 last:border-b-0">
+            <div key={idx} className="border-b border-border/50 last:border-b-0">
               {/* Main Row */}
-              <div className="grid grid-cols-12 gap-2 px-4 py-2 items-center hover:bg-slate-50/50">
+              <div className="grid grid-cols-12 gap-2 px-4 py-2 items-center hover:bg-muted/30">
                 <div className="col-span-2">
-                  <span className="text-sm font-mono text-slate-700">{colCfg.name}</span>
+                  <span className="text-sm font-mono text-foreground">{colCfg.name}</span>
                 </div>
                 <div className="col-span-2">
-                  <span className="text-[11px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded truncate block">
+                  <span className="text-[11px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded truncate block">
                     {colCfg.type}
                   </span>
                 </div>
@@ -1857,7 +1857,7 @@ function ColumnConfigTable({
                     onChange={e => onUpdateGenerator(idx, e.target.value)}
                     disabled={colCfg.isConstant}
                     className={cn(
-                      'w-full text-xs border border-slate-200 rounded px-2 py-1.5 bg-card text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30',
+                      'w-full text-xs border border-border rounded px-2 py-1.5 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-aqua-500/30',
                       colCfg.isConstant && 'opacity-50'
                     )}
                   >
@@ -1876,7 +1876,7 @@ function ColumnConfigTable({
                       onClick={() => onToggleConstant(idx)}
                       className={cn(
                         'w-8 h-4 rounded-full transition-colors relative',
-                        colCfg.isConstant ? 'bg-aqua-500' : 'bg-slate-300'
+                        colCfg.isConstant ? 'bg-aqua-500' : 'bg-muted-foreground/40'
                       )}
                     >
                       <span className={cn(
@@ -1890,19 +1890,19 @@ function ColumnConfigTable({
                         value={colCfg.constantValue || ''}
                         onChange={e => onSetConstantValue(idx, e.target.value)}
                         placeholder="Value"
-                        className="w-20 text-[11px] border border-slate-200 rounded px-1.5 py-0.5 bg-card text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
+                        className="w-20 text-[11px] border border-border rounded px-1.5 py-0.5 bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
                       />
                     )}
                   </div>
                 </div>
                 <div className="col-span-2 flex items-center gap-1 flex-wrap">
                   {colCfg.isPrimaryKey && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold bg-blue-100 text-blue-700 rounded">
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold bg-blue-100 text-blue-700 dark:text-blue-300 rounded">
                       <Lock className="w-2.5 h-2.5" /> PK
                     </span>
                   )}
                   {colCfg.isForeignKey && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 text-amber-700 rounded">
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 text-amber-700 dark:text-amber-300 rounded">
                       <Link2 className="w-2.5 h-2.5" /> FK
                     </span>
                   )}
@@ -1925,7 +1925,7 @@ function ColumnConfigTable({
                     typeCheck && !typeCheck.compatible ? 'border-red-400' : 'border-amber-300'
                   )}>
                     <div className="flex items-center gap-1">
-                      <label className="text-[10px] text-slate-500 whitespace-nowrap font-medium">
+                      <label className="text-[10px] text-muted-foreground whitespace-nowrap font-medium">
                         Parent Table:
                       </label>
                       <select
@@ -1948,7 +1948,7 @@ function ColumnConfigTable({
                             }
                           }
                         }}
-                        className="text-[11px] border border-amber-200 rounded px-1.5 py-1 bg-amber-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400/50 min-w-[140px]"
+                        className="text-[11px] border border-amber-200 rounded px-1.5 py-1 bg-amber-50 text-foreground focus:outline-none focus:ring-1 focus:ring-amber-400/50 min-w-[140px]"
                       >
                         <option value="">-- Select parent table --</option>
                         {schemaTables?.map((t: Table) => (
@@ -1959,14 +1959,14 @@ function ColumnConfigTable({
                       </select>
                     </div>
                     <div className="flex items-center gap-1">
-                      <label className="text-[10px] text-slate-500 whitespace-nowrap font-medium">
+                      <label className="text-[10px] text-muted-foreground whitespace-nowrap font-medium">
                         Parent Column:
                       </label>
                       <select
                         value={colCfg.params.refColumn || ''}
                         onChange={e => onUpdateParam(idx, 'refColumn', e.target.value)}
                         className={cn(
-                          'text-[11px] border rounded px-1.5 py-1 text-slate-700 focus:outline-none focus:ring-1 min-w-[120px]',
+                          'text-[11px] border rounded px-1.5 py-1 text-foreground focus:outline-none focus:ring-1 min-w-[120px]',
                           typeCheck && !typeCheck.compatible
                             ? 'border-red-300 bg-red-50 focus:ring-red-400/50'
                             : 'border-amber-200 bg-amber-50 focus:ring-amber-400/50'
@@ -2010,14 +2010,14 @@ function ColumnConfigTable({
                   <div className="ml-[16.67%] pl-3 border-l-2 border-aqua-200 flex items-center gap-2.5 flex-wrap">
                     {genDef?.params?.map(paramDef => (
                       <div key={paramDef.key} className="flex items-center gap-1">
-                        <label className="text-[10px] text-slate-500 whitespace-nowrap font-medium">
+                        <label className="text-[10px] text-muted-foreground whitespace-nowrap font-medium">
                           {paramDef.label}:
                         </label>
                         {paramDef.type === 'select' ? (
                           <select
                             value={colCfg.params[paramDef.key] ?? paramDef.defaultValue ?? ''}
                             onChange={e => onUpdateParam(idx, paramDef.key, e.target.value)}
-                            className="text-[11px] border border-slate-200 rounded px-1.5 py-0.5 bg-card text-slate-700 focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
+                            className="text-[11px] border border-border rounded px-1.5 py-0.5 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-aqua-500/30"
                           >
                             {paramDef.options?.map(opt => (
                               <option key={opt} value={opt}>{opt}</option>
@@ -2030,7 +2030,7 @@ function ColumnConfigTable({
                             onChange={e => onUpdateParam(idx, paramDef.key, e.target.value)}
                             placeholder={paramDef.placeholder}
                             className={cn(
-                              'text-[11px] font-mono border border-slate-200 rounded px-1.5 py-0.5 bg-card text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-aqua-500/30',
+                              'text-[11px] font-mono border border-border rounded px-1.5 py-0.5 bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-aqua-500/30',
                               paramDef.width || 'w-24',
                             )}
                           />
@@ -2038,7 +2038,7 @@ function ColumnConfigTable({
                       </div>
                     ))}
                     {hasJava && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold bg-amber-50 text-amber-700 rounded font-mono max-w-[280px] truncate border border-amber-200">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold bg-amber-50 text-amber-700 dark:text-amber-300 rounded font-mono max-w-[280px] truncate border border-amber-200">
                         <Coffee className="w-3 h-3 flex-shrink-0" />
                         {genDef!.javaExpression}
                       </span>
@@ -2060,14 +2060,14 @@ function PreviewTable({ columns }: { columns: ColumnConfig[] }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-semibold text-slate-700">Sample Preview (5 rows)</h4>
+        <h4 className="text-xs font-semibold text-foreground">Sample Preview (5 rows)</h4>
       </div>
-      <div className="bg-card border border-slate-200 rounded-lg overflow-x-auto">
+      <div className="bg-card border border-border rounded-lg overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
+            <tr className="bg-muted/50 border-b border-border">
               {columns.map((c, i) => (
-                <th key={i} className="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">
+                <th key={i} className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">
                   {c.name}
                   {c.isPrimaryKey && <Lock className="w-2.5 h-2.5 inline ml-1 text-blue-500" />}
                   {c.isForeignKey && <Link2 className="w-2.5 h-2.5 inline ml-1 text-amber-500" />}
@@ -2077,9 +2077,9 @@ function PreviewTable({ columns }: { columns: ColumnConfig[] }) {
           </thead>
           <tbody>
             {Array.from({ length: 5 }, (_, rowIdx) => (
-              <tr key={rowIdx} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50">
+              <tr key={rowIdx} className="border-b border-border/50 last:border-b-0 hover:bg-muted/30">
                 {columns.map((c, colIdx) => (
-                  <td key={colIdx} className="px-3 py-2 text-slate-700 font-mono whitespace-nowrap">
+                  <td key={colIdx} className="px-3 py-2 text-foreground font-mono whitespace-nowrap">
                     {generateSampleValue(c.generator, c.params, rowIdx, c.isConstant, c.constantValue)}
                   </td>
                 ))}

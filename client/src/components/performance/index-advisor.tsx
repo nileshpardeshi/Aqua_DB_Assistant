@@ -364,7 +364,7 @@ export function IndexAdvisor() {
     <div className="space-y-6">
       {/* Query Input */}
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1.5 flex items-center gap-1.5">
+        <label className="block text-xs font-medium text-foreground mb-1.5 flex items-center gap-1.5">
           <Search className="w-3.5 h-3.5" />
           Paste Slow Queries
         </label>
@@ -374,7 +374,7 @@ export function IndexAdvisor() {
           placeholder={`-- Paste one or more slow queries here\nSELECT o.*, u.name FROM orders o\nJOIN users u ON u.id = o.customer_id\nWHERE o.created_at > '2025-01-01'\nORDER BY o.created_at DESC;\n\n-- Another slow query\nSELECT * FROM products\nWHERE category_id = 5 AND price BETWEEN 10 AND 100;`}
           rows={8}
           spellCheck={false}
-          className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
+          className="w-full px-4 py-3 text-sm font-mono bg-[#1e293b] text-slate-100 rounded-lg border border-slate-700 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-aqua-500/30 focus:border-aqua-500 resize-y selection:bg-aqua-500/30 caret-aqua-400"
         />
       </div>
 
@@ -386,7 +386,7 @@ export function IndexAdvisor() {
           className={cn(
             'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
             isAnalyzing || !projectId
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              ? 'bg-muted text-muted-foreground cursor-not-allowed'
               : 'bg-aqua-600 text-white hover:bg-aqua-700'
           )}
         >
@@ -405,14 +405,14 @@ export function IndexAdvisor() {
 
         <button
           onClick={handleLoadDemo}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
         >
           <FlaskConical className="w-4 h-4" />
           Load Demo
         </button>
 
         {isAnalyzing && (
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-muted-foreground">
             AI is analyzing query patterns and table structures...
           </span>
         )}
@@ -420,7 +420,7 @@ export function IndexAdvisor() {
 
       {/* Analysis Progress Stepper */}
       {isAnalyzing && (
-        <div className="bg-card border border-slate-200 rounded-xl p-4 space-y-3">
+        <div className="bg-card border border-border rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
             {ANALYSIS_STEPS.map((step, i) => {
               const StepIcon = step.icon;
@@ -433,22 +433,22 @@ export function IndexAdvisor() {
                       'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 flex-shrink-0',
                       isCompleted ? 'bg-aqua-500 text-white' :
                       isActive ? 'bg-aqua-100 text-aqua-700 ring-2 ring-aqua-500 animate-pulse' :
-                      'bg-slate-100 text-slate-400'
+                      'bg-muted text-muted-foreground'
                     )}>
                       {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <StepIcon className="w-4 h-4" />}
                     </div>
-                    <span className={cn('text-xs whitespace-nowrap', isActive ? 'text-aqua-700 font-medium' : isCompleted ? 'text-aqua-600' : 'text-slate-400')}>
+                    <span className={cn('text-xs whitespace-nowrap', isActive ? 'text-aqua-700 font-medium' : isCompleted ? 'text-aqua-600' : 'text-muted-foreground')}>
                       {step.label}
                     </span>
                   </div>
                   {i < ANALYSIS_STEPS.length - 1 && (
-                    <div className={cn('flex-1 h-0.5 min-w-[20px]', isCompleted ? 'bg-aqua-500' : 'bg-slate-200')} />
+                    <div className={cn('flex-1 h-0.5 min-w-[20px]', isCompleted ? 'bg-aqua-500' : 'bg-muted')} />
                   )}
                 </React.Fragment>
               );
             })}
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
             <div className="bg-gradient-to-r from-aqua-500 to-cyan-500 h-1.5 rounded-full transition-all duration-500"
                  style={{ width: `${((analysisStep + 1) / ANALYSIS_STEPS.length) * 100}%` }} />
           </div>
@@ -508,8 +508,8 @@ export function IndexAdvisor() {
                     { label: 'Tables Affected', value: tablesAffected, color: 'text-violet-600' },
                     { label: 'Redundant', value: redundantCount, color: 'text-orange-600' },
                   ].map(stat => (
-                    <div key={stat.label} className="bg-card border border-slate-200 rounded-lg p-3 text-center">
-                      <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">{stat.label}</p>
+                    <div key={stat.label} className="bg-card border border-border rounded-lg p-3 text-center">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">{stat.label}</p>
                       <p className={cn('text-lg font-bold', stat.color)}>{stat.value}</p>
                     </div>
                   ))}
@@ -517,8 +517,8 @@ export function IndexAdvisor() {
 
                 {/* Impact Distribution Charts */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="bg-card border border-slate-200 rounded-lg p-4">
-                    <h5 className="text-xs font-semibold text-slate-700 mb-3">Impact Distribution</h5>
+                  <div className="bg-card border border-border rounded-lg p-4">
+                    <h5 className="text-xs font-semibold text-foreground mb-3">Impact Distribution</h5>
                     <div className="h-52">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -535,14 +535,14 @@ export function IndexAdvisor() {
                       {impactChartData.map(d => (
                         <div key={d.name} className="flex items-center gap-1.5">
                           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.fill }} />
-                          <span className="text-xs text-slate-600">{d.name} ({d.value})</span>
+                          <span className="text-xs text-muted-foreground">{d.name} ({d.value})</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="bg-card border border-slate-200 rounded-lg p-4">
-                    <h5 className="text-xs font-semibold text-slate-700 mb-3">Indexes per Table</h5>
+                  <div className="bg-card border border-border rounded-lg p-4">
+                    <h5 className="text-xs font-semibold text-foreground mb-3">Indexes per Table</h5>
                     <div className="h-52">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={tableChartData}>
@@ -569,16 +569,16 @@ export function IndexAdvisor() {
               </h5>
               <div className="grid grid-cols-5 gap-2 text-center text-xs">
                 <div />
-                <div className="font-semibold text-slate-500 uppercase text-[10px]">Total</div>
-                <div className="font-semibold text-slate-500 uppercase text-[10px]">High</div>
-                <div className="font-semibold text-slate-500 uppercase text-[10px]">Medium</div>
-                <div className="font-semibold text-slate-500 uppercase text-[10px]">Low</div>
+                <div className="font-semibold text-muted-foreground uppercase text-[10px]">Total</div>
+                <div className="font-semibold text-muted-foreground uppercase text-[10px]">High</div>
+                <div className="font-semibold text-muted-foreground uppercase text-[10px]">Medium</div>
+                <div className="font-semibold text-muted-foreground uppercase text-[10px]">Low</div>
 
-                <div className="text-xs font-semibold text-slate-600 bg-slate-50 rounded-lg py-2">Before</div>
-                <div className="bg-card border border-slate-200 rounded-lg py-2 font-bold text-slate-800">{result.recommendations.length}</div>
-                <div className="bg-card border border-slate-200 rounded-lg py-2 font-bold text-red-600">{result.recommendations.filter(r => r.estimatedImpact === 'HIGH').length}</div>
-                <div className="bg-card border border-slate-200 rounded-lg py-2 font-bold text-amber-600">{result.recommendations.filter(r => r.estimatedImpact === 'MEDIUM').length}</div>
-                <div className="bg-card border border-slate-200 rounded-lg py-2 font-bold text-blue-600">{result.recommendations.filter(r => r.estimatedImpact === 'LOW').length}</div>
+                <div className="text-xs font-semibold text-muted-foreground bg-muted/50 rounded-lg py-2">Before</div>
+                <div className="bg-card border border-border rounded-lg py-2 font-bold text-foreground">{result.recommendations.length}</div>
+                <div className="bg-card border border-border rounded-lg py-2 font-bold text-red-600">{result.recommendations.filter(r => r.estimatedImpact === 'HIGH').length}</div>
+                <div className="bg-card border border-border rounded-lg py-2 font-bold text-amber-600">{result.recommendations.filter(r => r.estimatedImpact === 'MEDIUM').length}</div>
+                <div className="bg-card border border-border rounded-lg py-2 font-bold text-blue-600">{result.recommendations.filter(r => r.estimatedImpact === 'LOW').length}</div>
 
                 <div className="text-xs font-semibold text-aqua-700 bg-aqua-50 rounded-lg py-2">After</div>
                 {(() => {
@@ -600,7 +600,7 @@ export function IndexAdvisor() {
                       'border rounded-lg py-2 font-bold',
                       item.val < item.ref ? 'bg-green-50 border-green-200 text-green-700' :
                       item.val > item.ref ? 'bg-red-50 border-red-200 text-red-700' :
-                      'bg-card border-slate-200 text-slate-800'
+                      'bg-card border-border text-foreground'
                     )}>
                       {item.val}
                     </div>
@@ -611,7 +611,7 @@ export function IndexAdvisor() {
           )}
 
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-slate-800">
+            <h4 className="text-sm font-semibold text-foreground">
               Recommended Indexes ({displayResult.recommendations.length})
             </h4>
             <div className="flex items-center gap-2">
@@ -627,14 +627,14 @@ export function IndexAdvisor() {
               )}
               <button
                 onClick={handleExportDDL}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export DDL
               </button>
               <button
                 onClick={handleCopyAll}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 {copiedId === 'all' ? (
                   <>
@@ -669,7 +669,7 @@ export function IndexAdvisor() {
                 {/* Header */}
                 <button
                   onClick={() => toggleExpand(idx)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50/50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50/50 transition-colors"
                 >
                   <div
                     className={cn(
@@ -686,11 +686,11 @@ export function IndexAdvisor() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-800">
+                      <span className="text-sm font-semibold text-foreground">
                         {rec.table}
                       </span>
-                      <ArrowRight className="w-3 h-3 text-slate-400" />
-                      <span className="text-sm text-slate-600 font-mono">
+                      <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground font-mono">
                         ({rec.columns.join(', ')})
                       </span>
                       {rec.isUnique && (
@@ -704,13 +704,13 @@ export function IndexAdvisor() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5 truncate">
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
                       {rec.reason}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-[10px] text-slate-500 font-mono">
+                    <span className="text-[10px] text-muted-foreground font-mono">
                       {rec.type}
                     </span>
                     <span
@@ -722,7 +722,7 @@ export function IndexAdvisor() {
                       {impactKey}
                     </span>
                     {/* Impact progress bar */}
-                    <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
                       <div className={cn('h-full rounded-full',
                         impactKey === 'HIGH' ? 'bg-red-500 w-full' :
                         impactKey === 'MEDIUM' ? 'bg-amber-500 w-3/5' :
@@ -734,18 +734,18 @@ export function IndexAdvisor() {
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100 px-4 py-3 space-y-3">
+                  <div className="border-t border-border/50 px-4 py-3 space-y-3">
                     <div>
-                      <p className="text-xs font-medium text-slate-600 mb-1">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
                         Why this index helps:
                       </p>
-                      <p className="text-sm text-slate-700">{rec.reason}</p>
+                      <p className="text-sm text-foreground">{rec.reason}</p>
                     </div>
 
                     {rec.writeOverheadImpact && (
                       <div className="flex items-center gap-3">
-                        <span className="text-xs font-medium text-slate-600 flex-shrink-0">Write Overhead:</span>
-                        <div className="flex-1 h-2 bg-slate-200 rounded-full max-w-[200px]">
+                        <span className="text-xs font-medium text-muted-foreground flex-shrink-0">Write Overhead:</span>
+                        <div className="flex-1 h-2 bg-muted rounded-full max-w-[200px]">
                           <div className={cn('h-2 rounded-full',
                             rec.writeOverheadImpact.toLowerCase().includes('minimal') || rec.writeOverheadImpact.toLowerCase().includes('low') ? 'bg-green-400 w-1/5' :
                             rec.writeOverheadImpact.toLowerCase().includes('moderate') || rec.writeOverheadImpact.toLowerCase().includes('medium') ? 'bg-amber-400 w-1/2' :
@@ -758,12 +758,12 @@ export function IndexAdvisor() {
 
                     {rec.queryPatterns && rec.queryPatterns.length > 0 && (
                       <div>
-                        <p className="text-xs font-medium text-slate-600 mb-1">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
                           Benefits these query patterns:
                         </p>
                         <ul className="space-y-1">
                           {rec.queryPatterns.map((qp, i) => (
-                            <li key={i} className="text-xs text-slate-600 font-mono bg-slate-50 rounded px-2 py-1">
+                            <li key={i} className="text-xs text-muted-foreground font-mono bg-muted/50 rounded px-2 py-1">
                               {qp}
                             </li>
                           ))}
@@ -773,7 +773,7 @@ export function IndexAdvisor() {
 
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-xs font-medium text-slate-600">
+                        <p className="text-xs font-medium text-muted-foreground">
                           CREATE INDEX Statement:
                         </p>
                         <button
@@ -781,7 +781,7 @@ export function IndexAdvisor() {
                             e.stopPropagation();
                             handleCopy(rec.createStatement, `idx-${idx}`);
                           }}
-                          className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-700 transition-colors"
+                          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                         >
                           {copiedId === `idx-${idx}` ? (
                             <>
@@ -812,7 +812,7 @@ export function IndexAdvisor() {
                           'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
                           isApplied
                             ? 'bg-green-100 text-green-700 border border-green-300'
-                            : 'bg-card text-slate-600 border border-slate-200 hover:bg-slate-50'
+                            : 'bg-card text-muted-foreground border border-border hover:bg-muted/50'
                         )}
                       >
                         {isApplied ? (
@@ -827,7 +827,7 @@ export function IndexAdvisor() {
                           </>
                         )}
                       </button>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-muted-foreground">
                         Mark indexes as applied, then re-analyze to see updated impact
                       </span>
                     </div>
@@ -840,7 +840,7 @@ export function IndexAdvisor() {
           {/* Redundant Indexes */}
           {displayResult.redundantIndexes && displayResult.redundantIndexes.length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-slate-800">
+              <h4 className="text-sm font-semibold text-foreground">
                 Potentially Redundant Indexes ({displayResult.redundantIndexes.length})
               </h4>
               {displayResult.redundantIndexes.map((ri, idx) => (

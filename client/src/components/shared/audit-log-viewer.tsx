@@ -21,12 +21,12 @@ const ACTION_CONFIG: Record<
   string,
   { label: string; color: string; bg: string; icon: React.ComponentType<{ className?: string }> }
 > = {
-  CREATE: { label: 'Create', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: Plus },
-  UPDATE: { label: 'Update', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200', icon: Pencil },
-  DELETE: { label: 'Delete', color: 'text-red-700', bg: 'bg-red-50 border-red-200', icon: Trash2 },
-  VIEW: { label: 'View', color: 'text-slate-700', bg: 'bg-slate-50 border-slate-200', icon: Eye },
-  EXPORT: { label: 'Export', color: 'text-violet-700', bg: 'bg-violet-50 border-violet-200', icon: Download },
-  UPLOAD: { label: 'Upload', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: Upload },
+  CREATE: { label: 'Create', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800', icon: Plus },
+  UPDATE: { label: 'Update', color: 'text-blue-700 dark:text-blue-300', bg: 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800', icon: Pencil },
+  DELETE: { label: 'Delete', color: 'text-red-700 dark:text-red-300', bg: 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800', icon: Trash2 },
+  VIEW: { label: 'View', color: 'text-foreground', bg: 'bg-muted/50 border-border', icon: Eye },
+  EXPORT: { label: 'Export', color: 'text-violet-700 dark:text-violet-300', bg: 'bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-800', icon: Download },
+  UPLOAD: { label: 'Upload', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800', icon: Upload },
 };
 
 const ENTITY_TYPES = [
@@ -128,7 +128,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                 'inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors',
                 showFilters
                   ? 'bg-aqua-50 border-aqua-200 text-aqua-700'
-                  : 'bg-card border-border text-foreground hover:bg-slate-50'
+                  : 'bg-card border-border text-foreground hover:bg-muted/50'
               )}
             >
               <Filter className="w-4 h-4" />
@@ -141,7 +141,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
         </div>
         <button
           onClick={exportToCsv}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-slate-50 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
         >
           <Download className="w-4 h-4" />
           Export CSV
@@ -236,21 +236,21 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
           </div>
         ) : logs.length === 0 ? (
           <div className="p-8 text-center">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-              <Search className="w-6 h-6 text-slate-400" />
+            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
+              <Search className="w-6 h-6 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">No audit log entries found</p>
-            <p className="text-xs text-slate-400 mt-1">Try adjusting your filters</p>
+            <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border/50">
             {logs.map((log) => {
               const isExpanded = expandedRows.has(log.id);
               const actionCfg = ACTION_CONFIG[log.action] || ACTION_CONFIG.VIEW;
               const ActionIcon = actionCfg.icon;
 
               return (
-                <div key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                <div key={log.id} className="hover:bg-muted/30 transition-colors">
                   <button
                     onClick={() => toggleExpanded(log.id)}
                     className="flex items-center gap-4 w-full px-5 py-3.5 text-left"
@@ -288,7 +288,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
 
                     {/* Entity Type */}
                     <div className="flex-shrink-0 w-24">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 capitalize">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground capitalize">
                         {log.entityType}
                       </span>
                     </div>
@@ -304,7 +304,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
                   {/* Expanded Details */}
                   {isExpanded && (
                     <div className="px-5 pb-4 pl-14">
-                      <div className="bg-slate-50 rounded-lg p-4 space-y-2.5">
+                      <div className="bg-muted/50 rounded-lg p-4 space-y-2.5">
                         <div>
                           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
                             Details
@@ -354,7 +354,7 @@ export function AuditLogViewer({ projectId, compact = false }: AuditLogViewerPro
 
         {/* Pagination */}
         {meta.totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-slate-50">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-muted/50">
             <p className="text-xs text-muted-foreground">
               Page {meta.page} of {meta.totalPages} ({meta.total} entries)
             </p>
