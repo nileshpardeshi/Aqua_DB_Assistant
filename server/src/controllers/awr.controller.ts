@@ -234,7 +234,10 @@ export const analyzeIncident = asyncHandler(async (req: Request, res: Response) 
     return;
   }
 
-  // Validate each source has content
+  // Validate each source has content + enforce size limits
+  const MAX_PER_FILE_MB = 50;
+  const MAX_TOTAL_MB = 150;
+
   for (let i = 0; i < sources.length; i++) {
     if (!sources[i].content || typeof sources[i].content !== 'string') {
       res.status(400).json({
@@ -243,11 +246,34 @@ export const analyzeIncident = asyncHandler(async (req: Request, res: Response) 
       });
       return;
     }
+    const fileSizeMB = sources[i].content.length / (1024 * 1024);
+    if (fileSizeMB > MAX_PER_FILE_MB) {
+      res.status(413).json({
+        success: false,
+        error: {
+          code: 'FILE_TOO_LARGE',
+          message: `File "${sources[i].fileName || `source[${i}]`}" is ${fileSizeMB.toFixed(1)}MB — exceeds per-file limit of ${MAX_PER_FILE_MB}MB`,
+        },
+      });
+      return;
+    }
   }
 
   const aiStartTime = Date.now();
   const totalLines = sources.reduce((sum, s) => sum + s.content.split('\n').length, 0);
   const totalSizeKB = sources.reduce((sum, s) => sum + Math.round(s.content.length / 1024), 0);
+  const totalSizeMB = totalSizeKB / 1024;
+
+  if (totalSizeMB > MAX_TOTAL_MB) {
+    res.status(413).json({
+      success: false,
+      error: {
+        code: 'PAYLOAD_TOO_LARGE',
+        message: `Total upload is ${totalSizeMB.toFixed(1)}MB across ${sources.length} files — exceeds combined limit of ${MAX_TOTAL_MB}MB`,
+      },
+    });
+    return;
+  }
 
   try {
     // Step 1: Parse all sources in parallel

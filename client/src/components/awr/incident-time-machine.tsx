@@ -170,26 +170,54 @@ function CopyButton({ text }: { text: string }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
+const MAX_FILE_SIZE_MB = 50;
+const MAX_TOTAL_SIZE_MB = 150;
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function IncidentTimeMachine() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyzeIncident = useIncidentAnalyze();
 
-  // Sources state
-  const [sources, setSources] = useState<Array<{ content: string; fileName: string }>>([]);
+  // Sources state — track file sizes for validation
+  const [sources, setSources] = useState<Array<{ content: string; fileName: string; sizeBytes: number }>>([]);
   const [incidentDescription, setIncidentDescription] = useState('');
   const [result, setResult] = useState<IncidentFullResult | null>(null);
   const [activeTab, setActiveTab] = useState<IncidentTab>('timeline');
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // File upload handler — supports multiple files
+  const totalSizeMB = sources.reduce((sum, s) => sum + s.sizeBytes, 0) / (1024 * 1024);
+
+  // File upload handler — supports multiple files with size validation
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
+    setUploadError(null);
+
     for (const file of Array.from(files)) {
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > MAX_FILE_SIZE_MB) {
+        setUploadError(`"${file.name}" is ${fileSizeMB.toFixed(1)}MB — exceeds the ${MAX_FILE_SIZE_MB}MB per-file limit. Consider trimming the log to the incident time window.`);
+        continue;
+      }
+
       const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
-        setSources((prev) => [...prev, { content: text, fileName: file.name }]);
+        setSources((prev) => {
+          const updated = [...prev, { content: text, fileName: file.name, sizeBytes: file.size }];
+          const newTotalMB = updated.reduce((s, f) => s + f.sizeBytes, 0) / (1024 * 1024);
+          if (newTotalMB > MAX_TOTAL_SIZE_MB) {
+            setUploadError(`Total upload size (${newTotalMB.toFixed(1)}MB) exceeds the ${MAX_TOTAL_SIZE_MB}MB combined limit. Remove some files or trim logs to the incident window.`);
+            return prev; // Don't add the file
+          }
+          return updated;
+        });
       };
       reader.readAsText(file);
     }
@@ -271,21 +299,37 @@ export function IncidentTimeMachine() {
             Supports <code className="px-1 py-0.5 bg-muted rounded">.html</code>{' '}
             <code className="px-1 py-0.5 bg-muted rounded">.txt</code>{' '}
             <code className="px-1 py-0.5 bg-muted rounded">.log</code>{' '}
-            <code className="px-1 py-0.5 bg-muted rounded">.csv</code> — upload as many as needed
+            <code className="px-1 py-0.5 bg-muted rounded">.csv</code> — up to {MAX_FILE_SIZE_MB}MB per file, {MAX_TOTAL_SIZE_MB}MB total
           </p>
         </div>
+
+        {/* Upload Error */}
+        {uploadError && (
+          <div className="flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+            <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-red-700">{uploadError}</p>
+            <button onClick={() => setUploadError(null)} className="p-0.5 ml-auto">
+              <X className="w-3.5 h-3.5 text-red-500" />
+            </button>
+          </div>
+        )}
 
         {/* Uploaded Sources List */}
         {sources.length > 0 && (
           <div className="space-y-2">
-            <h5 className="text-xs font-semibold text-muted-foreground uppercase">
-              Evidence Files ({sources.length})
-            </h5>
+            <div className="flex items-center justify-between">
+              <h5 className="text-xs font-semibold text-muted-foreground uppercase">
+                Evidence Files ({sources.length})
+              </h5>
+              <span className={cn('text-[10px] font-medium', totalSizeMB > MAX_TOTAL_SIZE_MB * 0.8 ? 'text-amber-600' : 'text-muted-foreground')}>
+                Total: {totalSizeMB < 1 ? `${(totalSizeMB * 1024).toFixed(0)} KB` : `${totalSizeMB.toFixed(1)} MB`} / {MAX_TOTAL_SIZE_MB}MB
+              </span>
+            </div>
             {sources.map((src, i) => (
               <div key={i} className="flex items-center gap-3 px-3 py-2 bg-violet-50 border border-violet-200 rounded-lg">
                 <FileText className="w-4 h-4 text-violet-600 flex-shrink-0" />
                 <span className="text-sm font-medium text-violet-800 flex-1 truncate">{src.fileName}</span>
-                <span className="text-[10px] text-violet-600">{Math.round(src.content.length / 1024)}KB</span>
+                <span className="text-[10px] text-violet-600">{formatFileSize(src.sizeBytes)}</span>
                 <button onClick={() => removeSource(i)} className="p-0.5 rounded hover:bg-violet-200 transition-colors">
                   <Trash2 className="w-3.5 h-3.5 text-violet-600" />
                 </button>
