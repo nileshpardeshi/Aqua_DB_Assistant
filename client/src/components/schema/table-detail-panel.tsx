@@ -169,6 +169,8 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
   const [editName, setEditName] = useState('');
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [editDesc, setEditDesc] = useState('');
+  const [isEditingRows, setIsEditingRows] = useState(false);
+  const [editRows, setEditRows] = useState('');
   const [reviewResult, setReviewResult] = useState<SchemaReview | null>(null);
   const [showReview, setShowReview] = useState(false);
   const [showAddIndex, setShowAddIndex] = useState(false);
@@ -309,6 +311,22 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
       }
     );
   }, [projectId, table, editDesc, updateTable]);
+
+  const handleSaveRows = useCallback(() => {
+    if (!projectId || !table) return;
+    const parsed = editRows.trim() === '' ? null : parseInt(editRows.replace(/[^0-9]/g, ''), 10);
+    if (parsed !== null && isNaN(parsed)) return;
+    updateTable.mutate(
+      { projectId, tableId: table.id, data: { estimatedRows: parsed } },
+      {
+        onSuccess: () => {
+          setIsEditingRows(false);
+          toast.success('Estimated rows updated');
+        },
+        onError: () => toast.error('Failed to update estimated rows'),
+      }
+    );
+  }, [projectId, table, editRows, updateTable]);
 
   // ── Delete table ─────────────────────────────────────────────────────────
 
@@ -754,9 +772,33 @@ export function TableDetailPanel({ tableId, onBack }: TableDetailPanelProps) {
               <span className="px-2 py-0.5 text-[10px] font-medium bg-aqua-50 text-aqua-700 rounded-full uppercase">
                 {table.type || 'table'}
               </span>
-              {table.estimatedRows != null && (
-                <span className="text-xs text-muted-foreground">
-                  ~{formatNumber(table.estimatedRows)} rows
+              {isEditingRows ? (
+                <span className="inline-flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={editRows}
+                    onChange={(e) => setEditRows(e.target.value)}
+                    placeholder="e.g. 1000000"
+                    className="w-28 text-xs border border-aqua-400 rounded-lg px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-aqua-500/30"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveRows();
+                      if (e.key === 'Escape') setIsEditingRows(false);
+                    }}
+                  />
+                  <button onClick={handleSaveRows} className="p-0.5 text-aqua-600 hover:text-aqua-700"><Check className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => setIsEditingRows(false)} className="p-0.5 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+                </span>
+              ) : (
+                <span
+                  className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors group/rows inline-flex items-center gap-1"
+                  onClick={() => {
+                    setEditRows(table.estimatedRows != null ? String(table.estimatedRows) : '');
+                    setIsEditingRows(true);
+                  }}
+                >
+                  {table.estimatedRows != null ? `~${formatNumber(table.estimatedRows)} rows` : 'Set expected rows'}
+                  <Pencil className="w-2.5 h-2.5 text-muted-foreground/50 opacity-0 group-hover/rows:opacity-100 transition-opacity" />
                 </span>
               )}
               <span className={cn('px-2 py-0.5 text-[10px] font-medium rounded-full', health.color)}>

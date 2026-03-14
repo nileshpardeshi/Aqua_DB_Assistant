@@ -947,6 +947,7 @@ export async function updateTable(
   input: {
     tableName?: string;
     description?: string;
+    estimatedRows?: number | null;
     columns?: Array<{
       columnName: string;
       dataType: string;
@@ -981,6 +982,7 @@ export async function updateTable(
     const updateData: any = {};
     if (input.tableName) updateData.tableName = input.tableName;
     if (input.description !== undefined) updateData.description = input.description;
+    if (input.estimatedRows !== undefined) updateData.estimatedRows = input.estimatedRows;
 
     if (Object.keys(updateData).length > 0) {
       await tx.tableMetadata.update({

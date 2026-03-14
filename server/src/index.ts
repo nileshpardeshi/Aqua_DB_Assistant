@@ -6,13 +6,22 @@ import { prisma } from './config/prisma.js';
 import { createApp } from './app.js';
 
 async function bootstrap() {
-  // Verify database connectivity
-  try {
-    await prisma.$connect();
-    logger.info('Database connected successfully');
-  } catch (error) {
-    logger.error('Failed to connect to database', { error });
-    process.exit(1);
+  // Verify database connectivity (retry up to 30 times, 2s apart = 60s total)
+  const MAX_RETRIES = 30;
+  const RETRY_DELAY_MS = 2000;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      await prisma.$connect();
+      logger.info('Database connected successfully');
+      break;
+    } catch (error) {
+      if (attempt === MAX_RETRIES) {
+        logger.error(`Failed to connect to database after ${MAX_RETRIES} attempts`, { error });
+        process.exit(1);
+      }
+      logger.warn(`Database not ready, retrying in ${RETRY_DELAY_MS / 1000}s (attempt ${attempt}/${MAX_RETRIES})...`);
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+    }
   }
 
   // Backfill: create PostgreSQL schemas for existing projects that don't have one

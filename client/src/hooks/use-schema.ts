@@ -273,6 +273,7 @@ export interface CreateTableInput {
 export interface UpdateTableInput {
   tableName?: string;
   description?: string;
+  estimatedRows?: number | null;
   columns?: CreateTableInput['columns'];
   indexes?: CreateTableInput['indexes'];
   constraints?: CreateTableInput['constraints'];
