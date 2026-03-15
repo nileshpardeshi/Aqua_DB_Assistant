@@ -607,3 +607,186 @@ model CostAssessment {
   @@index([projectId, status])
   @@index([createdAt])
 }
+
+// ============================================================
+// PERFORMANCE TESTING SUITE (PT Suite)
+// ============================================================
+
+model PtApiCollection {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(300)
+  description String?  @db.Text
+  baseUrl     String   @db.VarChar(1000)
+  swaggerSpec String?  @db.Text  // JSON: raw parsed OpenAPI spec
+  authConfig  String?  @db.Text  // JSON: {type, token, apiKey, basicAuth, etc.}
+  headers     String?  @db.Text  // JSON: default headers [{key, value}]
+  variables   String?  @db.Text  // JSON: environment variables [{key, value, env}]
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  endpoints PtApiEndpoint[]
+  chains    PtApiChain[]
+
+  @@schema("aqua_db")
+  @@index([createdAt])
+}
+
+model PtApiEndpoint {
+  id           String  @id @default(uuid()) @db.Uuid
+  collectionId String  @db.Uuid
+  name         String  @db.VarChar(300)
+  method       String  @db.VarChar(10)  // GET | POST | PUT | PATCH | DELETE
+  path         String  @db.VarChar(1000)
+  description  String? @db.Text
+  headers      String? @db.Text  // JSON: [{key, value}]
+  queryParams  String? @db.Text  // JSON: [{key, value, enabled}]
+  bodyType     String? @db.VarChar(30) // json | form | xml | none
+  bodyTemplate String? @db.Text  // JSON template with {{variables}}
+  tags         String? @db.Text  // JSON: string[]
+  createdAt    DateTime @default(now()) @db.Timestamptz
+
+  collection PtApiCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  chainSteps PtChainStep[]
+
+  @@schema("aqua_db")
+  @@index([collectionId])
+}
+
+model PtApiChain {
+  id           String   @id @default(uuid()) @db.Uuid
+  collectionId String   @db.Uuid
+  name         String   @db.VarChar(300)
+  description  String?  @db.Text
+  isDemo       Boolean  @default(false)
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
+
+  collection PtApiCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  steps      PtChainStep[]
+  scenarios  PtLoadScenario[]
+
+  @@schema("aqua_db")
+  @@index([collectionId])
+}
+
+model PtChainStep {
+  id           String  @id @default(uuid()) @db.Uuid
+  chainId      String  @db.Uuid
+  endpointId   String? @db.Uuid
+  sortOrder    Int
+  name         String  @db.VarChar(300)
+  method       String  @db.VarChar(10)
+  url          String  @db.VarChar(1000) // Can contain {{variables}}
+  headers      String? @db.Text  // JSON: [{key, value}]
+  body         String? @db.Text  // JSON body with {{variables}}
+  extractors   String? @db.Text  // JSON: [{name, source, path}] — JSONPath/regex extractors
+  assertions   String? @db.Text  // JSON: [{type, target, operator, value}]
+  preScript    String? @db.Text  // JavaScript pre-request script
+  postScript   String? @db.Text  // JavaScript post-response script
+  thinkTimeSec Float   @default(0) // Delay after step
+  isEnabled    Boolean @default(true)
+
+  chain    PtApiChain     @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  endpoint PtApiEndpoint? @relation(fields: [endpointId], references: [id], onDelete: SetNull)
+
+  @@schema("aqua_db")
+  @@index([chainId, sortOrder])
+}
+
+model PtLoadScenario {
+  id              String   @id @default(uuid()) @db.Uuid
+  chainId         String   @db.Uuid
+  name            String   @db.VarChar(300)
+  description     String?  @db.Text
+  pattern         String   @db.VarChar(30)  // ramp | spike | soak | stress | step | custom
+  peakVU          Int      @default(10)
+  rampUpSec       Int      @default(30)
+  steadyStateSec  Int      @default(60)
+  rampDownSec     Int      @default(10)
+  thinkTimeSec    Float    @default(1)
+  pacingSec       Float    @default(0)
+  timeoutMs       Int      @default(30000)
+  maxErrorPct     Float    @default(10)
+  slaThresholds   String?  @db.Text  // JSON: [{metric, operator, value, severity}]
+  customRampSteps String?  @db.Text  // JSON: [{atSec, targetVU}] for custom pattern
+  isDemo          Boolean  @default(false)
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @updatedAt @db.Timestamptz
+
+  chain PtApiChain @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  runs  PtTestRun[]
+
+  @@schema("aqua_db")
+  @@index([chainId])
+}
+
+model PtTestRun {
+  id            String    @id @default(uuid()) @db.Uuid
+  scenarioId    String    @db.Uuid
+  status        String    @db.VarChar(20) // queued | running | completed | failed | stopped
+  startedAt     DateTime  @default(now()) @db.Timestamptz
+  completedAt   DateTime? @db.Timestamptz
+  totalRequests Int       @default(0)
+  totalErrors   Int       @default(0)
+  avgLatencyMs  Float     @default(0)
+  p50LatencyMs  Float     @default(0)
+  p95LatencyMs  Float     @default(0)
+  p99LatencyMs  Float     @default(0)
+  maxLatencyMs  Float     @default(0)
+  peakTps       Float     @default(0)
+  avgTps        Float     @default(0)
+  errorRate     Float     @default(0)
+  slaResults    String?   @db.Text  // JSON: [{metric, target, actual, passed}]
+  aiAnalysis    String?   @db.Text  // AI-generated bottleneck analysis
+  reportData    String?   @db.Text  // JSON: full report payload
+
+  scenario PtLoadScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  metrics  PtTestMetric[]
+  stepMetrics PtStepMetric[]
+
+  @@schema("aqua_db")
+  @@index([scenarioId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model PtTestMetric {
+  id           String   @id @default(uuid()) @db.Uuid
+  runId        String   @db.Uuid
+  timestamp    DateTime @db.Timestamptz
+  activeVU     Int
+  requestCount Int
+  errorCount   Int
+  avgLatencyMs Float
+  p95LatencyMs Float
+  p99LatencyMs Float
+  tps          Float
+  bytesIn      BigInt   @default(0)
+  bytesOut     BigInt   @default(0)
+
+  run PtTestRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@schema("aqua_db")
+  @@index([runId, timestamp])
+}
+
+model PtStepMetric {
+  id           String @id @default(uuid()) @db.Uuid
+  runId        String @db.Uuid
+  stepName     String @db.VarChar(300)
+  method       String @db.VarChar(10)
+  url          String @db.VarChar(1000)
+  totalCalls   Int    @default(0)
+  totalErrors  Int    @default(0)
+  avgLatencyMs Float  @default(0)
+  p95LatencyMs Float  @default(0)
+  p99LatencyMs Float  @default(0)
+  minLatencyMs Float  @default(0)
+  maxLatencyMs Float  @default(0)
+  errorsByStatus String? @db.Text // JSON: {"404": 5, "500": 2}
+
+  run PtTestRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@schema("aqua_db")
+  @@index([runId])
+}

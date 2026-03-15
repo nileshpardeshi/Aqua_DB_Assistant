@@ -23,6 +23,7 @@ import {
   FileSearch,
   ShieldAlert,
   DollarSign,
+  Activity,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { APP_NAME, APP_TAGLINE, getDialect } from '../../config/constants';
@@ -42,6 +43,7 @@ const mainNavItems: NavItem[] = [
 ];
 
 const toolNavItems: NavItem[] = [
+  { label: 'PT Suite', icon: Activity, path: '/tools/pt-suite' },
   { label: 'SQL Converter', icon: ArrowRightLeft, path: '/tools/sql-converter' },
   { label: 'JPA Query Lab', icon: FlaskConical, path: '/tools/jpa-lab' },
   { label: 'Report Analyzer', icon: FileSearch, path: '/tools/awr-analyzer' },

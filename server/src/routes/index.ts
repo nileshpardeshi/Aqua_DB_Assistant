@@ -21,6 +21,7 @@ import sandboxRoutes from './sandbox.routes.js';
 import awrRoutes from './awr.routes.js';
 import drRoutes from './disaster-recovery.routes.js';
 import costOptimizerRoutes from './cost-optimizer.routes.js';
+import ptSuiteRoutes from './pt-suite.routes.js';
 
 const router = Router();
 
@@ -49,5 +50,6 @@ router.use('/api/v1/projects/:projectId/sandbox', sandboxRoutes);
 router.use('/api/v1/tools/awr', awrRoutes);
 router.use('/api/v1/projects/:projectId/dr', drRoutes);
 router.use('/api/v1/projects/:projectId/cost-optimizer', costOptimizerRoutes);
+router.use('/api/v1/pt-suite', ptSuiteRoutes);
 
 export default router;

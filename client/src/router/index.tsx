@@ -20,6 +20,7 @@ import { AIUsageDashboard } from '../pages/ai-usage-dashboard';
 import { AWRAnalyzerPage } from '../pages/awr-analyzer';
 import { DisasterRecovery } from '../pages/disaster-recovery';
 import { CostOptimizer } from '../pages/cost-optimizer';
+import { PtSuite } from '../pages/pt-suite';
 import { NotFound } from '../pages/not-found';
 
 export const router = createBrowserRouter([
@@ -59,6 +60,10 @@ export const router = createBrowserRouter([
       {
         path: 'tools/awr-analyzer',
         element: <AWRAnalyzerPage />,
+      },
+      {
+        path: 'tools/pt-suite',
+        element: <PtSuite />,
       },
       // Project workspace
       {
