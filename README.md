@@ -31,14 +31,14 @@ The platform supports databases containing **millions to billions of records** a
 
 | Metric | Count |
 |--------|-------|
-| Frontend Pages | 21 |
-| API Endpoints | 53+ across 23 route groups |
-| Database Models | 28 Prisma models |
-| AI Prompt Templates | 22 specialized templates |
+| Frontend Pages | 22 |
+| API Endpoints | 81+ across 24 route groups |
+| Database Models | 36 Prisma models |
+| AI Prompt Templates | 25 specialized templates |
 | Supported Databases | 8 dialects |
 | AI Providers | 5 (Anthropic, OpenAI, Gemini, OpenRouter, Ollama) |
-| Custom React Hooks | 28 |
-| Frontend Components | 53+ |
+| Custom React Hooks | 55+ |
+| Frontend Components | 60+ |
 
 ---
 
@@ -141,14 +141,43 @@ The platform supports databases containing **millions to billions of records** a
 - **Multi-Cloud Support** — AWS, Azure, GCP cost comparison
 - **Connection Pooling** — Recommendations for connection management
 
-### 11. SQL Converter (Standalone Tool)
+### 11. Performance Testing Suite (PT Suite)
+
+Enterprise-grade API load testing and performance analysis — like JMeter, but built-in with AI intelligence:
+
+- **Swagger/OpenAPI Import** — Upload Swagger JSON/YAML to auto-populate API collections with all endpoints
+- **Manual API Entry** — Create collections and endpoints manually when Swagger is unavailable
+- **Visual API Chain Designer** — Build multi-step API test flows with variable extraction and chaining
+  - JSONPath extractors to capture tokens, IDs, and response data between steps
+  - Configurable assertions (status code, body content, response time thresholds)
+  - Think time configuration per step
+- **Load Scenario Engine** — Configure sophisticated load patterns:
+  - **Ramp Up/Down** — Gradual increase to peak virtual users
+  - **Spike** — Sudden traffic burst simulation
+  - **Soak** — Extended duration for memory leak detection
+  - **Stress** — Find system breaking point
+  - **Step** — Incremental load increase
+- **Real-Time Test Dashboard** — Live monitoring during execution via SSE streaming:
+  - Active VU, Avg Latency, TPS, Error Rate, P95/P99 KPI cards
+  - Response time time-series charts (Avg, P95, P99)
+  - Throughput and error rate charts
+  - Active virtual users chart
+- **AI-Powered Test Reports** — Automated bottleneck analysis after each run:
+  - Executive summary with risk level assessment
+  - SLA compliance table (pass/warn/fail)
+  - Bottleneck identification with root cause and recommendations
+  - Capacity estimation (max safe VU, max TPS, limiting factor)
+- **Test History** — Track runs with status badges, compare across releases
+- **Demo Data** — One-click seed of E-Commerce Order Flow with real API calls
+
+### 12. SQL Converter (Standalone Tool)
 
 - **8 Dialect Support** — PostgreSQL, MySQL, Oracle, SQL Server, MariaDB, Snowflake, BigQuery, MongoDB
 - **Bidirectional Conversion** — Any source to any target
 - **Auto-Detect Dialect** — Schema detection from SQL input
 - **Syntax Validation** — Validate converted SQL
 
-### 12. JPA Query Lab
+### 13. JPA Query Lab
 
 - **JPA/JPQL/HQL Analysis** — Parse and analyze Java persistence queries
 - **N+1 Detection** — Identify N+1 query anti-patterns
@@ -156,7 +185,7 @@ The platform supports databases containing **millions to billions of records** a
 - **Batch Analysis** — Analyze multiple queries simultaneously
 - **Sample Files** — Pre-loaded JPA examples
 
-### 13. AWR Report Analyzer
+### 14. AWR Report Analyzer
 
 - **Report Parsing** — AWR, ASH, and ADDM report analysis
 - **Type Detection** — Auto-detect report format
@@ -164,7 +193,7 @@ The platform supports databases containing **millions to billions of records** a
 - **Report Comparison** — Before/after comparison
 - **Incident Time Machine** — Multi-source root cause analysis with timeline reconstruction
 
-### 14. AI Usage Dashboard
+### 15. AI Usage Dashboard
 
 - **Usage Metrics** — Total tokens, cost, API calls
 - **Breakdown Views** — By module, by provider, by project
@@ -173,28 +202,28 @@ The platform supports databases containing **millions to billions of records** a
 - **Budget Management** — Monthly/weekly budgets with alert thresholds
 - **Per-Provider Budgets** — Independent limits per AI provider
 
-### 15. Audit & Compliance
+### 16. Audit & Compliance
 
 - **Automatic Logging** — All mutating API requests logged automatically
 - **Searchable Audit Viewer** — Filter by method, endpoint, status, timestamp
 - **AES-256-GCM Encryption** — Sensitive audit data encrypted at rest
 - **PCI DSS & GDPR Support** — Enterprise compliance capabilities
 
-### 16. Database Connections
+### 17. Database Connections
 
 - **Connection Management** — Store and manage database credentials securely
 - **Connection Testing** — Verify connectivity with latency measurement
 - **Schema Introspection** — Discover schemas and tables from live databases
 - **Live Query Execution** — Run SQL directly against connected databases
 
-### 17. AI Copilot Chat
+### 18. AI Copilot Chat
 
 - **Floating AI Assistant** — Available from any page
 - **SSE Streaming** — Real-time token-by-token responses
 - **Context-Aware** — Understands your project's schema and queries
 - **Multi-Provider** — Switch between Anthropic, OpenAI, Gemini, OpenRouter, Ollama
 
-### 18. Settings & Configuration
+### 19. Settings & Configuration
 
 - **AI Provider Configuration** — API keys, model selection, parameters
 - **Application Settings** — General platform preferences
@@ -231,13 +260,14 @@ Aqua DB Copilot supports **5 AI providers** with automatic usage tracking and bu
 | **OpenRouter** | Multiple models | Multi-model router |
 | **Ollama** | Llama 3, CodeLlama, etc. | Local/air-gapped |
 
-### 22 Specialized AI Prompt Templates
+### 25 Specialized AI Prompt Templates
 
 | Category | Templates |
 |----------|-----------|
 | **Schema Intelligence** | Schema Design, Schema Review, Trigger Analysis, Evolution Impact |
 | **Query Intelligence** | NL to SQL, Query Optimization, Query Explanation |
 | **Performance Lab** | Index Recommendation, Partition Recommendation, Synthetic Data, Query Plan Simulation, Data Distribution |
+| **PT Suite** | Load Test Analysis, Chain Design Review, Assertion Suggestions |
 | **Documentation** | Auto-Documentation Generator |
 | **Migration Studio** | Risk Assessment, Script Generation, Column Mapping, Dialect Validation |
 | **Analytics** | JPA Analysis, AWR Analysis, Incident Analysis |
@@ -394,23 +424,24 @@ Aqua_DB_Assistant/
 │   │   │   ├── awr/                 # AWR report analysis
 │   │   │   ├── project/             # Project creation
 │   │   │   └── shared/              # AI chat, command palette
-│   │   ├── pages/                   # 21 route pages
-│   │   ├── hooks/                   # 28 custom React hooks
+│   │   ├── pages/                   # 22 route pages
+│   │   ├── hooks/                   # 55+ custom React hooks
+│   │   ├── types/                   # TypeScript type definitions
 │   │   ├── stores/                  # Zustand state stores
 │   │   ├── lib/                     # API client, utilities
 │   │   └── router/                  # React Router config
 │   └── public/
 ├── server/                          # Express.js Backend
 │   ├── prisma/
-│   │   ├── schema.prisma            # 28 models
+│   │   ├── schema.prisma            # 36 models
 │   │   └── migrations/
 │   └── src/
 │       ├── config/                  # Env, logger, Prisma
-│       ├── routes/                  # 23 route groups
+│       ├── routes/                  # 24 route groups
 │       ├── controllers/             # Request handlers
 │       ├── services/
 │       │   ├── ai/
-│       │   │   ├── prompt-templates/  # 22 AI prompts
+│       │   │   ├── prompt-templates/  # 25 AI prompts
 │       │   │   ├── ai-provider.factory.ts
 │       │   │   └── tracked-ai-provider.ts
 │       │   └── sql-parser/

@@ -27,16 +27,16 @@
 
 ## 1. Executive Summary
 
-**Aqua DB Copilot** is an enterprise-grade AI-powered Database Engineering Platform designed for teams managing large-scale database systems in banking, payment processing, card management, and other mission-critical domains. It provides a unified workspace for database design, schema analysis, query optimization, performance benchmarking, data lifecycle management, migration planning, disaster recovery, and cost optimization — all enhanced with multi-provider AI assistance.
+**Aqua DB Copilot** is an enterprise-grade AI-powered Database Engineering Platform designed for teams managing large-scale database systems in banking, payment processing, card management, and other mission-critical domains. It provides a unified workspace for database design, schema analysis, query optimization, performance benchmarking, API load testing, data lifecycle management, migration planning, disaster recovery, and cost optimization — all enhanced with multi-provider AI assistance.
 
 ### Key Highlights
 
 | Metric | Value |
 |--------|-------|
-| Frontend Pages | 21 |
-| API Endpoints | 53+ across 23 route groups |
-| Database Models | 28 Prisma models |
-| AI Prompt Templates | 22 specialized templates |
+| Frontend Pages | 22 |
+| API Endpoints | 81+ across 24 route groups |
+| Database Models | 36 Prisma models |
+| AI Prompt Templates | 25 specialized templates |
 | Supported Databases | 8 dialects |
 | AI Providers | 5 (Anthropic, OpenAI, Gemini, OpenRouter, Ollama) |
 
@@ -72,6 +72,7 @@ All features operate within a **Project Workspace** model:
 - **Database Architects** — Schema design, ER diagrams, normalization
 - **Backend Developers** — Query writing, JPA analysis, performance tuning
 - **DBAs** — Performance monitoring, index optimization, DR strategy
+- **Performance Testers** — API load testing, chain execution, bottleneck analysis, test reporting
 - **Data Engineers** — Migration planning, data lifecycle, cost optimization
 - **Team Leads** — Audit trails, AI usage monitoring, project oversight
 
@@ -436,6 +437,133 @@ Application configuration:
 - **LLM Configuration** — Select models, adjust parameters
 - **Application Settings** — General platform preferences
 
+### 5.19 Performance Testing Suite (PT Suite)
+
+Enterprise-grade API load testing and performance analysis platform — a built-in alternative to JMeter with AI-powered intelligence:
+
+#### API Collections & Swagger Import
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Upload Swagger / OpenAPI  ──►  Auto-Populate Endpoints │
+│  Manual Entry              ──►  Create Custom Endpoints │
+│                                                         │
+│  Collection: "Card Management APIs"                     │
+│  Base URL: https://api.cardmgmt.bank                    │
+│  ├── POST /auth/login          (Authenticate)           │
+│  ├── POST /cards/issue         (Issue Card)             │
+│  ├── GET  /cards/{id}          (Get Card)               │
+│  ├── POST /transactions/auth   (Authorize Transaction)  │
+│  └── GET  /transactions/list   (List Transactions)      │
+└─────────────────────────────────────────────────────────┘
+```
+
+- **Swagger/OpenAPI Import** — Upload JSON/YAML to auto-create collections with all endpoints
+- **Manual Entry** — Create collections and endpoints when Swagger unavailable
+- **Auth Configuration** — Bearer token, API key, Basic auth per collection
+- **Default Headers** — Set common headers across all endpoints
+
+#### Visual API Chain Designer
+
+Build multi-step API test flows with variable extraction and chaining:
+
+```
+Step 1: POST /auth/login       ──► Extract: {{authToken}} = $.token
+    │
+    ▼
+Step 2: POST /cards/issue      ──► Extract: {{cardId}} = $.data.id
+    │   Headers: Authorization: Bearer {{authToken}}
+    ▼
+Step 3: GET /cards/{{cardId}}  ──► Assert: status == 200
+    │                               Assert: $.data.status == "ACTIVE"
+    ▼
+Step 4: POST /txn/authorize    ──► Assert: responseTime < 2000ms
+        Body: { "cardId": "{{cardId}}", "amount": 29.99 }
+```
+
+- **Variable Extraction** — JSONPath extractors to capture tokens, IDs, response data
+- **Variable Injection** — Use `{{variables}}` in URLs, headers, and body templates
+- **Assertions** — Status code, body content, response time thresholds
+- **Think Time** — Configurable delay between steps (simulates real user behavior)
+- **Chain Execution** — Test full chain with real HTTP calls before load testing
+
+#### Load Scenario Engine
+
+Configure sophisticated load patterns with visual ramp preview:
+
+| Pattern | Description | Use Case |
+|---------|-------------|----------|
+| **Ramp** | Gradual increase to peak VU | Normal load testing |
+| **Spike** | Sudden burst to peak | Flash sale / batch processing |
+| **Soak** | Moderate load for extended duration | Memory leak detection |
+| **Stress** | Progressive increase until failure | Find breaking point |
+| **Step** | Incremental increase at intervals | Capacity planning |
+
+Configuration options:
+- Peak Virtual Users (1 - 500+)
+- Ramp-up / Steady State / Ramp-down durations
+- Think time between iterations
+- Request timeout
+- Maximum error percentage before auto-stop
+- SLA thresholds (P95 latency, P99 latency, error rate, TPS)
+
+#### Real-Time Test Dashboard
+
+Live monitoring during execution via Server-Sent Events (SSE):
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  LIVE: Running (12:47 / 20:00)  ████████░░  63%         │
+│                                                         │
+│  Active VU   Avg Latency   TPS      Error Rate   P99   │
+│  ┌──────┐   ┌──────┐    ┌──────┐   ┌──────┐   ┌──────┐│
+│  │  347 │   │234ms │    │ 892  │   │ 0.3% │   │1.2s  ││
+│  └──────┘   └──────┘    └──────┘   └──────┘   └──────┘│
+│                                                         │
+│  [Response Time Chart]  [Throughput Chart]              │
+│  [Active VU Chart]      [Error Rate Chart]             │
+└─────────────────────────────────────────────────────────┘
+```
+
+- KPI cards with live values (Active VU, Avg Latency, TPS, Error Rate, P99)
+- Response time time-series chart (Avg, P95, P99 lines)
+- Throughput bar chart per second
+- Active virtual users line chart
+- Error rate area chart
+- Stop/pause controls
+
+#### AI-Powered Test Reports
+
+Automated analysis after each completed run:
+
+- **Executive Summary** — Overall risk assessment (Low/Medium/High/Critical)
+- **SLA Compliance Table** — Each metric with pass/warn/fail badge
+- **Bottleneck Identification** — Severity-ranked issues with:
+  - Root cause analysis
+  - Affected API step
+  - Specific recommendations
+- **Capacity Estimation** — Maximum safe VU count, max TPS, limiting factor
+- **Recommendations** — Prioritized improvements with expected impact
+
+#### Test History & Baselines
+
+- Run history with status badges (completed/failed/stopped)
+- Metrics comparison across runs
+- Regression detection across releases
+
+#### Data Models (8 New)
+
+| Model | Purpose |
+|-------|---------|
+| PtApiCollection | API collection with base URL and auth config |
+| PtApiEndpoint | Individual API endpoint (method, path, body template) |
+| PtApiChain | Sequence of API steps forming a test flow |
+| PtChainStep | Single step with extractors, assertions, variables |
+| PtLoadScenario | Load test configuration (pattern, VU, ramp, SLA) |
+| PtTestRun | Execution record with summary statistics |
+| PtTestMetric | Per-second time-series metrics during a run |
+| PtStepMetric | Per-API-step aggregated performance data |
+
 ---
 
 ## 6. AI Integration
@@ -458,7 +586,7 @@ Application configuration:
 └──────┘└──────┘└──────────┘└──────────┘└──────┘
 ```
 
-### 6.2 AI Prompt Templates (22 Specialized Templates)
+### 6.2 AI Prompt Templates (25 Specialized Templates)
 
 | # | Template | Module | Purpose |
 |---|----------|--------|---------|
@@ -484,6 +612,9 @@ Application configuration:
 | 20 | Incident Analysis | AWR Analyzer | Root cause analysis |
 | 21 | DR Strategy | Disaster Recovery | Plan DR strategies |
 | 22 | Cost Optimization | Cost Optimizer | Optimize cloud costs |
+| 23 | Load Test Analysis | PT Suite | Analyze load test results for bottlenecks and capacity |
+| 24 | Chain Design Review | PT Suite | Review API chain design for issues |
+| 25 | Assertion Suggestions | PT Suite | Suggest assertions for API test steps |
 
 ### 6.3 AI Streaming
 
@@ -522,7 +653,7 @@ Every AI call is automatically tracked:
 http://localhost:3001/api/v1
 ```
 
-### Route Groups (23 Total)
+### Route Groups (24 Total)
 
 #### Project Management
 | Method | Endpoint | Description |
@@ -688,6 +819,42 @@ http://localhost:3001/api/v1
 | POST | `/tools/awr/compare` | Compare reports |
 | POST | `/tools/awr/incident-analyze` | Incident analysis |
 
+#### Performance Testing Suite (PT Suite)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/pt-suite/swagger/parse` | Parse Swagger/OpenAPI spec |
+| GET | `/pt-suite/collections` | List API collections |
+| POST | `/pt-suite/collections` | Create collection |
+| GET | `/pt-suite/collections/:id` | Get collection with endpoints |
+| PUT | `/pt-suite/collections/:id` | Update collection |
+| DELETE | `/pt-suite/collections/:id` | Delete collection |
+| POST | `/pt-suite/collections/:id/endpoints` | Create endpoint |
+| PUT | `/pt-suite/endpoints/:id` | Update endpoint |
+| DELETE | `/pt-suite/endpoints/:id` | Delete endpoint |
+| GET | `/pt-suite/chains` | List API chains |
+| POST | `/pt-suite/chains` | Create chain |
+| GET | `/pt-suite/chains/:id` | Get chain with steps |
+| PUT | `/pt-suite/chains/:id` | Update chain |
+| DELETE | `/pt-suite/chains/:id` | Delete chain |
+| POST | `/pt-suite/chains/:id/steps` | Add step to chain |
+| PUT | `/pt-suite/steps/:id` | Update step |
+| DELETE | `/pt-suite/steps/:id` | Delete step |
+| POST | `/pt-suite/chains/:id/reorder` | Reorder chain steps |
+| POST | `/pt-suite/chains/:id/execute` | Execute chain (test run) |
+| GET | `/pt-suite/scenarios` | List load scenarios |
+| POST | `/pt-suite/scenarios` | Create scenario |
+| PUT | `/pt-suite/scenarios/:id` | Update scenario |
+| DELETE | `/pt-suite/scenarios/:id` | Delete scenario |
+| POST | `/pt-suite/runs` | Start load test |
+| GET | `/pt-suite/runs` | List test runs |
+| GET | `/pt-suite/runs/:id` | Get run details |
+| GET | `/pt-suite/runs/:id/stream` | SSE live metrics |
+| POST | `/pt-suite/runs/:id/stop` | Stop running test |
+| POST | `/pt-suite/runs/:id/report` | Generate AI report |
+| GET | `/pt-suite/demo/seed` | Seed demo data |
+| POST | `/pt-suite/ai/analyze-chain` | AI chain analysis |
+| POST | `/pt-suite/ai/suggest-assertions` | AI assertion suggestions |
+
 ---
 
 ## 9. Data Model
@@ -721,6 +888,17 @@ Project (1) ──── (*) ProjectFile
     ├──── (*) DRAssessment
     └──── (*) CostAssessment
 
+PT Suite (Standalone):
+    PtApiCollection (1) ──── (*) PtApiEndpoint
+        │                         │
+        └──── (*) PtApiChain      └──── (*) PtChainStep
+                    │
+                    └──── (*) PtLoadScenario
+                                │
+                                └──── (*) PtTestRun
+                                          ├──── (*) PtTestMetric
+                                          └──── (*) PtStepMetric
+
 Standalone:
     AppSettings
     AIProviderConfig
@@ -729,7 +907,7 @@ Standalone:
     AIBudgetConfig
 ```
 
-### Key Models (28 Total)
+### Key Models (36 Total)
 
 | Model | Purpose | Key Fields |
 |-------|---------|------------|
@@ -751,6 +929,14 @@ Standalone:
 | AuditLog | Activity audit | method, endpoint, statusCode, userId |
 | DRAssessment | DR evaluations | title, rtoMinutes, rpoMinutes |
 | CostAssessment | Cost evaluations | title, currentMonthlyCost |
+| PtApiCollection | API test collection | name, baseUrl, swaggerSpec, authConfig |
+| PtApiEndpoint | API endpoint definition | method, path, bodyTemplate, headers |
+| PtApiChain | API test flow sequence | name, collectionId, description |
+| PtChainStep | Chain step with extractors | method, url, extractors, assertions |
+| PtLoadScenario | Load test configuration | pattern, peakVU, rampUpSec, slaThresholds |
+| PtTestRun | Load test execution | status, avgLatencyMs, p95, p99, peakTps |
+| PtTestMetric | Per-second metrics | activeVU, tps, avgLatencyMs, errorCount |
+| PtStepMetric | Per-step aggregated data | stepName, totalCalls, avgLatencyMs, errors |
 
 ---
 
