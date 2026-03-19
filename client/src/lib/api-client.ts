@@ -39,4 +39,15 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Typed API helpers that account for the response interceptor unwrapping { success, data } → data
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ApiArgs = [url: string, data?: any, config?: any];
+
+export const api = {
+  get: <T>(...args: ApiArgs) => apiClient.get(args[0], args[2]) as unknown as Promise<T>,
+  post: <T>(...args: ApiArgs) => apiClient.post(args[0], args[1], args[2]) as unknown as Promise<T>,
+  put: <T>(...args: ApiArgs) => apiClient.put(args[0], args[1], args[2]) as unknown as Promise<T>,
+  delete: <T>(...args: ApiArgs) => apiClient.delete(args[0], args[2]) as unknown as Promise<T>,
+};
+
 export default apiClient;

@@ -35,6 +35,7 @@ export interface ChainStepResult {
   statusCode: number;
   latencyMs: number;
   responseSize: number;
+  requestSize: number;
   extractedVariables: Record<string, string>;
   assertionResults: Array<{ assertion: string; passed: boolean; actual: string }>;
   error: string | null;
@@ -52,6 +53,30 @@ export interface LoadTestConfig {
   maxErrorPct: number;
   pattern: string;
   customRampSteps?: Array<{ atSec: number; targetVU: number }>;
+}
+
+export interface AuthConfig {
+  type: 'none' | 'bearer' | 'apiKey' | 'basic' | 'oauth2';
+  token?: string;       // bearer
+  apiKey?: string;       // apiKey
+  apiKeyName?: string;   // apiKey header name
+  apiKeyIn?: 'header' | 'query';
+  username?: string;     // basic
+  password?: string;     // basic
+}
+
+export interface SlaThreshold {
+  metric: 'avgLatency' | 'p95Latency' | 'p99Latency' | 'errorRate' | 'tps';
+  operator: 'lt' | 'gt' | 'lte' | 'gte';
+  value: number;
+}
+
+export interface SlaResult {
+  metric: string;
+  operator: string;
+  threshold: number;
+  actual: number;
+  passed: boolean;
 }
 
 // ── Active run tracking (stop signals) ───────────────────────────────────────
@@ -432,12 +457,16 @@ export function evaluateAssertions(
 
 function evaluateOperator(actual: string, operator: string, expected: string): boolean {
   switch (operator) {
+    case 'eq':
     case 'equals':
       return actual === expected;
+    case 'neq':
     case 'notEquals':
       return actual !== expected;
     case 'contains':
       return actual.includes(expected);
+    case 'notContains':
+      return !actual.includes(expected);
     case 'gt':
       return parseFloat(actual) > parseFloat(expected);
     case 'lt':
@@ -480,6 +509,8 @@ export async function executeChainSteps(
   baseUrl: string,
   initialVariables: Record<string, string> = {},
   timeoutMs: number = 30000,
+  authConfig?: AuthConfig | null,
+  collectionHeaders?: Array<{ key: string; value: string }> | null,
 ): Promise<ChainStepResult[]> {
   const variables = new Map<string, string>(Object.entries(initialVariables));
   const results: ChainStepResult[] = [];
@@ -487,7 +518,7 @@ export async function executeChainSteps(
   for (const step of steps) {
     if (!step.isEnabled) continue;
 
-    const result = await executeSingleStep(step, baseUrl, variables, timeoutMs);
+    const result = await executeSingleStep(step, baseUrl, variables, timeoutMs, authConfig, collectionHeaders);
     results.push(result);
 
     // Add extracted variables to the map
@@ -509,11 +540,14 @@ async function executeSingleStep(
   baseUrl: string,
   variables: Map<string, string>,
   timeoutMs: number,
+  authConfig?: AuthConfig | null,
+  collectionHeaders?: Array<{ key: string; value: string }> | null,
 ): Promise<ChainStepResult> {
   const startTime = Date.now();
   let statusCode = 0;
   let responseBody: string | null = null;
   let responseSize = 0;
+  let requestSize = 0;
   let error: string | null = null;
   const extractedVariables: Record<string, string> = {};
   let assertionResults: AssertionResult[] = [];
@@ -526,8 +560,50 @@ async function executeSingleStep(
       url = `${baseUrl.replace(/\/$/, '')}${url.startsWith('/') ? '' : '/'}${url}`;
     }
 
-    // Build headers
+    // Build headers: start with defaults, layer collection headers, then step headers
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+    // Apply collection-level headers
+    if (collectionHeaders && Array.isArray(collectionHeaders)) {
+      for (const h of collectionHeaders) {
+        if (h.key) headers[h.key] = substituteVariables(h.value, variables);
+      }
+    }
+
+    // Apply auth config
+    if (authConfig && authConfig.type !== 'none') {
+      switch (authConfig.type) {
+        case 'bearer':
+          if (authConfig.token) {
+            headers['Authorization'] = `Bearer ${substituteVariables(authConfig.token, variables)}`;
+          }
+          break;
+        case 'apiKey': {
+          const keyName = authConfig.apiKeyName || 'X-API-Key';
+          const keyValue = authConfig.apiKey ? substituteVariables(authConfig.apiKey, variables) : '';
+          if (authConfig.apiKeyIn === 'query') {
+            const sep = url.includes('?') ? '&' : '?';
+            url = `${url}${sep}${encodeURIComponent(keyName)}=${encodeURIComponent(keyValue)}`;
+          } else {
+            headers[keyName] = keyValue;
+          }
+          break;
+        }
+        case 'basic':
+          if (authConfig.username) {
+            const creds = `${substituteVariables(authConfig.username, variables)}:${substituteVariables(authConfig.password ?? '', variables)}`;
+            headers['Authorization'] = `Basic ${Buffer.from(creds).toString('base64')}`;
+          }
+          break;
+        case 'oauth2':
+          if (authConfig.token) {
+            headers['Authorization'] = `Bearer ${substituteVariables(authConfig.token, variables)}`;
+          }
+          break;
+      }
+    }
+
+    // Apply step-level headers (override collection headers)
     if (step.headers) {
       try {
         const parsed = JSON.parse(step.headers) as Array<{ key: string; value: string }>;
@@ -542,6 +618,10 @@ async function executeSingleStep(
     if (step.body && ['POST', 'PUT', 'PATCH'].includes(step.method.toUpperCase())) {
       body = substituteVariables(step.body, variables);
     }
+
+    // Calculate request size (headers + body)
+    const headerStr = Object.entries(headers).map(([k, v]) => `${k}: ${v}`).join('\r\n');
+    requestSize = new TextEncoder().encode(headerStr).length + (body ? new TextEncoder().encode(body).length : 0);
 
     // Execute request
     const controller = new AbortController();
@@ -582,6 +662,10 @@ async function executeSingleStep(
             value = extractJsonPath(parsedBody, ext.path);
           } else if (ext.source === 'header') {
             value = responseHeaders[ext.path.toLowerCase()] ?? null;
+          } else if (ext.source === 'cookie') {
+            const setCookie = responseHeaders['set-cookie'] ?? '';
+            const cookieMatch = setCookie.match(new RegExp(`${ext.path}=([^;]+)`));
+            if (cookieMatch) value = cookieMatch[1];
           } else if (ext.source === 'status') {
             value = String(statusCode);
           }
@@ -624,6 +708,7 @@ async function executeSingleStep(
     statusCode,
     latencyMs: Date.now() - startTime,
     responseSize,
+    requestSize,
     extractedVariables,
     assertionResults,
     error,
@@ -686,9 +771,26 @@ export async function startLoadTest(
       customRampSteps: scenario.customRampSteps ? JSON.parse(scenario.customRampSteps) : undefined,
     };
 
-    const baseUrl = scenario.chain.collection.baseUrl;
+    const collection = scenario.chain.collection;
+    const baseUrl = collection.baseUrl;
     const steps = scenario.chain.steps;
     const totalDuration = config.rampUpSec + config.steadyStateSec + config.rampDownSec;
+
+    // Parse collection auth config and headers
+    let authConfig: AuthConfig | null = null;
+    let collectionHeaders: Array<{ key: string; value: string }> | null = null;
+    try {
+      if (collection.authConfig) authConfig = JSON.parse(collection.authConfig) as AuthConfig;
+    } catch { /* ignore */ }
+    try {
+      if (collection.headers) collectionHeaders = JSON.parse(collection.headers) as Array<{ key: string; value: string }>;
+    } catch { /* ignore */ }
+
+    // Parse SLA thresholds
+    let slaThresholds: SlaThreshold[] = [];
+    try {
+      if (scenario.slaThresholds) slaThresholds = JSON.parse(scenario.slaThresholds) as SlaThreshold[];
+    } catch { /* ignore */ }
 
     // Metrics accumulator per interval
     const allLatencies: number[] = [];
@@ -705,6 +807,8 @@ export async function startLoadTest(
     let intervalRequests = 0;
     let intervalErrors = 0;
     let intervalLatencies: number[] = [];
+    let intervalBytesIn = 0;
+    let intervalBytesOut = 0;
     let currentActiveVU = 0;
     let totalRequests = 0;
     let totalErrors = 0;
@@ -731,8 +835,8 @@ export async function startLoadTest(
             p95LatencyMs: percs.p95,
             p99LatencyMs: percs.p99,
             tps: intervalRequests, // per-second since interval = 1s
-            bytesIn: BigInt(0),
-            bytesOut: BigInt(0),
+            bytesIn: BigInt(intervalBytesIn),
+            bytesOut: BigInt(intervalBytesOut),
           },
         });
       } catch (err) {
@@ -743,6 +847,8 @@ export async function startLoadTest(
       intervalRequests = 0;
       intervalErrors = 0;
       intervalLatencies = [];
+      intervalBytesIn = 0;
+      intervalBytesOut = 0;
     }, 1000);
 
     // VU runner function
@@ -774,6 +880,8 @@ export async function startLoadTest(
             baseUrl,
             variables,
             config.timeoutMs,
+            authConfig,
+            collectionHeaders,
           );
 
           // Record metrics
@@ -781,6 +889,8 @@ export async function startLoadTest(
           intervalRequests++;
           allLatencies.push(result.latencyMs);
           intervalLatencies.push(result.latencyMs);
+          intervalBytesIn += result.responseSize;
+          intervalBytesOut += result.requestSize;
 
           const stepLats = stepLatencies.get(step.name);
           if (stepLats) stepLats.push(result.latencyMs);
@@ -935,6 +1045,36 @@ export async function startLoadTest(
       });
     }
 
+    // Evaluate SLA thresholds
+    const slaResults: SlaResult[] = [];
+    if (slaThresholds.length > 0) {
+      const metricValues: Record<string, number> = {
+        avgLatency: avgLatency,
+        p95Latency: percs.p95,
+        p99Latency: percs.p99,
+        errorRate: errorRate,
+        tps: avgTps,
+      };
+
+      for (const sla of slaThresholds) {
+        const actual = metricValues[sla.metric] ?? 0;
+        let passed = false;
+        switch (sla.operator) {
+          case 'lt': passed = actual < sla.value; break;
+          case 'gt': passed = actual > sla.value; break;
+          case 'lte': passed = actual <= sla.value; break;
+          case 'gte': passed = actual >= sla.value; break;
+        }
+        slaResults.push({
+          metric: sla.metric,
+          operator: sla.operator,
+          threshold: sla.value,
+          actual: Math.round(actual * 100) / 100,
+          passed,
+        });
+      }
+    }
+
     // Update run with summary
     await prisma.ptTestRun.update({
       where: { id: runId },
@@ -951,6 +1091,7 @@ export async function startLoadTest(
         peakTps,
         avgTps,
         errorRate,
+        slaResults: slaResults.length > 0 ? JSON.stringify(slaResults) : null,
       },
     });
 

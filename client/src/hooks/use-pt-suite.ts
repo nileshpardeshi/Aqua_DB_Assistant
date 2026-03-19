@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '../lib/api-client';
+import { api } from '../lib/api-client';
 import type {
   PtCollection,
   PtEndpoint,
@@ -39,20 +39,14 @@ const ptKeys = {
 export function useCollections() {
   return useQuery({
     queryKey: ptKeys.collections(),
-    queryFn: async () => {
-      const response = await apiClient.get('/pt-suite/collections');
-      return response as unknown as PtCollection[];
-    },
+    queryFn: () => api.get<PtCollection[]>('/pt-suite/collections'),
   });
 }
 
 export function useCollection(id: string | undefined) {
   return useQuery({
     queryKey: ptKeys.collection(id!),
-    queryFn: async () => {
-      const response = await apiClient.get(`/pt-suite/collections/${id}`);
-      return response as unknown as PtCollection;
-    },
+    queryFn: () => api.get<PtCollection>(`/pt-suite/collections/${id}`),
     enabled: !!id,
   });
 }
@@ -61,17 +55,14 @@ export function useCreateCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: {
+    mutationFn: (input: {
       name: string;
       description?: string;
       baseUrl: string;
       authConfig?: PtAuthConfig;
       headers?: PtHeader[];
       variables?: PtVariable[];
-    }) => {
-      const response = await apiClient.post('/pt-suite/collections', input);
-      return response as unknown as PtCollection;
-    },
+    }) => api.post<PtCollection>('/pt-suite/collections', input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ptKeys.collections() });
     },
@@ -82,7 +73,7 @@ export function useUpdateCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       data,
     }: {
@@ -95,10 +86,7 @@ export function useUpdateCollection() {
         headers?: PtHeader[];
         variables?: PtVariable[];
       };
-    }) => {
-      const response = await apiClient.put(`/pt-suite/collections/${id}`, data);
-      return response as unknown as PtCollection;
-    },
+    }) => api.put<PtCollection>(`/pt-suite/collections/${id}`, data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ptKeys.collection(variables.id) });
       queryClient.invalidateQueries({ queryKey: ptKeys.collections() });
@@ -110,9 +98,7 @@ export function useDeleteCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      await apiClient.delete(`/pt-suite/collections/${id}`);
-    },
+    mutationFn: (id: string) => api.delete<void>(`/pt-suite/collections/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ptKeys.collections() });
     },
@@ -122,10 +108,16 @@ export function useDeleteCollection() {
 // ── Swagger Parsing ─────────────────────────────────────────────────────────
 
 export function useParseSwagger() {
+  const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async (input: { spec: string | object; collectionId?: string }) => {
-      const response = await apiClient.post('/pt-suite/swagger/parse', input);
-      return response as unknown as { endpoints: PtEndpoint[]; count: number };
+    mutationFn: (input: { specText: string; name?: string }) =>
+      api.post<{ collection: PtCollection; parsed: { title: string; version: string; baseUrl: string; endpointCount: number } }>(
+        '/pt-suite/swagger/parse',
+        input,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ptKeys.collections() });
     },
   });
 }
@@ -136,7 +128,7 @@ export function useCreateEndpoint() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       collectionId,
       data,
     }: {
@@ -152,17 +144,10 @@ export function useCreateEndpoint() {
         bodyTemplate?: string;
         tags?: string[];
       };
-    }) => {
-      const response = await apiClient.post(
-        `/pt-suite/collections/${collectionId}/endpoints`,
-        data
-      );
-      return response as unknown as PtEndpoint;
-    },
+    }) => api.post<PtEndpoint>(`/pt-suite/collections/${collectionId}/endpoints`, data),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ptKeys.collection(variables.collectionId),
-      });
+      queryClient.invalidateQueries({ queryKey: ptKeys.collection(variables.collectionId) });
+      queryClient.invalidateQueries({ queryKey: ptKeys.collections() });
     },
   });
 }
@@ -171,7 +156,7 @@ export function useUpdateEndpoint() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       collectionId,
       data,
@@ -189,14 +174,9 @@ export function useUpdateEndpoint() {
         bodyTemplate?: string;
         tags?: string[];
       };
-    }) => {
-      const response = await apiClient.put(`/pt-suite/endpoints/${id}`, data);
-      return response as unknown as PtEndpoint;
-    },
+    }) => api.put<PtEndpoint>(`/pt-suite/endpoints/${id}`, data),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ptKeys.collection(variables.collectionId),
-      });
+      queryClient.invalidateQueries({ queryKey: ptKeys.collection(variables.collectionId) });
     },
   });
 }
@@ -205,19 +185,16 @@ export function useDeleteEndpoint() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       collectionId,
     }: {
       id: string;
       collectionId: string;
-    }) => {
-      await apiClient.delete(`/pt-suite/endpoints/${id}`);
-    },
+    }) => api.delete<void>(`/pt-suite/endpoints/${id}`),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ptKeys.collection(variables.collectionId),
-      });
+      queryClient.invalidateQueries({ queryKey: ptKeys.collection(variables.collectionId) });
+      queryClient.invalidateQueries({ queryKey: ptKeys.collections() });
     },
   });
 }
@@ -227,20 +204,14 @@ export function useDeleteEndpoint() {
 export function useChains() {
   return useQuery({
     queryKey: ptKeys.chains(),
-    queryFn: async () => {
-      const response = await apiClient.get('/pt-suite/chains');
-      return response as unknown as PtChain[];
-    },
+    queryFn: () => api.get<PtChain[]>('/pt-suite/chains'),
   });
 }
 
 export function useChain(id: string | undefined) {
   return useQuery({
     queryKey: ptKeys.chain(id!),
-    queryFn: async () => {
-      const response = await apiClient.get(`/pt-suite/chains/${id}`);
-      return response as unknown as PtChain;
-    },
+    queryFn: () => api.get<PtChain>(`/pt-suite/chains/${id}`),
     enabled: !!id,
   });
 }
@@ -249,14 +220,11 @@ export function useCreateChain() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: {
+    mutationFn: (input: {
       collectionId: string;
       name: string;
       description?: string;
-    }) => {
-      const response = await apiClient.post('/pt-suite/chains', input);
-      return response as unknown as PtChain;
-    },
+    }) => api.post<PtChain>('/pt-suite/chains', input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ptKeys.chains() });
     },
@@ -267,19 +235,13 @@ export function useUpdateChain() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       data,
     }: {
       id: string;
-      data: {
-        name?: string;
-        description?: string;
-      };
-    }) => {
-      const response = await apiClient.put(`/pt-suite/chains/${id}`, data);
-      return response as unknown as PtChain;
-    },
+      data: { name?: string; description?: string };
+    }) => api.put<PtChain>(`/pt-suite/chains/${id}`, data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ptKeys.chain(variables.id) });
       queryClient.invalidateQueries({ queryKey: ptKeys.chains() });
@@ -291,9 +253,7 @@ export function useDeleteChain() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      await apiClient.delete(`/pt-suite/chains/${id}`);
-    },
+    mutationFn: (id: string) => api.delete<void>(`/pt-suite/chains/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ptKeys.chains() });
     },
@@ -306,7 +266,7 @@ export function useCreateStep() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       chainId,
       data,
     }: {
@@ -325,17 +285,9 @@ export function useCreateStep() {
         thinkTimeSec?: number;
         isEnabled?: boolean;
       };
-    }) => {
-      const response = await apiClient.post(
-        `/pt-suite/chains/${chainId}/steps`,
-        data
-      );
-      return response as unknown as PtChainStep;
-    },
+    }) => api.post<PtChainStep>(`/pt-suite/chains/${chainId}/steps`, data),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ptKeys.chain(variables.chainId),
-      });
+      queryClient.invalidateQueries({ queryKey: ptKeys.chain(variables.chainId) });
     },
   });
 }
@@ -344,7 +296,7 @@ export function useUpdateStep() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       chainId,
       data,
@@ -365,14 +317,9 @@ export function useUpdateStep() {
         thinkTimeSec?: number;
         isEnabled?: boolean;
       };
-    }) => {
-      const response = await apiClient.put(`/pt-suite/steps/${id}`, data);
-      return response as unknown as PtChainStep;
-    },
+    }) => api.put<PtChainStep>(`/pt-suite/steps/${id}`, data),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ptKeys.chain(variables.chainId),
-      });
+      queryClient.invalidateQueries({ queryKey: ptKeys.chain(variables.chainId) });
     },
   });
 }
@@ -381,19 +328,15 @@ export function useDeleteStep() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       chainId,
     }: {
       id: string;
       chainId: string;
-    }) => {
-      await apiClient.delete(`/pt-suite/steps/${id}`);
-    },
+    }) => api.delete<void>(`/pt-suite/steps/${id}`),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ptKeys.chain(variables.chainId),
-      });
+      queryClient.invalidateQueries({ queryKey: ptKeys.chain(variables.chainId) });
     },
   });
 }
@@ -402,23 +345,15 @@ export function useReorderSteps() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       chainId,
       stepIds,
     }: {
       chainId: string;
       stepIds: string[];
-    }) => {
-      const response = await apiClient.post(
-        `/pt-suite/chains/${chainId}/reorder`,
-        { stepIds }
-      );
-      return response as unknown as PtChainStep[];
-    },
+    }) => api.post<PtChainStep[]>(`/pt-suite/chains/${chainId}/reorder`, { stepIds }),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ptKeys.chain(variables.chainId),
-      });
+      queryClient.invalidateQueries({ queryKey: ptKeys.chain(variables.chainId) });
     },
   });
 }
@@ -427,23 +362,15 @@ export function useExecuteChain() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       chainId,
       variables,
     }: {
       chainId: string;
       variables?: Record<string, string>;
-    }) => {
-      const response = await apiClient.post(
-        `/pt-suite/chains/${chainId}/execute`,
-        { variables }
-      );
-      return response as unknown as PtChainExecutionResult;
-    },
+    }) => api.post<PtChainExecutionResult>(`/pt-suite/chains/${chainId}/execute`, { variables }),
     onSuccess: (_data, vars) => {
-      queryClient.invalidateQueries({
-        queryKey: ptKeys.chain(vars.chainId),
-      });
+      queryClient.invalidateQueries({ queryKey: ptKeys.chain(vars.chainId) });
     },
   });
 }
@@ -453,10 +380,7 @@ export function useExecuteChain() {
 export function useScenarios() {
   return useQuery({
     queryKey: ptKeys.scenarios(),
-    queryFn: async () => {
-      const response = await apiClient.get('/pt-suite/scenarios');
-      return response as unknown as PtScenario[];
-    },
+    queryFn: () => api.get<PtScenario[]>('/pt-suite/scenarios'),
   });
 }
 
@@ -464,7 +388,7 @@ export function useCreateScenario() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: {
+    mutationFn: (input: {
       chainId: string;
       name: string;
       description?: string;
@@ -479,10 +403,7 @@ export function useCreateScenario() {
       maxErrorPct?: number;
       slaThresholds?: PtSlaThreshold[];
       customRampSteps?: PtRampStep[];
-    }) => {
-      const response = await apiClient.post('/pt-suite/scenarios', input);
-      return response as unknown as PtScenario;
-    },
+    }) => api.post<PtScenario>('/pt-suite/scenarios', input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ptKeys.scenarios() });
     },
@@ -493,7 +414,7 @@ export function useUpdateScenario() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       data,
     }: {
@@ -513,10 +434,7 @@ export function useUpdateScenario() {
         slaThresholds?: PtSlaThreshold[];
         customRampSteps?: PtRampStep[];
       };
-    }) => {
-      const response = await apiClient.put(`/pt-suite/scenarios/${id}`, data);
-      return response as unknown as PtScenario;
-    },
+    }) => api.put<PtScenario>(`/pt-suite/scenarios/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ptKeys.scenarios() });
     },
@@ -527,9 +445,7 @@ export function useDeleteScenario() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      await apiClient.delete(`/pt-suite/scenarios/${id}`);
-    },
+    mutationFn: (id: string) => api.delete<void>(`/pt-suite/scenarios/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ptKeys.scenarios() });
     },
@@ -542,10 +458,8 @@ export function useStartRun() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { scenarioId: string }) => {
-      const response = await apiClient.post('/pt-suite/runs', input);
-      return response as unknown as PtTestRun;
-    },
+    mutationFn: (input: { scenarioId: string }) =>
+      api.post<PtTestRun>('/pt-suite/runs', input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ptKeys.runs() });
     },
@@ -555,20 +469,14 @@ export function useStartRun() {
 export function useRuns() {
   return useQuery({
     queryKey: ptKeys.runs(),
-    queryFn: async () => {
-      const response = await apiClient.get('/pt-suite/runs');
-      return response as unknown as PtTestRun[];
-    },
+    queryFn: () => api.get<PtTestRun[]>('/pt-suite/runs'),
   });
 }
 
 export function useRun(id: string | undefined) {
   return useQuery({
     queryKey: ptKeys.run(id!),
-    queryFn: async () => {
-      const response = await apiClient.get(`/pt-suite/runs/${id}`);
-      return response as unknown as PtTestRun;
-    },
+    queryFn: () => api.get<PtTestRun>(`/pt-suite/runs/${id}`),
     enabled: !!id,
   });
 }
@@ -577,12 +485,21 @@ export function useStopRun() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await apiClient.post(`/pt-suite/runs/${id}/stop`);
-      return response as unknown as PtTestRun;
-    },
+    mutationFn: (id: string) =>
+      api.post<PtTestRun>(`/pt-suite/runs/${id}/stop`),
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ptKeys.run(id) });
+      queryClient.invalidateQueries({ queryKey: ptKeys.runs() });
+    },
+  });
+}
+
+export function useDeleteRun() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/pt-suite/runs/${id}`),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ptKeys.runs() });
     },
   });
@@ -592,12 +509,11 @@ export function useGenerateReport() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await apiClient.post(`/pt-suite/runs/${id}/report`);
-      return response as unknown as PtAiReport;
-    },
+    mutationFn: (id: string) =>
+      api.post<PtAiReport>(`/pt-suite/runs/${id}/report`),
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ptKeys.run(id) });
+      queryClient.invalidateQueries({ queryKey: ptKeys.runs() });
     },
   });
 }
@@ -608,10 +524,7 @@ export function useSeedDemo() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      const response = await apiClient.get('/pt-suite/demo/seed');
-      return response as unknown as { message: string };
-    },
+    mutationFn: () => api.get<{ message: string }>('/pt-suite/demo/seed'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ptKeys.all });
     },
@@ -622,19 +535,15 @@ export function useSeedDemo() {
 
 export function useAiAnalyzeChain() {
   return useMutation({
-    mutationFn: async (input: { chainId: string; executionResult?: PtChainExecutionResult }) => {
-      const response = await apiClient.post('/pt-suite/ai/analyze-chain', input);
-      return response as unknown as { analysis: string };
-    },
+    mutationFn: (input: { chainId: string; executionResult?: PtChainExecutionResult }) =>
+      api.post<{ analysis: unknown }>('/pt-suite/ai/analyze-chain', input),
   });
 }
 
 export function useAiSuggestAssertions() {
   return useMutation({
-    mutationFn: async (input: { stepId: string; responseBody?: string; responseHeaders?: Record<string, string> }) => {
-      const response = await apiClient.post('/pt-suite/ai/suggest-assertions', input);
-      return response as unknown as { assertions: PtAssertion[] };
-    },
+    mutationFn: (input: { stepId: string; responseBody?: string; responseHeaders?: Record<string, string> }) =>
+      api.post<{ assertions: PtAssertion[] }>('/pt-suite/ai/suggest-assertions', input),
   });
 }
 
@@ -658,6 +567,7 @@ export function useRunStream(runId: string | undefined) {
     const es = new EventSource(url);
     eventSourceRef.current = es;
     setIsStreaming(true);
+    setMetrics([]); // Reset on new connection
 
     es.addEventListener('metric', (event: MessageEvent) => {
       try {

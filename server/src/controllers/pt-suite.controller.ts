@@ -419,7 +419,7 @@ export const executeChain = asyncHandler(async (req: Request, res: Response) => 
     where: { id: chainId },
     include: {
       steps: { where: { isEnabled: true }, orderBy: { sortOrder: 'asc' } },
-      collection: { select: { baseUrl: true } },
+      collection: { select: { baseUrl: true, authConfig: true, headers: true } },
     },
   });
 
@@ -430,6 +430,16 @@ export const executeChain = asyncHandler(async (req: Request, res: Response) => 
     });
     return;
   }
+
+  // Parse collection auth config and headers
+  let authConfig = null;
+  let collectionHeaders = null;
+  try {
+    if (chain.collection.authConfig) authConfig = JSON.parse(chain.collection.authConfig);
+  } catch { /* ignore */ }
+  try {
+    if (chain.collection.headers) collectionHeaders = JSON.parse(chain.collection.headers);
+  } catch { /* ignore */ }
 
   const results = await executeChainSteps(
     chain.steps.map(s => ({
@@ -445,6 +455,9 @@ export const executeChain = asyncHandler(async (req: Request, res: Response) => 
     })),
     chain.collection.baseUrl,
     variables ?? {},
+    30000,
+    authConfig,
+    collectionHeaders,
   );
 
   const totalLatency = results.reduce((sum, r) => sum + r.latencyMs, 0);
@@ -643,7 +656,18 @@ export const getRun = asyncHandler(async (req: Request, res: Response) => {
       metrics: { orderBy: { timestamp: 'asc' } },
     },
   });
-  res.json({ success: true, data: run });
+
+  // Convert BigInt fields to Number for JSON serialization
+  const data = {
+    ...run,
+    metrics: run.metrics.map(m => ({
+      ...m,
+      bytesIn: Number(m.bytesIn),
+      bytesOut: Number(m.bytesOut),
+    })),
+  };
+
+  res.json({ success: true, data });
 });
 
 export const stopRun = asyncHandler(async (req: Request, res: Response) => {
@@ -836,10 +860,14 @@ export const generateReport = asyncHandler(async (req: Request, res: Response) =
       avgLatency: sm.avgLatencyMs,
       p95: sm.p95LatencyMs,
       p99: sm.p99LatencyMs,
+      minLatency: sm.minLatencyMs,
+      maxLatency: sm.maxLatencyMs,
       totalCalls: sm.totalCalls,
       totalErrors: sm.totalErrors,
       errorRate: sm.totalCalls > 0 ? (sm.totalErrors / sm.totalCalls) * 100 : 0,
+      errorsByStatus: sm.errorsByStatus ? JSON.parse(sm.errorsByStatus) : undefined,
     })),
+    slaResults: run.slaResults ? JSON.parse(run.slaResults) : undefined,
     timeSeriesHighlights,
   });
 
@@ -915,18 +943,29 @@ export const aiAnalyzeChain = asyncHandler(async (req: Request, res: Response) =
     where: { id: chainId as string },
     include: {
       steps: { orderBy: { sortOrder: 'asc' } },
-      collection: { select: { baseUrl: true } },
+      collection: { select: { baseUrl: true, authConfig: true } },
     },
   });
+
+  let authType: string | undefined;
+  try {
+    if (chain.collection.authConfig) {
+      const parsed = JSON.parse(chain.collection.authConfig) as { type?: string };
+      if (parsed.type && parsed.type !== 'none') authType = parsed.type;
+    }
+  } catch { /* ignore */ }
 
   const messages = buildPtChainAnalysisPrompt({
     chainName: chain.name,
     collectionBaseUrl: chain.collection.baseUrl,
+    authType,
+    totalSteps: chain.steps.length,
     steps: chain.steps.map(s => ({
       name: s.name,
       method: s.method,
       url: s.url,
       hasBody: !!s.body,
+      bodySnippet: s.body ? s.body.slice(0, 200) : undefined,
       extractors: s.extractors ? JSON.parse(s.extractors) as Array<{ name: string; source: string; path: string }> : [],
       assertions: s.assertions ? JSON.parse(s.assertions) as Array<{ type: string; target: string; operator: string; value: string }> : [],
       thinkTimeSec: s.thinkTimeSec,

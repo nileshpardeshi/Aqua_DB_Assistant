@@ -1,0 +1,138 @@
+<html>
+<head><title>WORKLOAD REPOSITORY report for DB: PRODDB</title></head>
+<body>
+<h1>WORKLOAD REPOSITORY report for DB: PRODDB</h1>
+<h2>AWR Report</h2>
+
+<table border="1">
+<tr><th colspan="4">Database Instance Information</th></tr>
+<tr><td>DB Name</td><td>DB Id</td><td>Instance</td><td>Inst num</td></tr>
+<tr><td>PRODDB</td><td>1847362951</td><td>proddb1</td><td>1</td></tr>
+</table>
+
+<table border="1">
+<tr><th colspan="4">Host Information</th></tr>
+<tr><td>Host Name</td><td>Platform</td><td>CPUs</td><td>Memory (GB)</td></tr>
+<tr><td>prod-db-server-01</td><td>Linux x86 64-bit</td><td>32</td><td>256</td></tr>
+</table>
+
+<table border="1">
+<tr><th colspan="4">Snapshot Information</th></tr>
+<tr><td></td><td>Snap Id</td><td>Snap Time</td><td>Sessions</td></tr>
+<tr><td>Begin Snap:</td><td>48251</td><td>14-Mar-26 08:00:15</td><td>287</td></tr>
+<tr><td>End Snap:</td><td>48252</td><td>14-Mar-26 09:00:22</td><td>312</td></tr>
+<tr><td>Elapsed:</td><td></td><td>60.12 (mins)</td><td></td></tr>
+<tr><td>DB Time:</td><td></td><td>487.35 (mins)</td><td></td></tr>
+</table>
+
+<p>DB Version: 19.21.0.0.0</p>
+
+<h3>Load Profile</h3>
+<table border="1">
+<tr><th>Metric</th><th>Per Second</th><th>Per Transaction</th></tr>
+<tr><td>DB Time(s):</td><td>8.11</td><td>0.42</td></tr>
+<tr><td>DB CPU(s):</td><td>3.24</td><td>0.17</td></tr>
+<tr><td>Redo size (bytes):</td><td>2847561.2</td><td>148293.1</td></tr>
+<tr><td>Logical reads (blocks):</td><td>187432.5</td><td>9762.8</td></tr>
+<tr><td>Block changes:</td><td>4521.3</td><td>235.6</td></tr>
+<tr><td>Physical reads (blocks):</td><td>12847.3</td><td>669.4</td></tr>
+<tr><td>Physical writes (blocks):</td><td>1523.7</td><td>79.4</td></tr>
+<tr><td>User calls:</td><td>892.4</td><td>46.5</td></tr>
+<tr><td>Parses (SQL):</td><td>345.2</td><td>18.0</td></tr>
+<tr><td>Hard parses (SQL):</td><td>28.7</td><td>1.5</td></tr>
+<tr><td>SQL Work Area (MB):</td><td>42.8</td><td>2.2</td></tr>
+<tr><td>Logons:</td><td>4.2</td><td>0.2</td></tr>
+<tr><td>Executes (SQL):</td><td>2847.1</td><td>148.3</td></tr>
+<tr><td>Rollbacks:</td><td>1.8</td><td>0.1</td></tr>
+<tr><td>Transactions:</td><td>19.2</td><td></td></tr>
+</table>
+
+<h3>Top 10 Foreground Events by Total Wait Time</h3>
+<table border="1">
+<tr><th>Event</th><th>Waits</th><th>Total Wait Time (sec)</th><th>Wait Avg(ms)</th><th>% DB time</th><th>Wait Class</th></tr>
+<tr><td>db file sequential read</td><td>2847561</td><td>8742.3</td><td>3.07</td><td>29.89</td><td>User I/O</td></tr>
+<tr><td>DB CPU</td><td></td><td>5824.1</td><td></td><td>19.92</td><td>CPU</td></tr>
+<tr><td>log file sync</td><td>487231</td><td>3421.7</td><td>7.02</td><td>11.70</td><td>Commit</td></tr>
+<tr><td>db file scattered read</td><td>1247832</td><td>2847.5</td><td>2.28</td><td>9.73</td><td>User I/O</td></tr>
+<tr><td>read by other session</td><td>384721</td><td>1923.4</td><td>5.00</td><td>6.58</td><td>User I/O</td></tr>
+<tr><td>enq: TX - row lock contention</td><td>12487</td><td>1847.2</td><td>147.94</td><td>6.31</td><td>Application</td></tr>
+<tr><td>direct path read</td><td>847231</td><td>1234.5</td><td>1.46</td><td>4.22</td><td>User I/O</td></tr>
+<tr><td>gc buffer busy acquire</td><td>284712</td><td>987.3</td><td>3.47</td><td>3.38</td><td>Cluster</td></tr>
+<tr><td>latch: cache buffers chains</td><td>184723</td><td>542.1</td><td>2.94</td><td>1.85</td><td>Concurrency</td></tr>
+<tr><td>cursor: pin S wait on X</td><td>84721</td><td>312.4</td><td>3.69</td><td>1.07</td><td>Concurrency</td></tr>
+</table>
+
+<h3>SQL ordered by Elapsed Time</h3>
+<table border="1">
+<tr><th>Elapsed Time (s)</th><th>CPU Time (s)</th><th>Executions</th><th>Elap per Exec (s)</th><th>% Total DB Time</th><th>SQL Id</th><th>SQL Module</th><th>SQL Text</th></tr>
+<tr><td>4287.32</td><td>1247.84</td><td>48721</td><td>0.088</td><td>14.66</td><td>g8fn4q2k7x9m2</td><td>JDBC Thin Client</td><td>SELECT o.order_id, o.order_date, o.status, c.customer_name, c.email, SUM(ol.quantity * ol.unit_price) AS total_amount FROM orders o JOIN customers c ON o.customer_id = c.customer_id JOIN order_lines ol ON o.order_id = ol.order_id WHERE o.order_date BETWEEN :1 AND :2 AND o.status IN (:3, :4, :5) GROUP BY o.order_id, o.order_date, o.status, c.customer_name, c.email ORDER BY o.order_date DESC</td></tr>
+<tr><td>3124.87</td><td>2847.12</td><td>12487</td><td>0.250</td><td>10.68</td><td>a2bx8n4kp1w3z</td><td>DBMS_SCHEDULER</td><td>SELECT /*+ FULL(t) PARALLEL(t, 4) */ t.transaction_id, t.account_id, t.amount, t.transaction_type, t.created_at, a.account_number, a.balance FROM transactions t JOIN accounts a ON t.account_id = a.account_id WHERE t.created_at >= SYSDATE - 30 AND t.amount > 10000 AND NOT EXISTS (SELECT 1 FROM audit_log al WHERE al.transaction_id = t.transaction_id AND al.status = 'REVIEWED')</td></tr>
+<tr><td>2487.21</td><td>487.32</td><td>284731</td><td>0.009</td><td>8.51</td><td>k7m2p4x9n1b8c</td><td>JDBC Thin Client</td><td>SELECT p.product_id, p.product_name, p.category_id, i.quantity_on_hand, i.warehouse_id FROM products p LEFT JOIN inventory i ON p.product_id = i.product_id WHERE p.category_id = :1 AND i.quantity_on_hand > 0 ORDER BY p.product_name</td></tr>
+<tr><td>1847.54</td><td>1523.41</td><td>847</td><td>2.181</td><td>6.32</td><td>w3z8b2n4k7m1p</td><td>PL/SQL Developer</td><td>SELECT customer_id, customer_name, email, phone, address, city, state, zip_code, country, credit_limit, (SELECT COUNT(*) FROM orders WHERE customer_id = c.customer_id) AS order_count, (SELECT MAX(order_date) FROM orders WHERE customer_id = c.customer_id) AS last_order_date, (SELECT SUM(ol.quantity * ol.unit_price) FROM orders o JOIN order_lines ol ON o.order_id = ol.order_id WHERE o.customer_id = c.customer_id) AS lifetime_value FROM customers c WHERE c.status = 'ACTIVE' ORDER BY lifetime_value DESC NULLS LAST</td></tr>
+<tr><td>1234.82</td><td>847.23</td><td>3847</td><td>0.321</td><td>4.22</td><td>p1w3z8b2n4k7m</td><td>JDBC Thin Client</td><td>UPDATE inventory SET quantity_on_hand = quantity_on_hand - :1, last_updated = SYSDATE, updated_by = :2 WHERE product_id = :3 AND warehouse_id = :4 AND quantity_on_hand >= :1</td></tr>
+<tr><td>987.41</td><td>312.87</td><td>48723</td><td>0.020</td><td>3.38</td><td>n4k7m2p1w3z8b</td><td>JDBC Thin Client</td><td>SELECT s.shipment_id, s.order_id, s.carrier, s.tracking_number, s.status, s.estimated_delivery FROM shipments s WHERE s.order_id = :1 ORDER BY s.created_at DESC</td></tr>
+<tr><td>847.23</td><td>623.41</td><td>1247</td><td>0.679</td><td>2.90</td><td>b2n4k7m2p1w3z</td><td>SQL*Plus</td><td>INSERT INTO audit_log (log_id, transaction_id, action, performed_by, performed_at, old_value, new_value, ip_address) SELECT audit_seq.NEXTVAL, t.transaction_id, 'BATCH_REVIEW', 'SYSTEM', SYSDATE, t.status, 'REVIEWED', '10.0.1.50' FROM transactions t WHERE t.created_at >= SYSDATE - 1 AND t.amount > 50000 AND t.status = 'PENDING'</td></tr>
+</table>
+
+<h3>SQL ordered by CPU Time</h3>
+<table border="1">
+<tr><th>CPU Time (s)</th><th>Elapsed Time (s)</th><th>Executions</th><th>CPU per Exec (s)</th><th>% Total DB Time</th><th>SQL Id</th><th>SQL Text</th></tr>
+<tr><td>2847.12</td><td>3124.87</td><td>12487</td><td>0.228</td><td>9.73</td><td>a2bx8n4kp1w3z</td><td>SELECT /*+ FULL(t) PARALLEL(t, 4) */ t.transaction_id, t.account_id...</td></tr>
+<tr><td>1523.41</td><td>1847.54</td><td>847</td><td>1.799</td><td>5.21</td><td>w3z8b2n4k7m1p</td><td>SELECT customer_id, customer_name, email, phone...</td></tr>
+<tr><td>1247.84</td><td>4287.32</td><td>48721</td><td>0.026</td><td>4.27</td><td>g8fn4q2k7x9m2</td><td>SELECT o.order_id, o.order_date, o.status, c.customer_name...</td></tr>
+<tr><td>847.23</td><td>1234.82</td><td>3847</td><td>0.220</td><td>2.90</td><td>p1w3z8b2n4k7m</td><td>UPDATE inventory SET quantity_on_hand = quantity_on_hand - :1...</td></tr>
+<tr><td>623.41</td><td>847.23</td><td>1247</td><td>0.500</td><td>2.13</td><td>b2n4k7m2p1w3z</td><td>INSERT INTO audit_log (log_id, transaction_id, action...)...</td></tr>
+</table>
+
+<h3>Instance Efficiency Percentages (Target 100%)</h3>
+<table border="1">
+<tr><th>Metric</th><th>Value</th></tr>
+<tr><td>Buffer Nowait %:</td><td>99.41</td></tr>
+<tr><td>Redo NoWait %:</td><td>99.97</td></tr>
+<tr><td>Buffer Hit %:</td><td>93.14</td></tr>
+<tr><td>In-memory Sort %:</td><td>99.87</td></tr>
+<tr><td>Library Hit %:</td><td>97.82</td></tr>
+<tr><td>Soft Parse %:</td><td>91.68</td></tr>
+<tr><td>Execute to Parse %:</td><td>87.89</td></tr>
+<tr><td>Latch Hit %:</td><td>99.72</td></tr>
+<tr><td>Parse CPU to Parse Elapsd %:</td><td>78.43</td></tr>
+<tr><td>% Non-Parse CPU:</td><td>98.21</td></tr>
+</table>
+
+<h3>Tablespace IO Stats</h3>
+<table border="1">
+<tr><th>Tablespace</th><th>Reads</th><th>Av Reads/s</th><th>Av Rd(ms)</th><th>Av Blks/Rd</th><th>Writes</th><th>Av Writes/s</th><th>Av Wrt(ms)</th></tr>
+<tr><td>USERS_DATA</td><td>4847231</td><td>1345</td><td>4.2</td><td>1.0</td><td>847231</td><td>235</td><td>1.8</td></tr>
+<tr><td>USERS_INDEX</td><td>2847123</td><td>790</td><td>2.1</td><td>1.0</td><td>284712</td><td>79</td><td>0.9</td></tr>
+<tr><td>UNDOTBS1</td><td>487231</td><td>135</td><td>1.4</td><td>1.0</td><td>1247832</td><td>346</td><td>1.2</td></tr>
+<tr><td>TEMP</td><td>847232</td><td>235</td><td>3.8</td><td>8.0</td><td>487231</td><td>135</td><td>2.1</td></tr>
+<tr><td>SYSTEM</td><td>84723</td><td>24</td><td>1.1</td><td>1.0</td><td>12487</td><td>3</td><td>0.7</td></tr>
+<tr><td>SYSAUX</td><td>48721</td><td>14</td><td>1.3</td><td>1.0</td><td>8472</td><td>2</td><td>0.8</td></tr>
+</table>
+
+<h3>Memory Statistics</h3>
+<table border="1">
+<tr><th>Component</th><th>Size (MB)</th></tr>
+<tr><td>SGA Total</td><td>98304</td></tr>
+<tr><td>Buffer Cache</td><td>65536</td></tr>
+<tr><td>Shared Pool</td><td>16384</td></tr>
+<tr><td>Large Pool</td><td>4096</td></tr>
+<tr><td>Java Pool</td><td>2048</td></tr>
+<tr><td>Streams Pool</td><td>1024</td></tr>
+<tr><td>PGA Aggregate Target</td><td>32768</td></tr>
+<tr><td>PGA Allocated</td><td>28471</td></tr>
+</table>
+
+<h3>Top Segments by Physical Reads</h3>
+<table border="1">
+<tr><th>Owner</th><th>Tablespace Name</th><th>Object Name</th><th>Subobject Name</th><th>Obj. Type</th><th>Physical Reads</th></tr>
+<tr><td>APP_OWNER</td><td>USERS_DATA</td><td>ORDERS</td><td>ORDERS_P202603</td><td>TABLE PARTITION</td><td>1847231</td></tr>
+<tr><td>APP_OWNER</td><td>USERS_DATA</td><td>ORDER_LINES</td><td></td><td>TABLE</td><td>1247832</td></tr>
+<tr><td>APP_OWNER</td><td>USERS_DATA</td><td>TRANSACTIONS</td><td>TXN_P202603</td><td>TABLE PARTITION</td><td>847231</td></tr>
+<tr><td>APP_OWNER</td><td>USERS_INDEX</td><td>IDX_ORDERS_DATE</td><td></td><td>INDEX</td><td>487231</td></tr>
+<tr><td>APP_OWNER</td><td>USERS_DATA</td><td>CUSTOMERS</td><td></td><td>TABLE</td><td>284712</td></tr>
+</table>
+
+<p>End of Report</p>
+</body>
+</html>

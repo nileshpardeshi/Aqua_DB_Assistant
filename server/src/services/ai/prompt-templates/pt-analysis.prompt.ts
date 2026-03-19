@@ -28,9 +28,19 @@ interface PtRunData {
     avgLatency: number;
     p95: number;
     p99: number;
+    minLatency?: number;
+    maxLatency?: number;
     totalCalls: number;
     totalErrors: number;
     errorRate: number;
+    errorsByStatus?: Record<string, number>;
+  }>;
+  slaResults?: Array<{
+    metric: string;
+    operator: string;
+    threshold: number;
+    actual: number;
+    passed: boolean;
   }>;
   timeSeriesHighlights: string;
 }
@@ -42,11 +52,14 @@ interface PtChainData {
     method: string;
     url: string;
     hasBody: boolean;
+    bodySnippet?: string;
     extractors: Array<{ name: string; source: string; path: string }>;
     assertions: Array<{ type: string; target: string; operator: string; value: string }>;
     thinkTimeSec: number;
   }>;
   collectionBaseUrl: string;
+  authType?: string;
+  totalSteps: number;
 }
 
 interface PtStepData {
@@ -60,6 +73,14 @@ interface PtStepData {
 // ── Performance Test Analysis ────────────────────────────────────────────────
 
 const PT_ANALYSIS_SYSTEM = `You are an expert performance engineer specializing in API load testing analysis. You analyze performance test results to identify bottlenecks, degradation patterns, and provide capacity planning guidance.
+
+Key analysis principles:
+- Compare P95/P99 latency against average to detect tail latency issues
+- Identify steps with disproportionately high error rates as likely bottlenecks
+- Consider the load pattern (ramp, spike, soak, stress) when interpreting results — a spike test reveals different things than a soak test
+- Flag any step where P99 > 3x P50 as having high variance
+- For error rates > 1%, classify as concerning; > 5% as critical
+- For capacity estimation, use the VU level at which P95 latency exceeds 2x the baseline value
 
 You MUST respond with a valid JSON object. Do NOT include any text outside the JSON.`;
 
@@ -126,7 +147,24 @@ export function buildPtAnalysisPrompt(
     userContent += `## Per-Step Metrics\n`;
     for (const step of runData.stepMetrics) {
       userContent += `- ${step.stepName} [${step.method}] ${step.url}\n`;
-      userContent += `  Calls: ${step.totalCalls} | Errors: ${step.totalErrors} (${step.errorRate.toFixed(2)}%) | Avg: ${step.avgLatency.toFixed(1)}ms | P95: ${step.p95.toFixed(1)}ms | P99: ${step.p99.toFixed(1)}ms\n`;
+      userContent += `  Calls: ${step.totalCalls} | Errors: ${step.totalErrors} (${step.errorRate.toFixed(2)}%)\n`;
+      userContent += `  Latency — Avg: ${step.avgLatency.toFixed(1)}ms | P95: ${step.p95.toFixed(1)}ms | P99: ${step.p99.toFixed(1)}ms`;
+      if (step.minLatency != null && step.maxLatency != null) {
+        userContent += ` | Min: ${step.minLatency.toFixed(1)}ms | Max: ${step.maxLatency.toFixed(1)}ms`;
+      }
+      userContent += '\n';
+      if (step.errorsByStatus && Object.keys(step.errorsByStatus).length > 0) {
+        userContent += `  Error breakdown: ${Object.entries(step.errorsByStatus).map(([k, v]) => `${k}=${v}`).join(', ')}\n`;
+      }
+    }
+    userContent += '\n';
+  }
+
+  if (runData.slaResults && runData.slaResults.length > 0) {
+    userContent += `## SLA Results\n`;
+    for (const sla of runData.slaResults) {
+      const icon = sla.passed ? 'PASS' : 'FAIL';
+      userContent += `- [${icon}] ${sla.metric} ${sla.operator} ${sla.threshold} → actual: ${sla.actual}\n`;
     }
     userContent += '\n';
   }
@@ -189,7 +227,11 @@ export function buildPtChainAnalysisPrompt(
   let userContent = '';
 
   userContent += `## API Chain: ${chainData.chainName}\n`;
-  userContent += `Base URL: ${chainData.collectionBaseUrl}\n\n`;
+  userContent += `Base URL: ${chainData.collectionBaseUrl}\n`;
+  if (chainData.authType) {
+    userContent += `Auth: ${chainData.authType}\n`;
+  }
+  userContent += `Total Steps: ${chainData.totalSteps}\n\n`;
 
   userContent += `## Steps (${chainData.steps.length})\n`;
   for (let i = 0; i < chainData.steps.length; i++) {
@@ -225,14 +267,22 @@ export function buildPtChainAnalysisPrompt(
 
 const PT_ASSERTION_SYSTEM = `You are an expert API tester who suggests comprehensive assertions for API endpoints. Given a step's method, URL, body template, and sample response, suggest assertions that ensure correctness, performance, and data integrity.
 
+Guidelines:
+- Always include a status code assertion (e.g., status eq 200 for successful requests)
+- For JSON responses, assert key fields exist and have correct types
+- Include a response time assertion (responseTime lt threshold) for latency-sensitive APIs
+- Use "body" type with JSONPath target (e.g., "$.data.id") for response body checks
+- Available assertion types: status, body, header, responseTime, size
+- Available operators: eq, neq, gt, lt, gte, lte, contains, notContains, matches, exists, notExists
+
 You MUST respond with a valid JSON object. Do NOT include any text outside the JSON.`;
 
 const PT_ASSERTION_SCHEMA = `{
   "assertions": [
     {
-      "type": "status|header|body|latency|size",
-      "target": "What to check (e.g., statusCode, $.data.id, Content-Type, responseTime)",
-      "operator": "equals|notEquals|contains|gt|lt|gte|lte|exists|notExists|matches",
+      "type": "status|header|body|responseTime|size",
+      "target": "What to check (e.g., statusCode, $.data.id, Content-Type)",
+      "operator": "eq|neq|gt|lt|gte|lte|contains|notContains|matches|exists|notExists",
       "value": "Expected value or threshold",
       "description": "Why this assertion matters",
       "priority": "must-have|recommended|nice-to-have"
